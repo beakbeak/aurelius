@@ -19,9 +19,13 @@ func main() {
 	C.avformat_network_init()
 	defer C.avformat_network_deinit()
 
-	if _, err := decode(os.Args[1]); err != nil {
+	var src *AudioFileSource
+	var err error
+	if src, err = decode(os.Args[1]); err != nil {
 		fmt.Println(err)
 	}
+
+	src.dumpFormat()
 }
 
 func avErr2Str(code C.int) string {
@@ -32,7 +36,29 @@ func avErr2Str(code C.int) string {
 	return C.GoString(&buffer[0])
 }
 
-func decode(path string) (error, error) {
+type AudioFileSource struct {
+	Path string
+
+	formatCtx *C.struct_AVFormatContext
+	codecCtx  *C.struct_AVCodecContext
+}
+
+func (s *AudioFileSource) Destroy() {
+	if s.codecCtx != nil {
+		C.avcodec_free_context(&s.codecCtx)
+	}
+	if s.formatCtx != nil {
+		C.avformat_close_input(&s.formatCtx)
+	}
+}
+
+func (s *AudioFileSource) dumpFormat() {
+	cPath := C.CString(s.Path)
+	defer C.free(unsafe.Pointer(cPath))
+	C.av_dump_format(s.formatCtx, 0, cPath, 0)
+}
+
+func decode(path string) (*AudioFileSource, error) {
 	success := false
 
 	cPath := C.CString(path)
@@ -54,13 +80,12 @@ func decode(path string) (error, error) {
 		return nil, fmt.Errorf("Failed to find stream info: %v", avErr2Str(err))
 	}
 
-	C.av_dump_format(formatCtx, 0, cPath, 0)
-
 	// find first audio stream
 	var audioStream *C.struct_AVStream
 	{
-		streams := (*[1 << 30]*C.struct_AVStream)(unsafe.Pointer(formatCtx.streams))[:formatCtx.nb_streams:formatCtx.nb_streams]
-		for i := C.uint(0); i < formatCtx.nb_streams; i++ {
+		streamCount := formatCtx.nb_streams
+		streams := (*[1 << 30]*C.struct_AVStream)(unsafe.Pointer(formatCtx.streams))[:streamCount:streamCount]
+		for i := C.uint(0); i < streamCount; i++ {
 			if streams[i].codecpar.codec_type == C.AVMEDIA_TYPE_AUDIO {
 				audioStream = streams[i]
 				break
@@ -95,6 +120,6 @@ func decode(path string) (error, error) {
 		return nil, fmt.Errorf("Failed to open decoder: %v", avErr2Str(err))
 	}
 
-	//success = true
-	return nil, nil
+	success = true
+	return &AudioFileSource{path, formatCtx, codecCtx}, nil
 }
