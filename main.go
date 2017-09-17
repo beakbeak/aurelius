@@ -1,5 +1,13 @@
 package main
 
+// TODO:
+// - resampling
+// - replaygain
+// - seamless playback of multiple files
+// - HTTP streaming
+// - convert between time bases?
+// - support embedded images
+
 /*
 #cgo pkg-config: libavformat libavcodec libavutil
 
@@ -13,6 +21,10 @@ static int avErrorEOF() {
 
 static int avErrorEAGAIN() {
 	return AVERROR(EAGAIN);
+}
+
+static char const* emptyString() {
+	return "";
 }
 */
 import "C"
@@ -215,6 +227,7 @@ func avErr2Str(code C.int) string {
 
 type AudioSource struct {
 	Path string
+	Tags map[string]string
 
 	formatCtx *C.struct_AVFormatContext
 	codecCtx  *C.struct_AVCodecContext
@@ -289,6 +302,20 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 
 	if err := C.avcodec_open2(src.codecCtx, codec, nil); err < 0 {
 		return nil, fmt.Errorf("failed to open decoder: %v", avErr2Str(err))
+	}
+
+	src.Tags = make(map[string]string)
+	{
+		var entry *C.struct_AVDictionaryEntry
+		for {
+			if entry = C.av_dict_get(
+				src.formatCtx.metadata, C.emptyString(), entry, C.AV_DICT_IGNORE_SUFFIX,
+			); entry != nil {
+				src.Tags[C.GoString(entry.key)] = C.GoString(entry.value)
+			} else {
+				break
+			}
+		}
 	}
 
 	success = true
