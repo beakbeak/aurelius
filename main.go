@@ -1,7 +1,8 @@
 package main
 
 // TODO:
-// - resampling
+// - need to flush resampler?
+// - don't resample if format is the same
 // - replaygain
 // - seamless playback of multiple files
 // - HTTP streaming
@@ -9,10 +10,11 @@ package main
 // - support embedded images
 
 /*
-#cgo pkg-config: libavformat libavcodec libavutil
+#cgo pkg-config: libavformat libavcodec libavutil libswresample
 
 #include <libavformat/avformat.h>
 #include <libavutil/audio_fifo.h>
+#include <libswresample/swresample.h>
 #include <stdlib.h>
 
 static int avErrorEOF() {
@@ -50,7 +52,11 @@ func main() {
 	src.dumpFormat()
 
 	var sink *AudioSink
-	if sink, err = newAudioFileSink(os.Args[2], src); err != nil {
+	if sink, err = newAudioFileSink(os.Args[2],
+		&AudioSinkOptions{
+			Channels: 2, SampleRate: 44100,
+		},
+	); err != nil {
 		panic(err)
 	}
 	defer sink.Destroy()
@@ -60,6 +66,16 @@ func main() {
 		panic(err)
 	}
 	defer fifo.Destroy()
+
+	var resampler *AudioResampler
+	if resampler, err = newAudioResampler(); err != nil {
+		panic(err)
+	}
+	defer resampler.Destroy()
+
+	if err = resampler.Setup(src, sink); err != nil {
+		panic(err)
+	}
 
 	// TODO need to prevent over-buffering or sending too much data before
 	//      it can be played
@@ -73,7 +89,7 @@ func main() {
 		outFrameSize := int(sink.codecCtx.frame_size)
 
 		for fifo.Size() < outFrameSize {
-			if done, err = src.decodeFrames(fifo); err != nil {
+			if done, err = src.decodeFrames(fifo, resampler); err != nil {
 				panic(err)
 			}
 			if done {
@@ -97,7 +113,10 @@ func (packet *C.AVPacket) Init() {
 	packet.size = 0
 }
 
-func (src *AudioSource) decodeFrames(fifo *AudioFIFO) (bool /*finished*/, error) {
+func (src *AudioSource) decodeFrames(
+	fifo *AudioFIFO,
+	rs *AudioResampler,
+) (bool /*finished*/, error) {
 	// XXX do we really have to allocate a new frame every time? (no)
 	var frame *C.AVFrame
 	if frame = C.av_frame_alloc(); frame == nil {
@@ -128,7 +147,11 @@ func (src *AudioSource) decodeFrames(fifo *AudioFIFO) (bool /*finished*/, error)
 			return false, fmt.Errorf("failed to receive frame from decoder: %v", avErr2Str(err))
 		}
 
-		if C.av_audio_fifo_write(
+		if rs != nil {
+			if _, err := rs.convert(frame.extended_data, frame.nb_samples, fifo); err != nil {
+				return false, err
+			}
+		} else if C.av_audio_fifo_write(
 			fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(frame.extended_data)), frame.nb_samples,
 		) < frame.nb_samples {
 			return false, fmt.Errorf("failed to write data to FIFO")
@@ -338,9 +361,19 @@ func (sink *AudioSink) Destroy() {
 	}
 }
 
+type AudioSinkOptions struct {
+	Channels   uint
+	SampleRate uint
+
+	// TODO:
+	// sample format
+	// encoding
+	// dictionary(?) of encoding-specific options (bit rate, etc.)
+}
+
 func newAudioFileSink(
 	path string,
-	src *AudioSource,
+	options *AudioSinkOptions,
 ) (*AudioSink, error) {
 	success := false
 	sink := AudioSink{}
@@ -378,8 +411,8 @@ func newAudioFileSink(
 	}
 
 	// set the sample rate for the container
-	stream.time_base.den = src.codecCtx.sample_rate
 	stream.time_base.num = 1
+	stream.time_base.den = C.int(options.SampleRate)
 
 	codec := C.avcodec_find_encoder(C.AV_CODEC_ID_FLAC)
 	if codec == nil {
@@ -390,12 +423,10 @@ func newAudioFileSink(
 		return nil, fmt.Errorf("failed to allocate encoding context")
 	}
 
-	sink.codecCtx.channels = src.codecCtx.channels
-	sink.codecCtx.channel_layout = src.codecCtx.channel_layout // C.av_get_default_channel_layout(sink.codecCtx.channels)
-	sink.codecCtx.sample_rate = src.codecCtx.sample_rate
-	sink.codecCtx.sample_fmt = *codec.sample_fmts // ?
-	//sink.codecCtx.sample_fmt = src.codecCtx.sample_fmt
-	// sink.codecCtx.bit_rate
+	sink.codecCtx.channels = C.int(options.Channels)
+	sink.codecCtx.channel_layout = C.uint64_t(C.av_get_default_channel_layout(sink.codecCtx.channels))
+	sink.codecCtx.sample_rate = C.int(options.SampleRate)
+	sink.codecCtx.sample_fmt = *codec.sample_fmts // arbitrarily choose first supported format
 	sink.codecCtx.time_base = stream.time_base
 
 	// some container formats (like MP4) require global headers to be present.
@@ -444,4 +475,119 @@ func newAudioFIFO(sink *AudioSink) (*AudioFIFO, error) {
 
 func (fifo *AudioFIFO) Size() int {
 	return int(C.av_audio_fifo_size(fifo.fifo))
+}
+
+type AudioResampler struct {
+	swr            *C.struct_SwrContext
+	buffer         **C.uint8_t
+	bufferSamples  C.int
+	bufferChannels C.int
+	bufferFormat   int32
+}
+
+func (rs *AudioResampler) Destroy() {
+	if rs.swr != nil {
+		C.swr_free(&rs.swr)
+	}
+	rs.destroyBuffer()
+}
+
+func (rs *AudioResampler) destroyBuffer() {
+	if rs.buffer != nil {
+		C.av_freep(unsafe.Pointer(rs.buffer))  // free planes
+		C.av_freep(unsafe.Pointer(&rs.buffer)) // free array of plane pointers
+	}
+}
+
+func newAudioResampler() (*AudioResampler, error) {
+	rs := AudioResampler{}
+
+	if rs.swr = C.swr_alloc(); rs.swr == nil {
+		return nil, fmt.Errorf("failed to allocate resampler")
+	}
+	return &rs, nil
+}
+
+func (rs *AudioResampler) Setup(
+	src *AudioSource,
+	sink *AudioSink,
+) error {
+	const defaultBufferSamples = 4096
+
+	rs.swr = C.swr_alloc_set_opts(
+		rs.swr,
+		C.int64_t(sink.codecCtx.channel_layout),
+		sink.codecCtx.sample_fmt,
+		sink.codecCtx.sample_rate,
+		C.int64_t(src.codecCtx.channel_layout),
+		src.codecCtx.sample_fmt,
+		src.codecCtx.sample_rate,
+		0, nil, // logging offset and context
+	)
+
+	if err := C.swr_init(rs.swr); err < 0 {
+		return fmt.Errorf("failed to initialize resampler: %v", avErr2Str(err))
+	}
+
+	rs.destroyBuffer()
+	rs.bufferSamples = C.int(defaultBufferSamples)
+	rs.bufferChannels = sink.codecCtx.channels
+	rs.bufferFormat = sink.codecCtx.sample_fmt
+
+	var lineSize C.int
+	if err := C.av_samples_alloc_array_and_samples(
+		&rs.buffer, &lineSize, rs.bufferChannels, rs.bufferSamples, rs.bufferFormat, 0,
+	); err < 0 {
+		return fmt.Errorf("failed to allocate sample buffer: %v", avErr2Str(err))
+	}
+	return nil
+}
+
+func (rs *AudioResampler) growBuffer(sampleCount C.int) error {
+	if rs.bufferSamples <= sampleCount {
+		return nil
+	}
+
+	C.av_freep(unsafe.Pointer(rs.buffer))
+
+	var lineSize C.int
+	if err := C.av_samples_alloc(
+		rs.buffer, &lineSize, rs.bufferChannels, sampleCount, rs.bufferFormat, 0,
+	); err < 0 {
+		return fmt.Errorf("failed to allocate sample buffer: %v", avErr2Str(err))
+	}
+
+	rs.bufferSamples = sampleCount
+	return nil
+}
+
+func (rs *AudioResampler) convert(
+	in **C.uint8_t,
+	inSamples C.int,
+	out *AudioFIFO,
+) (C.int /* samples written */, error) {
+	if rs.buffer == nil {
+		return 0, fmt.Errorf("convert() called without Setup()")
+	}
+
+	if maxOutSamples := C.swr_get_out_samples(rs.swr, inSamples); maxOutSamples >= 0 {
+		if err := rs.growBuffer(maxOutSamples); err != nil {
+			return 0, err
+		}
+	} else if maxOutSamples < 0 {
+		return 0, fmt.Errorf(
+			"failed to calculate output buffer size: %v", avErr2Str(maxOutSamples))
+	}
+
+	outSamples := C.swr_convert(rs.swr, rs.buffer, rs.bufferSamples, in, inSamples)
+	if outSamples < 0 {
+		return 0, fmt.Errorf("failed to convert samples: %v", avErr2Str(outSamples))
+	}
+
+	writtenSamples := C.av_audio_fifo_write(
+		out.fifo, (*unsafe.Pointer)(unsafe.Pointer(rs.buffer)), outSamples)
+	if writtenSamples < outSamples {
+		return writtenSamples, fmt.Errorf("failed to write data to FIFO")
+	}
+	return writtenSamples, nil
 }
