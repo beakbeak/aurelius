@@ -128,11 +128,6 @@ func (src *AudioSource) decodeFrames(fifo *AudioFIFO) (bool /*finished*/, error)
 			return false, fmt.Errorf("failed to receive frame from decoder: %v", avErr2Str(err))
 		}
 
-		// XXX better to only grow
-		if err := fifo.Realloc(fifo.Size() + int(frame.nb_samples)); err != nil {
-			return false, err
-		}
-
 		if C.av_audio_fifo_write(
 			fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(frame.extended_data)), frame.nb_samples,
 		) < frame.nb_samples {
@@ -449,11 +444,4 @@ func newAudioFIFO(sink *AudioSink) (*AudioFIFO, error) {
 
 func (fifo *AudioFIFO) Size() int {
 	return int(C.av_audio_fifo_size(fifo.fifo))
-}
-
-func (fifo *AudioFIFO) Realloc(size int) error {
-	if err := C.av_audio_fifo_realloc(fifo.fifo, C.int(size)); err < 0 {
-		return fmt.Errorf("failed to reallocate FIFO: %v", avErr2Str(err))
-	}
-	return nil
 }
