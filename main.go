@@ -6,7 +6,6 @@ package main
 // - support embedded images
 
 // - replaygain preamp?
-// - need to flush resampler?
 // - convert between time bases?
 
 /*
@@ -671,5 +670,23 @@ func (rs *AudioResampler) convert(
 	if writtenSamples < outSamples {
 		return writtenSamples, fmt.Errorf("failed to write data to FIFO")
 	}
-	return writtenSamples, nil
+
+	// flush resampler (probably unnecessary)
+	totalWrittenSamples := writtenSamples
+	for outSamples != 0 {
+		outSamples = C.swr_convert(rs.swr, rs.buffer, rs.bufferSamples, nil, 0)
+		if outSamples < 0 {
+			return totalWrittenSamples,
+				fmt.Errorf("failed to convert samples: %v", avErr2Str(outSamples))
+		} else if outSamples > 0 {
+			writtenSamples = C.av_audio_fifo_write(
+				out.fifo, (*unsafe.Pointer)(unsafe.Pointer(rs.buffer)), outSamples)
+			totalWrittenSamples += writtenSamples
+
+			if writtenSamples < outSamples {
+				return totalWrittenSamples, fmt.Errorf("failed to write data to FIFO")
+			}
+		}
+	}
+	return totalWrittenSamples, nil
 }
