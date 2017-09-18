@@ -1,19 +1,21 @@
 package main
 
 // TODO:
-// - need to flush resampler?
-// - don't resample if format is the same
-// - replaygain
 // - seamless playback of multiple files
 // - HTTP streaming
-// - convert between time bases?
 // - support embedded images
+
+// - replaygain preamp?
+// - need to flush resampler?
+// - convert between time bases?
 
 /*
 #cgo pkg-config: libavformat libavcodec libavutil libswresample
 
 #include <libavformat/avformat.h>
 #include <libavutil/audio_fifo.h>
+#include <libavutil/opt.h>
+#include <libavutil/replaygain.h>
 #include <libswresample/swresample.h>
 #include <stdlib.h>
 
@@ -25,14 +27,19 @@ static int avErrorEAGAIN() {
 	return AVERROR(EAGAIN);
 }
 
-static char const* emptyString() {
+static char const* strEmpty() {
 	return "";
+}
+
+static char const* strRematrixVolume() {
+	return "rematrix_volume";
 }
 */
 import "C"
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"unsafe"
 )
@@ -50,6 +57,7 @@ func main() {
 	defer src.Destroy()
 
 	src.dumpFormat()
+	fmt.Println(src.Tags)
 
 	var sink *AudioSink
 	if sink, err = newAudioFileSink(os.Args[2],
@@ -73,7 +81,7 @@ func main() {
 	}
 	defer resampler.Destroy()
 
-	if err = resampler.Setup(src, sink); err != nil {
+	if err = resampler.Setup(src, sink, src.ReplayGain(ReplayGainTrack, true)); err != nil {
 		panic(err)
 	}
 
@@ -249,6 +257,7 @@ type AudioSource struct {
 
 	formatCtx *C.struct_AVFormatContext
 	codecCtx  *C.struct_AVCodecContext
+	stream    *C.struct_AVStream
 }
 
 func (src *AudioSource) Destroy() {
@@ -289,23 +298,21 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 	}
 
 	// find first audio stream
-	var audioStream *C.struct_AVStream
 	{
 		streamCount := src.formatCtx.nb_streams
 		streams := (*[1 << 30]*C.struct_AVStream)(unsafe.Pointer(src.formatCtx.streams))[:streamCount:streamCount]
 		for _, stream := range streams {
 			if stream.codecpar.codec_type == C.AVMEDIA_TYPE_AUDIO {
-				audioStream = stream
+				src.stream = stream
 				break
 			}
 		}
 	}
-
-	if audioStream == nil {
+	if src.stream == nil {
 		return nil, errors.New("no audio streams")
 	}
 
-	codec := C.avcodec_find_decoder(audioStream.codecpar.codec_id)
+	codec := C.avcodec_find_decoder(src.stream.codecpar.codec_id)
 	if codec == nil {
 		return nil, errors.New("failed to find decoder")
 	}
@@ -314,7 +321,7 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 		return nil, errors.New("failed to allocate decoding context")
 	}
 
-	if err := C.avcodec_parameters_to_context(src.codecCtx, audioStream.codecpar); err < 0 {
+	if err := C.avcodec_parameters_to_context(src.codecCtx, src.stream.codecpar); err < 0 {
 		return nil, fmt.Errorf("failed to copy codec parameters: %v", avErr2Str(err))
 	}
 
@@ -327,7 +334,7 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 		var entry *C.struct_AVDictionaryEntry
 		for {
 			if entry = C.av_dict_get(
-				src.formatCtx.metadata, C.emptyString(), entry, C.AV_DICT_IGNORE_SUFFIX,
+				src.formatCtx.metadata, C.strEmpty(), entry, C.AV_DICT_IGNORE_SUFFIX,
 			); entry != nil {
 				src.Tags[C.GoString(entry.key)] = C.GoString(entry.value)
 			} else {
@@ -338,6 +345,72 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 
 	success = true
 	return &src, nil
+}
+
+type ReplayGainMode int
+
+const (
+	ReplayGainTrack ReplayGainMode = iota
+	ReplayGainAlbum
+)
+
+func (src *AudioSource) ReplayGain(
+	mode ReplayGainMode,
+	preventClipping bool,
+) float64 {
+	var data *C.struct_AVPacketSideData
+	for i := C.int(0); i < src.stream.nb_side_data; i++ {
+		address := uintptr(unsafe.Pointer(src.stream.side_data))
+		address += uintptr(i) * unsafe.Sizeof(*src.stream.side_data)
+		localData := (*C.struct_AVPacketSideData)(unsafe.Pointer(address))
+
+		if localData._type == C.AV_PKT_DATA_REPLAYGAIN {
+			data = localData
+			break
+		}
+	}
+	if data == nil {
+		return 1.
+	}
+
+	gainData := (*C.struct_AVReplayGain)(unsafe.Pointer(data.data))
+
+	var gain, peak float64
+	var gainValid, peakValid bool
+
+	if gainData.track_gain != C.INT32_MIN {
+		gain = float64(gainData.track_gain)
+		gainValid = true
+	}
+	if gainData.track_peak != 0 {
+		peak = float64(gainData.track_peak)
+		peakValid = true
+	}
+
+	if (mode == ReplayGainAlbum || !gainValid) && gainData.album_gain != C.INT32_MIN {
+		gain = float64(gainData.album_gain)
+		gainValid = true
+	}
+	if (mode == ReplayGainAlbum || !peakValid) && gainData.album_peak != 0 {
+		peak = float64(gainData.album_peak)
+		peakValid = true
+	}
+
+	if !gainValid {
+		return 1.
+	}
+
+	gain /= 100000.
+	peak /= 100000.
+
+	volume := math.Pow(10, gain/20.)
+	if preventClipping && peakValid {
+		invPeak := 1. / peak
+		if volume > invPeak {
+			volume = invPeak
+		}
+	}
+	return volume
 }
 
 type AudioSink struct {
@@ -511,6 +584,7 @@ func newAudioResampler() (*AudioResampler, error) {
 func (rs *AudioResampler) Setup(
 	src *AudioSource,
 	sink *AudioSink,
+	volume float64,
 ) error {
 	const defaultBufferSamples = 4096
 
@@ -524,6 +598,14 @@ func (rs *AudioResampler) Setup(
 		src.codecCtx.sample_rate,
 		0, nil, // logging offset and context
 	)
+
+	if volume != 1. {
+		if err := C.av_opt_set_double(
+			unsafe.Pointer(rs.swr), C.strRematrixVolume(), C.double(volume), 0,
+		); err < 0 {
+			return fmt.Errorf("failed to set resampler volume: %v", avErr2Str(err))
+		}
+	}
 
 	if err := C.swr_init(rs.swr); err < 0 {
 		return fmt.Errorf("failed to initialize resampler: %v", avErr2Str(err))
