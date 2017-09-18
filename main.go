@@ -1,12 +1,20 @@
 package main
 
 // TODO:
-// - seamless playback of multiple files
+// - ogg tags
+// - flesh out encoding & resampling options
 // - HTTP streaming
 // - support embedded images
 
 // - replaygain preamp?
-// - convert between time bases?
+
+// - need to prevent over-buffering or sending too much data before
+//   it can be played
+//   - for now: rely on client's buffer being small(ish)?
+//     - fine for some players (foobar), not for others (browsers)
+//   - later: throttle encoding speed based on playback speed
+//            (available in packet after av_read_frame())
+//     - *** this will be necessary for silence when paused ***
 
 /*
 #cgo pkg-config: libavformat libavcodec libavutil libswresample
@@ -44,22 +52,23 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 3 {
+		panic("not enough arguments")
+	}
+
 	C.av_register_all()
 	C.avformat_network_init()
 	defer C.avformat_network_deinit()
 
-	var src *AudioSource
+	var resampler *AudioResampler
 	var err error
-	if src, err = newAudioFileSource(os.Args[1]); err != nil {
+	if resampler, err = newAudioResampler(); err != nil {
 		panic(err)
 	}
-	defer src.Destroy()
-
-	src.dumpFormat()
-	fmt.Println(src.Tags)
+	defer resampler.Destroy()
 
 	var sink *AudioSink
-	if sink, err = newAudioFileSink(os.Args[2],
+	if sink, err = newAudioFileSink(os.Args[len(os.Args)-1],
 		&AudioSinkOptions{
 			Channels: 2, SampleRate: 44100,
 		},
@@ -74,44 +83,55 @@ func main() {
 	}
 	defer fifo.Destroy()
 
-	var resampler *AudioResampler
-	if resampler, err = newAudioResampler(); err != nil {
-		panic(err)
-	}
-	defer resampler.Destroy()
+	playFile := func(path string) error {
+		var src *AudioSource
+		var err error
+		if src, err = newAudioFileSource(path); err != nil {
+			return err
+		}
+		defer src.Destroy()
 
-	if err = resampler.Setup(src, sink, src.ReplayGain(ReplayGainTrack, true)); err != nil {
-		panic(err)
-	}
+		src.dumpFormat()
+		fmt.Println(src.Tags)
 
-	// TODO need to prevent over-buffering or sending too much data before
-	//      it can be played
-	// - for now: rely on client's buffer being small(ish)?
-	//   - fine for some players (foobar), not for others (browsers)
-	// - later: throttle encoding speed based on playback speed
-	//          (available in packet after av_read_frame())
-
-	done := false
-	for !done {
-		outFrameSize := int(sink.codecCtx.frame_size)
-
-		for fifo.Size() < outFrameSize {
-			if done, err = src.decodeFrames(fifo, resampler); err != nil {
-				panic(err)
-			}
-			if done {
-				break
-			}
+		if err := resampler.Setup(src, sink, src.ReplayGain(ReplayGainTrack, true)); err != nil {
+			return err
 		}
 
-		for fifo.Size() >= outFrameSize || (done && fifo.Size() > 0) {
-			if err = sink.encodeFrames(fifo); err != nil {
-				panic(err)
+		done := false
+		for !done {
+			outFrameSize := int(sink.codecCtx.frame_size)
+
+			for fifo.Size() < outFrameSize {
+				if done, err = src.decodeFrames(fifo, resampler); err != nil {
+					return err
+				}
+				if done {
+					break
+				}
+			}
+
+			for fifo.Size() >= outFrameSize {
+				if err = sink.encodeFrames(fifo); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 	}
-	sink.flush()
-	sink.writeTrailer()
+
+	for _, path := range os.Args[1 : len(os.Args)-1] {
+		if err := playFile(path); err != nil {
+			fmt.Printf("failed to play '%v': %v\n", path, err)
+		}
+	}
+
+	if err = sink.flush(fifo); err != nil {
+		fmt.Printf("failed to flush sink: %v\n", err)
+	}
+	if err = sink.writeTrailer(); err != nil {
+		fmt.Printf("failed to write trailer: %v\n", err)
+	}
 }
 
 func (packet *C.AVPacket) Init() {
@@ -203,17 +223,28 @@ func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
 		return fmt.Errorf("failed to encode frame: %s", avErr2Str(err))
 	}
 
-	return sink.writeFrames()
+	if eof, err := sink.writeFrames(); eof {
+		return fmt.Errorf("unexpected EOF from encoder")
+	} else if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (sink *AudioSink) flush() error {
+func (sink *AudioSink) flush(fifo *AudioFIFO) error {
+	for fifo.Size() > 0 {
+		if err := sink.encodeFrames(fifo); err != nil {
+			return err
+		}
+	}
 	if err := C.avcodec_send_frame(sink.codecCtx, nil); err < 0 {
 		return fmt.Errorf("failed to encode NULL frame: %s", avErr2Str(err))
 	}
-	return sink.writeFrames()
+	_, err := sink.writeFrames()
+	return err
 }
 
-func (sink *AudioSink) writeFrames() error {
+func (sink *AudioSink) writeFrames() (bool /*eof*/, error) {
 	var packet C.AVPacket
 	packet.Init()
 	defer C.av_packet_unref(&packet)
@@ -223,16 +254,16 @@ func (sink *AudioSink) writeFrames() error {
 		if err := C.avcodec_receive_packet(sink.codecCtx, &packet); err == C.avErrorEAGAIN() {
 			break
 		} else if err == C.avErrorEOF() {
-			return fmt.Errorf("unexpected EOF from encoder (might be normal)")
+			return true, nil
 		} else if err < 0 {
-			return fmt.Errorf("failed to receive packet from encoder: %v", avErr2Str(err))
+			return false, fmt.Errorf("failed to receive packet from encoder: %v", avErr2Str(err))
 		}
 
 		if err := C.av_write_frame(sink.formatCtx, &packet); err < 0 {
-			return fmt.Errorf("failed to write frame: %s", avErr2Str(err))
+			return false, fmt.Errorf("failed to write frame: %s", avErr2Str(err))
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func (sink *AudioSink) writeTrailer() error {
@@ -598,12 +629,10 @@ func (rs *AudioResampler) Setup(
 		0, nil, // logging offset and context
 	)
 
-	if volume != 1. {
-		if err := C.av_opt_set_double(
-			unsafe.Pointer(rs.swr), C.strRematrixVolume(), C.double(volume), 0,
-		); err < 0 {
-			return fmt.Errorf("failed to set resampler volume: %v", avErr2Str(err))
-		}
+	if err := C.av_opt_set_double(
+		unsafe.Pointer(rs.swr), C.strRematrixVolume(), C.double(volume), 0,
+	); err < 0 {
+		return fmt.Errorf("failed to set resampler volume: %v", avErr2Str(err))
 	}
 
 	if err := C.swr_init(rs.swr); err < 0 {
