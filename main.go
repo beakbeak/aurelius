@@ -1,20 +1,20 @@
 package main
 
 // TODO:
-// - ogg tags
+// - figure out why timing is wrong when using MKV container
+//   (maybe something to do with time base settings/conversion)
 // - flesh out encoding & resampling options
 // - HTTP streaming
+//   - need to prevent over-buffering or sending too much data before
+//     it can be played
+//     - for now: fixed-size buffer; rely on client to drain at appropriate speed
+//     - later: throttle encoding speed based on playback speed
+//              (available in packet after av_read_frame())
+//       - *** this will be necessary for silence when paused ***
 // - support embedded images
 
 // - replaygain preamp?
-
-// - need to prevent over-buffering or sending too much data before
-//   it can be played
-//   - for now: rely on client's buffer being small(ish)?
-//     - fine for some players (foobar), not for others (browsers)
-//   - later: throttle encoding speed based on playback speed
-//            (available in packet after av_read_frame())
-//     - *** this will be necessary for silence when paused ***
+// - treat sections of a file as playlist entries (e.g. pieces of a long live set, a hidden track)
 
 /*
 #cgo pkg-config: libavformat libavcodec libavutil libswresample
@@ -360,11 +360,12 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 	}
 
 	src.Tags = make(map[string]string)
-	{
+
+	gatherTagsFromDict := func(dict *C.struct_AVDictionary) {
 		var entry *C.struct_AVDictionaryEntry
 		for {
 			if entry = C.av_dict_get(
-				src.formatCtx.metadata, C.strEmpty(), entry, C.AV_DICT_IGNORE_SUFFIX,
+				dict, C.strEmpty(), entry, C.AV_DICT_IGNORE_SUFFIX,
 			); entry != nil {
 				src.Tags[C.GoString(entry.key)] = C.GoString(entry.value)
 			} else {
@@ -372,6 +373,8 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 			}
 		}
 	}
+	gatherTagsFromDict(src.formatCtx.metadata)
+	gatherTagsFromDict(src.stream.metadata)
 
 	success = true
 	return &src, nil
