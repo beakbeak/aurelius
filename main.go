@@ -3,8 +3,6 @@ package main
 // TODO:
 // - figure out why timing is wrong when using MKV container
 //   (maybe something to do with time base settings/conversion)
-// - flesh out encoding & resampling options
-//   - dictionary(?) of encoding-specific options (bit rate, etc.)
 // - HTTP streaming
 //   - need to prevent over-buffering or sending too much data before
 //     it can be played
@@ -71,8 +69,10 @@ func main() {
 	}
 	defer resampler.Destroy()
 
+	options := NewAudioSinkOptions()
+
 	var sink *AudioSink
-	if sink, err = newAudioFileSink(os.Args[len(os.Args)-1], nil); err != nil {
+	if sink, err = newAudioFileSink(os.Args[len(os.Args)-1], options); err != nil {
 		panic(err)
 	}
 	defer sink.Destroy()
@@ -488,18 +488,31 @@ func (sink *AudioSink) FrameSize() int {
 }
 
 type AudioSinkOptions struct {
-	Channels      uint   // default 2
-	ChannelLayout string // optional; overrides Channels
-	SampleRate    uint   // default 44100
-	SampleFormat  string // default is codec-dependent
-	Codec         string // default "flac"
+	Channels         uint    // default 2
+	ChannelLayout    string  // optional; overrides Channels
+	SampleRate       uint    // default 44100
+	SampleFormat     string  // default is codec-dependent
+	Codec            string  // default "flac"
+	CompressionLevel int     // used for flac
+	Quality          float32 // used for libmp3lame, libvorbis
+	BitRate          uint
+}
+
+func NewAudioSinkOptions() *AudioSinkOptions {
+	return &AudioSinkOptions{
+		Channels:         2,
+		SampleRate:       44100,
+		Codec:            "flac",
+		CompressionLevel: -1,
+		Quality:          -2,
+	}
 }
 
 func (options *AudioSinkOptions) getChannels() (C.int, C.uint64_t) {
 	var channels C.int
 	var channelLayout C.uint64_t
 
-	if options != nil && options.ChannelLayout != "" {
+	if options.ChannelLayout != "" {
 		channelLayoutName := C.CString(options.ChannelLayout)
 		defer C.free(unsafe.Pointer(channelLayoutName))
 
@@ -508,25 +521,14 @@ func (options *AudioSinkOptions) getChannels() (C.int, C.uint64_t) {
 		}
 	}
 	if channels == 0 {
-		if options != nil && options.Channels != 0 {
-			channels = C.int(options.Channels)
-		} else {
-			channels = 2
-		}
+		channels = C.int(options.Channels)
 		channelLayout = C.uint64_t(C.av_get_default_channel_layout(channels))
 	}
 	return channels, channelLayout
 }
 
-func (options *AudioSinkOptions) getSampleRate() C.int {
-	if options != nil && options.SampleRate != 0 {
-		return C.int(options.SampleRate)
-	}
-	return 44100
-}
-
 func (options *AudioSinkOptions) getSampleFormat(defaultFormat int32) int32 {
-	if options != nil && options.SampleFormat != "" {
+	if options.SampleFormat != "" {
 		formatName := C.CString(options.SampleFormat)
 		defer C.free(unsafe.Pointer(formatName))
 
@@ -535,22 +537,11 @@ func (options *AudioSinkOptions) getSampleFormat(defaultFormat int32) int32 {
 	return defaultFormat
 }
 
-func (options *AudioSinkOptions) getCodec() (*C.struct_AVCodec, error) {
-	var codecName string
-	if options != nil && options.Codec != "" {
-		codecName = options.Codec
-	} else {
-		codecName = "flac"
-	}
-
-	cCodecName := C.CString(codecName)
+func (options *AudioSinkOptions) getCodec() *C.struct_AVCodec {
+	cCodecName := C.CString(options.Codec)
 	defer C.free(unsafe.Pointer(cCodecName))
 
-	codec := C.avcodec_find_encoder_by_name(cCodecName)
-	if codec == nil {
-		return nil, fmt.Errorf("failed to find output encoder '%v'", codecName)
-	}
-	return codec, nil
+	return C.avcodec_find_encoder_by_name(cCodecName)
 }
 
 func newAudioFileSink(
@@ -594,12 +585,11 @@ func newAudioFileSink(
 
 	// set the sample rate for the container
 	stream.time_base.num = 1
-	stream.time_base.den = options.getSampleRate()
+	stream.time_base.den = C.int(options.SampleRate)
 
 	var codec *C.struct_AVCodec
-	var err error
-	if codec, err = options.getCodec(); err != nil {
-		return nil, err
+	if codec = options.getCodec(); codec == nil {
+		return nil, fmt.Errorf("failed to find output encoder '%v'", options.Codec)
 	}
 
 	if sink.codecCtx = C.avcodec_alloc_context3(codec); sink.codecCtx == nil {
@@ -608,7 +598,7 @@ func newAudioFileSink(
 
 	sink.codecCtx.channels, sink.codecCtx.channel_layout = options.getChannels()
 
-	sink.codecCtx.sample_rate = options.getSampleRate()
+	sink.codecCtx.sample_rate = C.int(options.SampleRate)
 	sink.codecCtx.sample_fmt = options.getSampleFormat(*codec.sample_fmts)
 	sink.codecCtx.time_base = stream.time_base
 
@@ -616,6 +606,15 @@ func newAudioFileSink(
 	// mark the encoder so that it behaves accordingly
 	if (sink.formatCtx.oformat.flags & C.AVFMT_GLOBALHEADER) != 0 {
 		sink.codecCtx.flags |= C.AV_CODEC_FLAG_GLOBAL_HEADER
+	}
+
+	if options.CompressionLevel >= 0 {
+		sink.codecCtx.compression_level = C.int(options.CompressionLevel)
+	} else if options.Quality >= -1. {
+		sink.codecCtx.flags |= C.AV_CODEC_FLAG_QSCALE
+		sink.codecCtx.global_quality = C.int(options.Quality * C.FF_QP2LAMBDA)
+	} else if options.BitRate != 0 {
+		sink.codecCtx.bit_rate = C.int64_t(options.BitRate)
 	}
 
 	// open the encoder for the audio stream to use it later
