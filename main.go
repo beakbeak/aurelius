@@ -395,6 +395,8 @@ const (
 	ReplayGainAlbum
 )
 
+// ReplayGain returns the [0,1] volume scale factor that should be applied
+// based on the audio stream's ReplayGain metadata and the supplied arguments.
 func (src *AudioSource) ReplayGain(
 	mode ReplayGainMode,
 	preventClipping bool,
@@ -527,11 +529,22 @@ func (options *AudioSinkOptions) getSampleFormat(defaultFormat int32) int32 {
 	return defaultFormat
 }
 
-func (options *AudioSinkOptions) getCodec() string {
+func (options *AudioSinkOptions) getCodec() (*C.struct_AVCodec, error) {
+	var codecName string
 	if options != nil && options.Codec != "" {
-		return options.Codec
+		codecName = options.Codec
+	} else {
+		codecName = "flac"
 	}
-	return "flac"
+
+	cCodecName := C.CString(codecName)
+	defer C.free(unsafe.Pointer(cCodecName))
+
+	codec := C.avcodec_find_encoder_by_name(cCodecName)
+	if codec == nil {
+		return nil, fmt.Errorf("failed to find output encoder '%v'", codecName)
+	}
+	return codec, nil
 }
 
 func newAudioFileSink(
@@ -550,8 +563,8 @@ func newAudioFileSink(
 	defer C.free(unsafe.Pointer(cPath))
 
 	// open the output file for writing
-	if err := C.avio_open(&sink.ioCtx, cPath, C.AVIO_FLAG_WRITE); err < 0 {
-		return nil, fmt.Errorf("failed to open file: %v", avErr2Str(err))
+	if avErr := C.avio_open(&sink.ioCtx, cPath, C.AVIO_FLAG_WRITE); avErr < 0 {
+		return nil, fmt.Errorf("failed to open file: %v", avErr2Str(avErr))
 	}
 
 	// create a new format context for the output container format
@@ -577,12 +590,10 @@ func newAudioFileSink(
 	stream.time_base.num = 1
 	stream.time_base.den = options.getSampleRate()
 
-	codecName := C.CString(options.getCodec())
-	defer C.free(unsafe.Pointer(codecName))
-
-	codec := C.avcodec_find_encoder_by_name(codecName)
-	if codec == nil {
-		return nil, fmt.Errorf("failed to find output encoder '%v'", options.Codec)
+	var codec *C.struct_AVCodec
+	var err error
+	if codec, err = options.getCodec(); err != nil {
+		return nil, err
 	}
 
 	if sink.codecCtx = C.avcodec_alloc_context3(codec); sink.codecCtx == nil {
@@ -602,16 +613,16 @@ func newAudioFileSink(
 	}
 
 	// open the encoder for the audio stream to use it later
-	if err := C.avcodec_open2(sink.codecCtx, codec, nil); err < 0 {
-		return nil, fmt.Errorf("failed to open output codec: %v", avErr2Str(err))
+	if avErr := C.avcodec_open2(sink.codecCtx, codec, nil); avErr < 0 {
+		return nil, fmt.Errorf("failed to open output codec: %v", avErr2Str(avErr))
 	}
 
-	if err := C.avcodec_parameters_from_context(stream.codecpar, sink.codecCtx); err < 0 {
+	if avErr := C.avcodec_parameters_from_context(stream.codecpar, sink.codecCtx); avErr < 0 {
 		return nil, fmt.Errorf("failed to initialize stream parameters")
 	}
 
-	if err := C.avformat_write_header(sink.formatCtx, nil); err < 0 {
-		return nil, fmt.Errorf("failed to write header: %v", avErr2Str(err))
+	if avErr := C.avformat_write_header(sink.formatCtx, nil); avErr < 0 {
+		return nil, fmt.Errorf("failed to write header: %v", avErr2Str(avErr))
 	}
 
 	success = true
