@@ -100,7 +100,7 @@ func main() {
 
 		done := false
 		for !done {
-			outFrameSize := int(sink.codecCtx.frame_size)
+			outFrameSize := sink.FrameSize()
 
 			for fifo.Size() < outFrameSize {
 				if done, err = src.decodeFrames(fifo, resampler); err != nil {
@@ -189,11 +189,9 @@ func (src *AudioSource) decodeFrames(
 }
 
 func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
-	var frameSize C.int
-	if C.int(fifo.Size()) < sink.codecCtx.frame_size {
-		frameSize = C.int(fifo.Size())
-	} else {
-		frameSize = sink.codecCtx.frame_size
+	frameSize := sink.FrameSize()
+	if fifo.Size() < frameSize {
+		frameSize = fifo.Size()
 	}
 
 	if sink.frame == nil {
@@ -203,7 +201,7 @@ func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
 	}
 	defer C.av_frame_unref(sink.frame)
 
-	sink.frame.nb_samples = frameSize
+	sink.frame.nb_samples = C.int(frameSize)
 	sink.frame.channel_layout = sink.codecCtx.channel_layout
 	sink.frame.format = C.int(sink.codecCtx.sample_fmt)
 	sink.frame.sample_rate = sink.codecCtx.sample_rate
@@ -213,8 +211,8 @@ func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
 	}
 
 	if C.av_audio_fifo_read(
-		fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(&sink.frame.data[0])), frameSize,
-	) < frameSize {
+		fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(&sink.frame.data[0])), C.int(frameSize),
+	) < C.int(frameSize) {
 		return fmt.Errorf("failed to read from FIFO")
 	}
 
@@ -479,6 +477,14 @@ func (sink *AudioSink) Destroy() {
 	if sink.ioCtx != nil {
 		C.avio_closep(&sink.ioCtx)
 	}
+}
+
+func (sink *AudioSink) FrameSize() int {
+	value := sink.codecCtx.frame_size
+	if value <= 0 {
+		return 4096
+	}
+	return int(value)
 }
 
 type AudioSinkOptions struct {
