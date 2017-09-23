@@ -4,7 +4,6 @@ package main
 // - figure out why timing is wrong when using MKV container
 //   (maybe something to do with time base settings/conversion)
 // - flesh out encoding & resampling options
-//   - sample format?
 //   - dictionary(?) of encoding-specific options (bit rate, etc.)
 // - HTTP streaming
 //   - need to prevent over-buffering or sending too much data before
@@ -470,10 +469,11 @@ func (sink *AudioSink) Destroy() {
 }
 
 type AudioSinkOptions struct {
-	Channels      uint   // optional; default 2
+	Channels      uint   // default 2
 	ChannelLayout string // optional; overrides Channels
-	SampleRate    uint   // optional; default 44100
-	Codec         string
+	SampleRate    uint   // default 44100
+	SampleFormat  string // default is codec-dependent
+	Codec         string // default "flac"
 }
 
 func (options *AudioSinkOptions) getChannels() (C.int, C.uint64_t) {
@@ -504,6 +504,16 @@ func (options *AudioSinkOptions) getSampleRate() C.int {
 		return C.int(options.SampleRate)
 	}
 	return 44100
+}
+
+func (options *AudioSinkOptions) getSampleFormat(defaultFormat int32) int32 {
+	if options != nil && options.SampleFormat != "" {
+		formatName := C.CString(options.SampleFormat)
+		defer C.free(unsafe.Pointer(formatName))
+
+		return C.av_get_sample_fmt(formatName)
+	}
+	return defaultFormat
 }
 
 func (options *AudioSinkOptions) getCodec() string {
@@ -571,7 +581,7 @@ func newAudioFileSink(
 	sink.codecCtx.channels, sink.codecCtx.channel_layout = options.getChannels()
 
 	sink.codecCtx.sample_rate = options.getSampleRate()
-	sink.codecCtx.sample_fmt = *codec.sample_fmts // arbitrarily choose first supported format
+	sink.codecCtx.sample_fmt = options.getSampleFormat(*codec.sample_fmts)
 	sink.codecCtx.time_base = stream.time_base
 
 	// some container formats (like MP4) require global headers to be present.
