@@ -144,12 +144,12 @@ func (src *AudioSource) decodeFrames(
 	fifo *AudioFIFO,
 	rs *AudioResampler,
 ) (bool /*finished*/, error) {
-	// XXX do we really have to allocate a new frame every time? (no)
-	var frame *C.AVFrame
-	if frame = C.av_frame_alloc(); frame == nil {
-		return false, fmt.Errorf("failed to allocate input frame")
+	if src.frame == nil {
+		if src.frame = C.av_frame_alloc(); src.frame == nil {
+			return false, fmt.Errorf("failed to allocate input frame")
+		}
 	}
-	defer C.av_frame_free(&frame)
+	defer C.av_frame_unref(src.frame)
 
 	var packet C.AVPacket
 	packet.Init()
@@ -166,7 +166,8 @@ func (src *AudioSource) decodeFrames(
 	}
 
 	for {
-		if err := C.avcodec_receive_frame(src.codecCtx, frame); err == C.avErrorEAGAIN() {
+		// calls av_frame_unref()
+		if err := C.avcodec_receive_frame(src.codecCtx, src.frame); err == C.avErrorEAGAIN() {
 			return false, nil
 		} else if err == C.avErrorEOF() {
 			return true, nil
@@ -175,12 +176,13 @@ func (src *AudioSource) decodeFrames(
 		}
 
 		if rs != nil {
-			if _, err := rs.convert(frame.extended_data, frame.nb_samples, fifo); err != nil {
+			if _, err := rs.convert(src.frame.extended_data, src.frame.nb_samples, fifo); err != nil {
 				return false, err
 			}
 		} else if C.av_audio_fifo_write(
-			fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(frame.extended_data)), frame.nb_samples,
-		) < frame.nb_samples {
+			fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(src.frame.extended_data)),
+			src.frame.nb_samples,
+		) < src.frame.nb_samples {
 			return false, fmt.Errorf("failed to write data to FIFO")
 		}
 	}
@@ -194,33 +196,33 @@ func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
 		frameSize = sink.codecCtx.frame_size
 	}
 
-	// XXX do we really have to allocate a new frame every time?
-	var frame *C.AVFrame
-	if frame = C.av_frame_alloc(); frame == nil {
-		return fmt.Errorf("failed to allocate input frame")
+	if sink.frame == nil {
+		if sink.frame = C.av_frame_alloc(); sink.frame == nil {
+			return fmt.Errorf("failed to allocate input frame")
+		}
 	}
-	defer C.av_frame_free(&frame)
+	defer C.av_frame_unref(sink.frame)
 
-	frame.nb_samples = frameSize
-	frame.channel_layout = sink.codecCtx.channel_layout
-	frame.format = C.int(sink.codecCtx.sample_fmt)
-	frame.sample_rate = sink.codecCtx.sample_rate
+	sink.frame.nb_samples = frameSize
+	sink.frame.channel_layout = sink.codecCtx.channel_layout
+	sink.frame.format = C.int(sink.codecCtx.sample_fmt)
+	sink.frame.sample_rate = sink.codecCtx.sample_rate
 
-	if err := C.av_frame_get_buffer(frame, 0); err < 0 {
+	if err := C.av_frame_get_buffer(sink.frame, 0); err < 0 {
 		return fmt.Errorf("failed to allocate output frame buffer: %s", avErr2Str(err))
 	}
 
 	if C.av_audio_fifo_read(
-		fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(&frame.data[0])), frameSize,
+		fifo.fifo, (*unsafe.Pointer)(unsafe.Pointer(&sink.frame.data[0])), frameSize,
 	) < frameSize {
 		return fmt.Errorf("failed to read from FIFO")
 	}
 
 	// XXX
-	frame.pts = sink.runningTime
+	sink.frame.pts = sink.runningTime
 	sink.runningTime += C.int64_t(frameSize)
 
-	if err := C.avcodec_send_frame(sink.codecCtx, frame); err < 0 {
+	if err := C.avcodec_send_frame(sink.codecCtx, sink.frame); err < 0 {
 		return fmt.Errorf("failed to encode frame: %s", avErr2Str(err))
 	}
 
@@ -289,9 +291,14 @@ type AudioSource struct {
 	formatCtx *C.struct_AVFormatContext
 	codecCtx  *C.struct_AVCodecContext
 	stream    *C.struct_AVStream
+
+	frame *C.struct_AVFrame
 }
 
 func (src *AudioSource) Destroy() {
+	if src.frame != nil {
+		C.av_frame_free(&src.frame)
+	}
 	if src.codecCtx != nil {
 		C.avcodec_free_context(&src.codecCtx)
 	}
@@ -453,9 +460,13 @@ type AudioSink struct {
 	codecCtx  *C.struct_AVCodecContext
 
 	runningTime C.int64_t
+	frame       *C.struct_AVFrame
 }
 
 func (sink *AudioSink) Destroy() {
+	if sink.frame != nil {
+		C.av_frame_free(&sink.frame)
+	}
 	if sink.codecCtx != nil {
 		C.avcodec_free_context(&sink.codecCtx)
 	}
