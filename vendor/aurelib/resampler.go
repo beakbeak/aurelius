@@ -1,4 +1,4 @@
-package main
+package aurelib
 
 /*
 #cgo pkg-config: libavformat libavcodec libavutil libswresample
@@ -17,7 +17,7 @@ import (
 	"unsafe"
 )
 
-type AudioResampler struct {
+type Resampler struct {
 	swr            *C.struct_SwrContext
 	buffer         **C.uint8_t
 	bufferSamples  C.int
@@ -25,22 +25,22 @@ type AudioResampler struct {
 	bufferFormat   int32
 }
 
-func (rs *AudioResampler) Destroy() {
+func (rs *Resampler) Destroy() {
 	if rs.swr != nil {
 		C.swr_free(&rs.swr)
 	}
 	rs.destroyBuffer()
 }
 
-func (rs *AudioResampler) destroyBuffer() {
+func (rs *Resampler) destroyBuffer() {
 	if rs.buffer != nil {
 		C.av_freep(unsafe.Pointer(rs.buffer))  // free planes
 		C.av_freep(unsafe.Pointer(&rs.buffer)) // free array of plane pointers
 	}
 }
 
-func newAudioResampler() (*AudioResampler, error) {
-	rs := AudioResampler{}
+func NewResampler() (*Resampler, error) {
+	rs := Resampler{}
 
 	if rs.swr = C.swr_alloc(); rs.swr == nil {
 		return nil, fmt.Errorf("failed to allocate resampler")
@@ -48,9 +48,9 @@ func newAudioResampler() (*AudioResampler, error) {
 	return &rs, nil
 }
 
-func (rs *AudioResampler) Setup(
-	src *AudioSource,
-	sink *AudioSink,
+func (rs *Resampler) Setup(
+	src *Source,
+	sink *Sink,
 	volume float64,
 ) error {
 	const defaultBufferSamples = 4096
@@ -90,7 +90,7 @@ func (rs *AudioResampler) Setup(
 	return nil
 }
 
-func (rs *AudioResampler) growBuffer(sampleCount C.int) error {
+func (rs *Resampler) growBuffer(sampleCount C.int) error {
 	if rs.bufferSamples <= sampleCount {
 		return nil
 	}
@@ -108,10 +108,10 @@ func (rs *AudioResampler) growBuffer(sampleCount C.int) error {
 	return nil
 }
 
-func (rs *AudioResampler) convert(
+func (rs *Resampler) convert(
 	in **C.uint8_t,
 	inSamples C.int,
-	out *AudioFIFO,
+	out *Fifo,
 ) (C.int /* samples written */, error) {
 	if rs.buffer == nil {
 		return 0, fmt.Errorf("convert() called without Setup()")

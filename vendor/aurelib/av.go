@@ -1,4 +1,4 @@
-package main
+package aurelib
 
 /*
 #cgo pkg-config: libavformat libavcodec
@@ -8,7 +8,7 @@ package main
 */
 import "C"
 
-func avInit() {
+func Init() {
 	C.av_register_all()
 	C.avformat_network_init()
 	defer C.avformat_network_deinit()

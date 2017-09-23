@@ -1,4 +1,4 @@
-package main
+package aurelib
 
 /*
 #cgo pkg-config: libavformat libavcodec libavutil
@@ -20,7 +20,7 @@ import (
 	"unsafe"
 )
 
-type AudioSinkOptions struct {
+type SinkOptions struct {
 	Channels         uint    // default 2
 	ChannelLayout    string  // optional; overrides Channels
 	SampleRate       uint    // default 44100
@@ -31,8 +31,8 @@ type AudioSinkOptions struct {
 	BitRate          uint
 }
 
-func NewAudioSinkOptions() *AudioSinkOptions {
-	return &AudioSinkOptions{
+func NewSinkOptions() *SinkOptions {
+	return &SinkOptions{
 		Channels:         2,
 		SampleRate:       44100,
 		Codec:            "flac",
@@ -41,7 +41,7 @@ func NewAudioSinkOptions() *AudioSinkOptions {
 	}
 }
 
-func (options *AudioSinkOptions) getChannels() (C.int, C.uint64_t) {
+func (options *SinkOptions) getChannels() (C.int, C.uint64_t) {
 	var channels C.int
 	var channelLayout C.uint64_t
 
@@ -60,7 +60,7 @@ func (options *AudioSinkOptions) getChannels() (C.int, C.uint64_t) {
 	return channels, channelLayout
 }
 
-func (options *AudioSinkOptions) getSampleFormat(defaultFormat int32) int32 {
+func (options *SinkOptions) getSampleFormat(defaultFormat int32) int32 {
 	if options.SampleFormat != "" {
 		formatName := C.CString(options.SampleFormat)
 		defer C.free(unsafe.Pointer(formatName))
@@ -70,14 +70,14 @@ func (options *AudioSinkOptions) getSampleFormat(defaultFormat int32) int32 {
 	return defaultFormat
 }
 
-func (options *AudioSinkOptions) getCodec() *C.struct_AVCodec {
+func (options *SinkOptions) getCodec() *C.struct_AVCodec {
 	cCodecName := C.CString(options.Codec)
 	defer C.free(unsafe.Pointer(cCodecName))
 
 	return C.avcodec_find_encoder_by_name(cCodecName)
 }
 
-type AudioSink struct {
+type Sink struct {
 	ioCtx     *C.struct_AVIOContext
 	formatCtx *C.struct_AVFormatContext
 	codecCtx  *C.struct_AVCodecContext
@@ -86,7 +86,7 @@ type AudioSink struct {
 	frame       *C.struct_AVFrame
 }
 
-func (sink *AudioSink) Destroy() {
+func (sink *Sink) Destroy() {
 	if sink.frame != nil {
 		C.av_frame_free(&sink.frame)
 	}
@@ -102,12 +102,12 @@ func (sink *AudioSink) Destroy() {
 	}
 }
 
-func newAudioFileSink(
+func NewFileSink(
 	path string,
-	options *AudioSinkOptions,
-) (*AudioSink, error) {
+	options *SinkOptions,
+) (*Sink, error) {
 	success := false
-	sink := AudioSink{}
+	sink := Sink{}
 	defer func() {
 		if !success {
 			sink.Destroy()
@@ -192,7 +192,7 @@ func newAudioFileSink(
 	return &sink, nil
 }
 
-func (sink *AudioSink) FrameSize() int {
+func (sink *Sink) FrameSize() int {
 	value := sink.codecCtx.frame_size
 	if value <= 0 {
 		return 4096
@@ -200,7 +200,7 @@ func (sink *AudioSink) FrameSize() int {
 	return int(value)
 }
 
-func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
+func (sink *Sink) EncodeFrames(fifo *Fifo) error {
 	frameSize := sink.FrameSize()
 	if fifo.Size() < frameSize {
 		frameSize = fifo.Size()
@@ -244,9 +244,9 @@ func (sink *AudioSink) encodeFrames(fifo *AudioFIFO) error {
 	return nil
 }
 
-func (sink *AudioSink) flush(fifo *AudioFIFO) error {
+func (sink *Sink) Flush(fifo *Fifo) error {
 	for fifo.Size() > 0 {
-		if err := sink.encodeFrames(fifo); err != nil {
+		if err := sink.EncodeFrames(fifo); err != nil {
 			return err
 		}
 	}
@@ -257,7 +257,7 @@ func (sink *AudioSink) flush(fifo *AudioFIFO) error {
 	return err
 }
 
-func (sink *AudioSink) writeFrames() (bool /*eof*/, error) {
+func (sink *Sink) writeFrames() (bool /*eof*/, error) {
 	var packet C.AVPacket
 	packet.init()
 	defer C.av_packet_unref(&packet)
@@ -279,7 +279,7 @@ func (sink *AudioSink) writeFrames() (bool /*eof*/, error) {
 	return false, nil
 }
 
-func (sink *AudioSink) writeTrailer() error {
+func (sink *Sink) WriteTrailer() error {
 	if err := C.av_write_trailer(sink.formatCtx); err < 0 {
 		return fmt.Errorf("failed to write trailer: %s", avErr2Str(err))
 	}

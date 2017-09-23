@@ -1,4 +1,4 @@
-package main
+package aurelib
 
 /*
 #cgo pkg-config: libavformat libavcodec libavutil
@@ -34,7 +34,7 @@ const (
 	ReplayGainAlbum
 )
 
-type AudioSource struct {
+type Source struct {
 	Path string
 	Tags map[string]string
 
@@ -45,7 +45,7 @@ type AudioSource struct {
 	frame *C.struct_AVFrame
 }
 
-func (src *AudioSource) Destroy() {
+func (src *Source) Destroy() {
 	if src.frame != nil {
 		C.av_frame_free(&src.frame)
 	}
@@ -57,9 +57,9 @@ func (src *AudioSource) Destroy() {
 	}
 }
 
-func newAudioFileSource(path string) (*AudioSource, error) {
+func NewFileSource(path string) (*Source, error) {
 	success := false
-	src := AudioSource{Path: path}
+	src := Source{Path: path}
 	defer func() {
 		if !success {
 			src.Destroy()
@@ -132,7 +132,7 @@ func newAudioFileSource(path string) (*AudioSource, error) {
 	return &src, nil
 }
 
-func (src *AudioSource) dumpFormat() {
+func (src *Source) DumpFormat() {
 	cPath := C.CString(src.Path)
 	defer C.free(unsafe.Pointer(cPath))
 	C.av_dump_format(src.formatCtx, 0, cPath, 0)
@@ -140,7 +140,7 @@ func (src *AudioSource) dumpFormat() {
 
 // ReplayGain returns the [0,1] volume scale factor that should be applied
 // based on the audio stream's ReplayGain metadata and the supplied arguments.
-func (src *AudioSource) ReplayGain(
+func (src *Source) ReplayGain(
 	mode ReplayGainMode,
 	preventClipping bool,
 ) float64 {
@@ -199,9 +199,9 @@ func (src *AudioSource) ReplayGain(
 	return volume
 }
 
-func (src *AudioSource) decodeFrames(
-	fifo *AudioFIFO,
-	rs *AudioResampler,
+func (src *Source) DecodeFrames(
+	fifo *Fifo,
+	rs *Resampler,
 ) (bool /*finished*/, error) {
 	if src.frame == nil {
 		if src.frame = C.av_frame_alloc(); src.frame == nil {

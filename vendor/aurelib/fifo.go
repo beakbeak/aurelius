@@ -1,4 +1,4 @@
-package main
+package aurelib
 
 /*
 #cgo pkg-config: libavutil
@@ -11,19 +11,19 @@ import (
 	"unsafe"
 )
 
-type AudioFIFO struct {
+type Fifo struct {
 	fifo *C.AVAudioFifo
 }
 
-func (fifo *AudioFIFO) Destroy() {
+func (fifo *Fifo) Destroy() {
 	if fifo.fifo != nil {
 		C.av_audio_fifo_free(fifo.fifo)
 		fifo.fifo = nil
 	}
 }
 
-func newAudioFIFO(sink *AudioSink) (*AudioFIFO, error) {
-	fifo := AudioFIFO{}
+func NewFifo(sink *Sink) (*Fifo, error) {
+	fifo := Fifo{}
 
 	fifo.fifo = C.av_audio_fifo_alloc(sink.codecCtx.sample_fmt, sink.codecCtx.channels, 1)
 	if fifo.fifo == nil {
@@ -32,18 +32,18 @@ func newAudioFIFO(sink *AudioSink) (*AudioFIFO, error) {
 	return &fifo, nil
 }
 
-func (fifo *AudioFIFO) Size() int {
+func (fifo *Fifo) Size() int {
 	return int(C.av_audio_fifo_size(fifo.fifo))
 }
 
-func (fifo *AudioFIFO) read(
+func (fifo *Fifo) read(
 	data *unsafe.Pointer,
 	sampleCount C.int,
 ) C.int {
 	return C.av_audio_fifo_read(fifo.fifo, data, sampleCount)
 }
 
-func (fifo *AudioFIFO) write(
+func (fifo *Fifo) write(
 	data *unsafe.Pointer,
 	sampleCount C.int,
 ) C.int {

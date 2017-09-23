@@ -19,6 +19,7 @@ package main
 // - tag editing
 
 import (
+	"aurelib"
 	"fmt"
 	"os"
 )
@@ -28,41 +29,43 @@ func main() {
 		panic("not enough arguments")
 	}
 
-	avInit()
+	aurelib.Init()
 
-	var resampler *AudioResampler
+	var resampler *aurelib.Resampler
 	var err error
-	if resampler, err = newAudioResampler(); err != nil {
+	if resampler, err = aurelib.NewResampler(); err != nil {
 		panic(err)
 	}
 	defer resampler.Destroy()
 
-	options := NewAudioSinkOptions()
+	options := aurelib.NewSinkOptions()
 
-	var sink *AudioSink
-	if sink, err = newAudioFileSink(os.Args[len(os.Args)-1], options); err != nil {
+	var sink *aurelib.Sink
+	if sink, err = aurelib.NewFileSink(os.Args[len(os.Args)-1], options); err != nil {
 		panic(err)
 	}
 	defer sink.Destroy()
 
-	var fifo *AudioFIFO
-	if fifo, err = newAudioFIFO(sink); err != nil {
+	var fifo *aurelib.Fifo
+	if fifo, err = aurelib.NewFifo(sink); err != nil {
 		panic(err)
 	}
 	defer fifo.Destroy()
 
 	playFile := func(path string) error {
-		var src *AudioSource
+		var src *aurelib.Source
 		var err error
-		if src, err = newAudioFileSource(path); err != nil {
+		if src, err = aurelib.NewFileSource(path); err != nil {
 			return err
 		}
 		defer src.Destroy()
 
-		src.dumpFormat()
+		src.DumpFormat()
 		fmt.Println(src.Tags)
 
-		if err := resampler.Setup(src, sink, src.ReplayGain(ReplayGainTrack, true)); err != nil {
+		if err := resampler.Setup(
+			src, sink, src.ReplayGain(aurelib.ReplayGainTrack, true),
+		); err != nil {
 			return err
 		}
 
@@ -71,7 +74,7 @@ func main() {
 			outFrameSize := sink.FrameSize()
 
 			for fifo.Size() < outFrameSize {
-				if done, err = src.decodeFrames(fifo, resampler); err != nil {
+				if done, err = src.DecodeFrames(fifo, resampler); err != nil {
 					return err
 				}
 				if done {
@@ -80,7 +83,7 @@ func main() {
 			}
 
 			for fifo.Size() >= outFrameSize {
-				if err = sink.encodeFrames(fifo); err != nil {
+				if err = sink.EncodeFrames(fifo); err != nil {
 					return err
 				}
 			}
@@ -94,10 +97,10 @@ func main() {
 		}
 	}
 
-	if err = sink.flush(fifo); err != nil {
+	if err = sink.Flush(fifo); err != nil {
 		fmt.Printf("failed to flush sink: %v\n", err)
 	}
-	if err = sink.writeTrailer(); err != nil {
+	if err = sink.WriteTrailer(); err != nil {
 		fmt.Printf("failed to write trailer: %v\n", err)
 	}
 }
