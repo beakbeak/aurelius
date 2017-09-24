@@ -21,7 +21,6 @@ static char const* strEmpty() {
 */
 import "C"
 import (
-	"errors"
 	"fmt"
 	"math"
 	"unsafe"
@@ -34,8 +33,7 @@ const (
 	ReplayGainAlbum
 )
 
-type Source struct {
-	Path string
+type sourceBase struct {
 	Tags map[string]string
 
 	formatCtx *C.struct_AVFormatContext
@@ -45,7 +43,26 @@ type Source struct {
 	frame *C.struct_AVFrame
 }
 
-func (src *Source) Destroy() {
+type FileSource struct {
+	sourceBase
+	Path string
+}
+
+type Source interface {
+	Destroy()
+	ReplayGain(
+		mode ReplayGainMode,
+		preventClipping bool,
+	) float64
+	Decode(
+		fifo *Fifo,
+		rs *Resampler,
+	) (finished bool, err error)
+
+	codecContext() *C.struct_AVCodecContext
+}
+
+func (src *sourceBase) Destroy() {
 	if src.frame != nil {
 		C.av_frame_free(&src.frame)
 	}
@@ -57,9 +74,9 @@ func (src *Source) Destroy() {
 	}
 }
 
-func NewFileSource(path string) (*Source, error) {
+func NewFileSource(path string) (*FileSource, error) {
 	success := false
-	src := Source{Path: path}
+	src := FileSource{Path: path}
 	defer func() {
 		if !success {
 			src.Destroy()
@@ -69,14 +86,21 @@ func NewFileSource(path string) (*Source, error) {
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
 
-	// open file
 	if err := C.avformat_open_input(&src.formatCtx, cPath, nil, nil); err < 0 {
 		return nil, fmt.Errorf("failed to open file: %v", avErr2Str(err))
 	}
 
+	if err := src.init(); err != nil {
+		return nil, err
+	}
+	success = true
+	return &src, nil
+}
+
+func (src *sourceBase) init() error {
 	// gather streams
 	if err := C.avformat_find_stream_info(src.formatCtx, nil); err < 0 {
-		return nil, fmt.Errorf("failed to find stream info: %v", avErr2Str(err))
+		return fmt.Errorf("failed to find stream info: %v", avErr2Str(err))
 	}
 
 	// find first audio stream
@@ -91,24 +115,24 @@ func NewFileSource(path string) (*Source, error) {
 		}
 	}
 	if src.stream == nil {
-		return nil, errors.New("no audio streams")
+		return fmt.Errorf("no audio streams")
 	}
 
 	codec := C.avcodec_find_decoder(src.stream.codecpar.codec_id)
 	if codec == nil {
-		return nil, errors.New("failed to find decoder")
+		return fmt.Errorf("failed to find decoder")
 	}
 
 	if src.codecCtx = C.avcodec_alloc_context3(codec); src.codecCtx == nil {
-		return nil, errors.New("failed to allocate decoding context")
+		return fmt.Errorf("failed to allocate decoding context")
 	}
 
 	if err := C.avcodec_parameters_to_context(src.codecCtx, src.stream.codecpar); err < 0 {
-		return nil, fmt.Errorf("failed to copy codec parameters: %v", avErr2Str(err))
+		return fmt.Errorf("failed to copy codec parameters: %v", avErr2Str(err))
 	}
 
 	if err := C.avcodec_open2(src.codecCtx, codec, nil); err < 0 {
-		return nil, fmt.Errorf("failed to open decoder: %v", avErr2Str(err))
+		return fmt.Errorf("failed to open decoder: %v", avErr2Str(err))
 	}
 
 	src.Tags = make(map[string]string)
@@ -128,11 +152,14 @@ func NewFileSource(path string) (*Source, error) {
 	gatherTagsFromDict(src.formatCtx.metadata)
 	gatherTagsFromDict(src.stream.metadata)
 
-	success = true
-	return &src, nil
+	return nil
 }
 
-func (src *Source) DumpFormat() {
+func (src *sourceBase) codecContext() *C.struct_AVCodecContext {
+	return src.codecCtx
+}
+
+func (src *FileSource) DumpFormat() {
 	cPath := C.CString(src.Path)
 	defer C.free(unsafe.Pointer(cPath))
 	C.av_dump_format(src.formatCtx, 0, cPath, 0)
@@ -140,7 +167,7 @@ func (src *Source) DumpFormat() {
 
 // ReplayGain returns the [0,1] volume scale factor that should be applied
 // based on the audio stream's ReplayGain metadata and the supplied arguments.
-func (src *Source) ReplayGain(
+func (src *sourceBase) ReplayGain(
 	mode ReplayGainMode,
 	preventClipping bool,
 ) float64 {
@@ -199,7 +226,7 @@ func (src *Source) ReplayGain(
 	return volume
 }
 
-func (src *Source) Decode(
+func (src *sourceBase) Decode(
 	fifo *Fifo,
 	rs *Resampler,
 ) (bool /*finished*/, error) {

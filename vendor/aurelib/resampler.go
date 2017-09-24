@@ -49,20 +49,20 @@ func NewResampler() (*Resampler, error) {
 }
 
 func (rs *Resampler) Setup(
-	src *Source,
-	sink *Sink,
+	src Source,
+	sink Sink,
 	volume float64,
 ) error {
 	const defaultBufferSamples = 4096
 
 	rs.swr = C.swr_alloc_set_opts(
 		rs.swr,
-		C.int64_t(sink.codecCtx.channel_layout),
-		sink.codecCtx.sample_fmt,
-		sink.codecCtx.sample_rate,
-		C.int64_t(src.codecCtx.channel_layout),
-		src.codecCtx.sample_fmt,
-		src.codecCtx.sample_rate,
+		C.int64_t(sink.codecContext().channel_layout),
+		sink.codecContext().sample_fmt,
+		sink.codecContext().sample_rate,
+		C.int64_t(src.codecContext().channel_layout),
+		src.codecContext().sample_fmt,
+		src.codecContext().sample_rate,
 		0, nil, // logging offset and context
 	)
 
@@ -78,8 +78,8 @@ func (rs *Resampler) Setup(
 
 	rs.destroyBuffer()
 	rs.bufferSamples = C.int(defaultBufferSamples)
-	rs.bufferChannels = sink.codecCtx.channels
-	rs.bufferFormat = sink.codecCtx.sample_fmt
+	rs.bufferChannels = sink.codecContext().channels
+	rs.bufferFormat = sink.codecContext().sample_fmt
 
 	var lineSize C.int
 	if err := C.av_samples_alloc_array_and_samples(

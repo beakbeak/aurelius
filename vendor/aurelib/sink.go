@@ -31,6 +31,29 @@ type SinkOptions struct {
 	BitRate          uint
 }
 
+type sinkBase struct {
+	formatCtx *C.struct_AVFormatContext
+	codecCtx  *C.struct_AVCodecContext
+
+	runningTime C.int64_t
+	frame       *C.struct_AVFrame
+}
+
+type FileSink struct {
+	sinkBase
+	ioCtx *C.struct_AVIOContext
+}
+
+type Sink interface {
+	Destroy()
+	FrameSize() int
+	Encode(fifo *Fifo) error
+	Flush(fifo *Fifo) error
+	WriteTrailer() error
+
+	codecContext() *C.struct_AVCodecContext
+}
+
 func NewSinkOptions() *SinkOptions {
 	return &SinkOptions{
 		Channels:         2,
@@ -77,16 +100,7 @@ func (options *SinkOptions) getCodec() *C.struct_AVCodec {
 	return C.avcodec_find_encoder_by_name(cCodecName)
 }
 
-type Sink struct {
-	ioCtx     *C.struct_AVIOContext
-	formatCtx *C.struct_AVFormatContext
-	codecCtx  *C.struct_AVCodecContext
-
-	runningTime C.int64_t
-	frame       *C.struct_AVFrame
-}
-
-func (sink *Sink) Destroy() {
+func (sink *sinkBase) Destroy() {
 	if sink.frame != nil {
 		C.av_frame_free(&sink.frame)
 	}
@@ -97,6 +111,11 @@ func (sink *Sink) Destroy() {
 		C.avformat_free_context(sink.formatCtx)
 		sink.formatCtx = nil
 	}
+}
+
+func (sink *FileSink) Destroy() {
+	sink.sinkBase.Destroy()
+
 	if sink.ioCtx != nil {
 		C.avio_closep(&sink.ioCtx)
 	}
@@ -105,40 +124,51 @@ func (sink *Sink) Destroy() {
 func NewFileSink(
 	path string,
 	options *SinkOptions,
-) (*Sink, error) {
+) (*FileSink, error) {
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	// guess the desired container format based on the file extension
+	var format *C.struct_AVOutputFormat
+	if format = C.av_guess_format(nil, cPath, nil); format == nil {
+		return nil, fmt.Errorf("failed to determine output file format")
+	}
+
 	success := false
-	sink := Sink{}
+	sink := FileSink{}
 	defer func() {
 		if !success {
 			sink.Destroy()
 		}
 	}()
 
-	cPath := C.CString(path)
-	defer C.free(unsafe.Pointer(cPath))
-
-	// open the output file for writing
 	if avErr := C.avio_open(&sink.ioCtx, cPath, C.AVIO_FLAG_WRITE); avErr < 0 {
 		return nil, fmt.Errorf("failed to open file: %v", avErr2Str(avErr))
 	}
 
-	// create a new format context for the output container format
+	if err := sink.init(format, sink.ioCtx, options); err != nil {
+		return nil, err
+	}
+
+	success = true
+	return &sink, nil
+}
+
+func (sink *sinkBase) init(
+	format *C.struct_AVOutputFormat,
+	ioCtx *C.struct_AVIOContext,
+	options *SinkOptions,
+) error {
 	if sink.formatCtx = C.avformat_alloc_context(); sink.formatCtx == nil {
-		return nil, fmt.Errorf("failed to allocate format context")
+		return fmt.Errorf("failed to allocate format context")
 	}
 
-	// guess the desired container format based on the file extension
-	if sink.formatCtx.oformat = C.av_guess_format(nil, cPath, nil); sink.formatCtx.oformat == nil {
-		return nil, fmt.Errorf("failed to determine output file format")
-	}
+	sink.formatCtx.oformat = format
+	sink.formatCtx.pb = ioCtx
 
-	// associate the output file with the container format context
-	sink.formatCtx.pb = sink.ioCtx
-
-	// create a new audio stream in the output file container
 	var stream *C.struct_AVStream
 	if stream = C.avformat_new_stream(sink.formatCtx, nil); stream == nil {
-		return nil, fmt.Errorf("failed to create output stream")
+		return fmt.Errorf("failed to create output stream")
 	}
 
 	// set the sample rate for the container
@@ -147,24 +177,17 @@ func NewFileSink(
 
 	var codec *C.struct_AVCodec
 	if codec = options.getCodec(); codec == nil {
-		return nil, fmt.Errorf("failed to find output encoder '%v'", options.Codec)
+		return fmt.Errorf("failed to find output encoder '%v'", options.Codec)
 	}
 
 	if sink.codecCtx = C.avcodec_alloc_context3(codec); sink.codecCtx == nil {
-		return nil, fmt.Errorf("failed to allocate encoding context")
+		return fmt.Errorf("failed to allocate encoding context")
 	}
 
 	sink.codecCtx.channels, sink.codecCtx.channel_layout = options.getChannels()
-
 	sink.codecCtx.sample_rate = C.int(options.SampleRate)
 	sink.codecCtx.sample_fmt = options.getSampleFormat(*codec.sample_fmts)
 	sink.codecCtx.time_base = stream.time_base
-
-	// some container formats (like MP4) require global headers to be present.
-	// mark the encoder so that it behaves accordingly
-	if (sink.formatCtx.oformat.flags & C.AVFMT_GLOBALHEADER) != 0 {
-		sink.codecCtx.flags |= C.AV_CODEC_FLAG_GLOBAL_HEADER
-	}
 
 	if options.CompressionLevel >= 0 {
 		sink.codecCtx.compression_level = C.int(options.CompressionLevel)
@@ -175,24 +198,30 @@ func NewFileSink(
 		sink.codecCtx.bit_rate = C.int64_t(options.BitRate)
 	}
 
-	// open the encoder for the audio stream to use it later
-	if avErr := C.avcodec_open2(sink.codecCtx, codec, nil); avErr < 0 {
-		return nil, fmt.Errorf("failed to open output codec: %v", avErr2Str(avErr))
+	// some container formats (like MP4) require global headers to be present.
+	// mark the encoder so that it behaves accordingly
+	if (sink.formatCtx.oformat.flags & C.AVFMT_GLOBALHEADER) != 0 {
+		sink.codecCtx.flags |= C.AV_CODEC_FLAG_GLOBAL_HEADER
 	}
 
+	if avErr := C.avcodec_open2(sink.codecCtx, codec, nil); avErr < 0 {
+		return fmt.Errorf("failed to open output codec: %v", avErr2Str(avErr))
+	}
 	if avErr := C.avcodec_parameters_from_context(stream.codecpar, sink.codecCtx); avErr < 0 {
-		return nil, fmt.Errorf("failed to initialize stream parameters")
+		return fmt.Errorf("failed to initialize stream parameters")
 	}
 
 	if avErr := C.avformat_write_header(sink.formatCtx, nil); avErr < 0 {
-		return nil, fmt.Errorf("failed to write header: %v", avErr2Str(avErr))
+		return fmt.Errorf("failed to write header: %v", avErr2Str(avErr))
 	}
-
-	success = true
-	return &sink, nil
+	return nil
 }
 
-func (sink *Sink) FrameSize() int {
+func (sink *sinkBase) codecContext() *C.struct_AVCodecContext {
+	return sink.codecCtx
+}
+
+func (sink *sinkBase) FrameSize() int {
 	value := sink.codecCtx.frame_size
 	if value <= 0 {
 		return 4096
@@ -200,7 +229,7 @@ func (sink *Sink) FrameSize() int {
 	return int(value)
 }
 
-func (sink *Sink) Encode(fifo *Fifo) error {
+func (sink *sinkBase) Encode(fifo *Fifo) error {
 	frameSize := sink.FrameSize()
 	if fifo.Size() < frameSize {
 		frameSize = fifo.Size()
@@ -244,7 +273,7 @@ func (sink *Sink) Encode(fifo *Fifo) error {
 	return nil
 }
 
-func (sink *Sink) Flush(fifo *Fifo) error {
+func (sink *sinkBase) Flush(fifo *Fifo) error {
 	for fifo.Size() > 0 {
 		if err := sink.Encode(fifo); err != nil {
 			return err
@@ -257,7 +286,7 @@ func (sink *Sink) Flush(fifo *Fifo) error {
 	return err
 }
 
-func (sink *Sink) write() (bool /*eof*/, error) {
+func (sink *sinkBase) write() (bool /*eof*/, error) {
 	var packet C.AVPacket
 	packet.init()
 	defer C.av_packet_unref(&packet)
@@ -279,7 +308,7 @@ func (sink *Sink) write() (bool /*eof*/, error) {
 	return false, nil
 }
 
-func (sink *Sink) WriteTrailer() error {
+func (sink *sinkBase) WriteTrailer() error {
 	if err := C.av_write_trailer(sink.formatCtx); err < 0 {
 		return fmt.Errorf("failed to write trailer: %s", avErr2Str(err))
 	}

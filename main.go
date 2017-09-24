@@ -17,6 +17,7 @@ package main
 // - treat sections of a file as playlist entries (e.g. pieces of a long live set, a hidden track)
 //   - can't use m3u anymore
 // - tag editing
+// - get replaygain info from RVA2 mp3 tag (requires another library dependency)
 
 import (
 	"aurelib"
@@ -40,7 +41,7 @@ func main() {
 
 	options := aurelib.NewSinkOptions()
 
-	var sink *aurelib.Sink
+	var sink *aurelib.FileSink
 	if sink, err = aurelib.NewFileSink(os.Args[len(os.Args)-1], options); err != nil {
 		panic(err)
 	}
@@ -53,7 +54,7 @@ func main() {
 	defer fifo.Destroy()
 
 	playFile := func(path string) error {
-		var src *aurelib.Source
+		var src *aurelib.FileSource
 		var err error
 		if src, err = aurelib.NewFileSource(path); err != nil {
 			return err

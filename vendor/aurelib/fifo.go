@@ -22,10 +22,11 @@ func (fifo *Fifo) Destroy() {
 	}
 }
 
-func NewFifo(sink *Sink) (*Fifo, error) {
+func NewFifo(sink Sink) (*Fifo, error) {
 	fifo := Fifo{}
 
-	fifo.fifo = C.av_audio_fifo_alloc(sink.codecCtx.sample_fmt, sink.codecCtx.channels, 1)
+	fifo.fifo = C.av_audio_fifo_alloc(
+		sink.codecContext().sample_fmt, sink.codecContext().channels, 1)
 	if fifo.fifo == nil {
 		return nil, fmt.Errorf("failed to allocate FIFO")
 	}
