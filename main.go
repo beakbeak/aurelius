@@ -74,7 +74,7 @@ func main() {
 			outFrameSize := sink.FrameSize()
 
 			for fifo.Size() < outFrameSize {
-				if done, err = src.DecodeFrames(fifo, resampler); err != nil {
+				if done, err = src.Decode(fifo, resampler); err != nil {
 					return err
 				}
 				if done {
@@ -83,7 +83,7 @@ func main() {
 			}
 
 			for fifo.Size() >= outFrameSize {
-				if err = sink.EncodeFrames(fifo); err != nil {
+				if err = sink.Encode(fifo); err != nil {
 					return err
 				}
 			}

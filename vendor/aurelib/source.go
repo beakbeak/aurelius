@@ -199,7 +199,7 @@ func (src *Source) ReplayGain(
 	return volume
 }
 
-func (src *Source) DecodeFrames(
+func (src *Source) Decode(
 	fifo *Fifo,
 	rs *Resampler,
 ) (bool /*finished*/, error) {

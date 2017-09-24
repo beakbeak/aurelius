@@ -200,7 +200,7 @@ func (sink *Sink) FrameSize() int {
 	return int(value)
 }
 
-func (sink *Sink) EncodeFrames(fifo *Fifo) error {
+func (sink *Sink) Encode(fifo *Fifo) error {
 	frameSize := sink.FrameSize()
 	if fifo.Size() < frameSize {
 		frameSize = fifo.Size()
@@ -236,7 +236,7 @@ func (sink *Sink) EncodeFrames(fifo *Fifo) error {
 		return fmt.Errorf("failed to encode frame: %s", avErr2Str(err))
 	}
 
-	if eof, err := sink.writeFrames(); eof {
+	if eof, err := sink.write(); eof {
 		return fmt.Errorf("unexpected EOF from encoder")
 	} else if err != nil {
 		return err
@@ -246,18 +246,18 @@ func (sink *Sink) EncodeFrames(fifo *Fifo) error {
 
 func (sink *Sink) Flush(fifo *Fifo) error {
 	for fifo.Size() > 0 {
-		if err := sink.EncodeFrames(fifo); err != nil {
+		if err := sink.Encode(fifo); err != nil {
 			return err
 		}
 	}
 	if err := C.avcodec_send_frame(sink.codecCtx, nil); err < 0 {
 		return fmt.Errorf("failed to encode NULL frame: %s", avErr2Str(err))
 	}
-	_, err := sink.writeFrames()
+	_, err := sink.write()
 	return err
 }
 
-func (sink *Sink) writeFrames() (bool /*eof*/, error) {
+func (sink *Sink) write() (bool /*eof*/, error) {
 	var packet C.AVPacket
 	packet.init()
 	defer C.av_packet_unref(&packet)
