@@ -7,11 +7,85 @@ package aurelib
 #include <stdlib.h>
 
 static int avErrorEOF() {
-    return AVERROR_EOF;
+	return AVERROR_EOF;
 }
 
 static int avErrorEAGAIN() {
-    return AVERROR(EAGAIN);
+	return AVERROR(EAGAIN);
+}
+
+typedef struct Buffer {
+	size_t size;
+	size_t capacity;
+	uint8_t* data;
+} Buffer;
+
+static Buffer*
+Buffer_new() {
+	Buffer* b;
+
+	b = (Buffer*)malloc(sizeof(Buffer));
+	b->size = b->capacity = 0;
+	b->data = NULL;
+	return b;
+}
+
+static void
+Buffer_delete(Buffer* b) {
+	if (b) {
+		free(b->data);
+	}
+	free(b);
+}
+
+typedef int (*Buffer_write_t)(void*, uint8_t*, int);
+
+int
+Buffer_write(
+	void* opaque,
+	uint8_t* data,
+	int data_size)
+{
+	Buffer* buffer;
+	size_t offset;
+
+	buffer = (Buffer*)opaque;
+	offset = buffer->size;
+	buffer->size += data_size;
+	if (buffer->size > buffer->capacity) {
+		buffer->data = (uint8_t*)realloc(buffer->data, buffer->size);
+		buffer->capacity = buffer->size;
+	}
+	memcpy(buffer->data + offset, data, data_size);
+	return data_size;
+}
+
+typedef int (*Buffer_read_t)(void*, uint8_t*, int);
+
+int
+Buffer_read(
+	void* opaque,
+	uint8_t* data,
+	int data_size)
+{
+	Buffer* buffer;
+
+	buffer = (Buffer*)opaque;
+	if ((int)buffer->size < data_size) {
+		data_size = (int)buffer->size;
+	}
+	if (data_size <= 0) {
+		return 0;
+	}
+
+	if (data) {
+		memcpy(data, buffer->data, data_size);
+	}
+	if ((size_t)data_size < buffer->size) {
+		memmove(buffer->data, buffer->data + data_size, buffer->size - data_size);
+	}
+	buffer->size -= data_size;
+	return data_size;
 }
 */
 import "C"
@@ -29,19 +103,6 @@ type SinkOptions struct {
 	CompressionLevel int     // used for flac
 	Quality          float32 // used for libmp3lame, libvorbis
 	BitRate          uint
-}
-
-type sinkBase struct {
-	formatCtx *C.struct_AVFormatContext
-	codecCtx  *C.struct_AVCodecContext
-
-	runningTime C.int64_t
-	frame       *C.struct_AVFrame
-}
-
-type FileSink struct {
-	sinkBase
-	ioCtx *C.struct_AVIOContext
 }
 
 type Sink interface {
@@ -113,6 +174,19 @@ func (sink *sinkBase) Destroy() {
 	}
 }
 
+type sinkBase struct {
+	formatCtx *C.struct_AVFormatContext
+	codecCtx  *C.struct_AVCodecContext
+
+	runningTime C.int64_t
+	frame       *C.struct_AVFrame
+}
+
+type FileSink struct {
+	sinkBase
+	ioCtx *C.struct_AVIOContext
+}
+
 func (sink *FileSink) Destroy() {
 	sink.sinkBase.Destroy()
 
@@ -152,6 +226,78 @@ func NewFileSink(
 
 	success = true
 	return &sink, nil
+}
+
+type BufferSink struct {
+	sinkBase
+	ioCtx  *C.struct_AVIOContext
+	buffer *C.struct_Buffer
+}
+
+func (sink *BufferSink) Destroy() {
+	sink.sinkBase.Destroy()
+
+	if sink.ioCtx != nil {
+		C.av_free(unsafe.Pointer(sink.ioCtx.buffer))
+		C.av_free(unsafe.Pointer(sink.ioCtx))
+		sink.ioCtx = nil
+	}
+	if sink.buffer != nil {
+		C.Buffer_delete(sink.buffer)
+		sink.buffer = nil
+	}
+}
+
+func NewBufferSink(
+	formatName string,
+	options *SinkOptions,
+) (*BufferSink, error) {
+	cFormatName := C.CString(formatName)
+	defer C.free(unsafe.Pointer(cFormatName))
+
+	var format *C.struct_AVOutputFormat
+	if format = C.av_guess_format(cFormatName, nil, nil); format == nil {
+		return nil, fmt.Errorf("failed to determine container format")
+	}
+
+	success := false
+	sink := BufferSink{}
+	defer func() {
+		if !success {
+			sink.Destroy()
+		}
+	}()
+
+	if sink.buffer = C.Buffer_new(); sink.buffer == nil {
+		return nil, fmt.Errorf("failed to allocate buffer")
+	}
+
+	ioCtxBufferSize := 4096
+	ioCtxBuffer := C.av_malloc(C.size_t(ioCtxBufferSize))
+
+	if sink.ioCtx = C.avio_alloc_context(
+		(*C.uchar)(ioCtxBuffer), C.int(ioCtxBufferSize), 1, unsafe.Pointer(sink.buffer),
+		C.Buffer_read_t(unsafe.Pointer(C.Buffer_read)),
+		C.Buffer_write_t(unsafe.Pointer(C.Buffer_write)), nil,
+	); sink.ioCtx == nil {
+		C.av_free(unsafe.Pointer(ioCtxBuffer))
+		return nil, fmt.Errorf("failed to allocate I/O context")
+	}
+
+	if err := sink.init(format, sink.ioCtx, options); err != nil {
+		return nil, err
+	}
+
+	success = true
+	return &sink, nil
+}
+
+func (sink *BufferSink) Buffer() []byte {
+	return (*[1 << 30]byte)(unsafe.Pointer(sink.buffer.data))[:sink.buffer.size:sink.buffer.capacity]
+}
+
+func (sink *BufferSink) Drain(byteCount uint) uint {
+	return uint(C.Buffer_read(unsafe.Pointer(sink.buffer), nil, C.int(byteCount)))
 }
 
 func (sink *sinkBase) init(
