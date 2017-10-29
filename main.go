@@ -24,12 +24,16 @@ import (
 
 const playAhead = 250 * time.Millisecond
 
+var debug *log.Logger
+
 func main() {
 	if len(os.Args) < 2 {
 		panic("not enough arguments")
 	}
 
 	aurelib.Init()
+
+	debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
 
 	http.HandleFunc("/", stream)
 	log.Fatal(http.ListenAndServe(":9090", nil))
@@ -79,7 +83,7 @@ func stream(
 		if count > 0 {
 			sink.Drain(uint(count))
 		}
-		log.Printf("wrote %v bytes\n", count)
+		debug.Printf("wrote %v bytes\n", count)
 		return err
 	}
 
@@ -128,7 +132,11 @@ func stream(
 			}
 
 			playedTime := (playedSamples * uint64(time.Second)) / uint64(sink.SampleRate())
-			time.Sleep(time.Duration(playedTime) - playAhead - time.Since(startTime))
+			timeToSleep := time.Duration(playedTime) - playAhead - time.Since(startTime)
+			if timeToSleep > time.Millisecond {
+				debug.Printf("sleeping %v", timeToSleep)
+				time.Sleep(timeToSleep)
+			}
 		}
 		return nil
 	}
