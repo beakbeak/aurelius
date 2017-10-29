@@ -1,12 +1,8 @@
 package main
 
 // TODO:
-// - HTTP streaming
-//   - need to prevent over-buffering or sending too much data before
-//     it can be played
-//     - throttle encoding speed based on playback speed
-//       (available in packet after av_read_frame())
 // - play silence when nothing is left to play
+// - make playAhead configurable
 // - figure out why timing is wrong when using MKV container
 //   (maybe something to do with time base settings/conversion)
 // - support embedded images
@@ -23,7 +19,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
+
+const playAhead = 250 * time.Millisecond
 
 func main() {
 	if len(os.Args) < 2 {
@@ -76,7 +75,7 @@ func stream(
 			return nil
 		}
 
-		count, err := w.Write(sink.Buffer())
+		count, err := w.Write(buffer)
 		if count > 0 {
 			sink.Drain(uint(count))
 		}
@@ -101,9 +100,12 @@ func stream(
 			return err
 		}
 
+		startTime := time.Now()
+		playedSamples := uint64(0)
 		done := false
 		for !done {
 			outFrameSize := sink.FrameSize()
+			fifoSize := fifo.Size()
 
 			for fifo.Size() < outFrameSize {
 				if done, err = src.Decode(fifo, resampler); err != nil {
@@ -114,6 +116,8 @@ func stream(
 				}
 			}
 
+			playedSamples += uint64(fifo.Size() - fifoSize)
+
 			for fifo.Size() >= outFrameSize {
 				if err = sink.Encode(fifo); err != nil {
 					return err
@@ -122,6 +126,9 @@ func stream(
 			if err = writeBuffer(); err != nil {
 				return err
 			}
+
+			playedTime := (playedSamples * uint64(time.Second)) / uint64(sink.SampleRate())
+			time.Sleep(time.Duration(playedTime) - playAhead - time.Since(startTime))
 		}
 		return nil
 	}

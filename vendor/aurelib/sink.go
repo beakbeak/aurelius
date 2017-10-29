@@ -108,6 +108,7 @@ type SinkOptions struct {
 type Sink interface {
 	Destroy()
 	FrameSize() int
+	SampleRate() int
 	Encode(fifo *Fifo) error
 	Flush(fifo *Fifo) error
 	WriteTrailer() error
@@ -373,6 +374,10 @@ func (sink *sinkBase) FrameSize() int {
 		return 4096
 	}
 	return int(value)
+}
+
+func (sink *sinkBase) SampleRate() int {
+	return int(sink.codecCtx.sample_rate)
 }
 
 func (sink *sinkBase) Encode(fifo *Fifo) error {
