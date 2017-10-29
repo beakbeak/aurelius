@@ -126,7 +126,7 @@ func stream(
 		return nil
 	}
 
-	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Type", "audio/wav")
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Cache-Control", "no-cache, no-store")

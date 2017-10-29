@@ -22,6 +22,7 @@ static char const* strEmpty() {
 import "C"
 import (
 	"fmt"
+	"log"
 	"math"
 	"unsafe"
 )
@@ -248,7 +249,8 @@ func (src *sourceBase) Decode(
 	defer C.av_packet_unref(&packet)
 
 	if err := C.avcodec_send_packet(src.codecCtx, &packet); err < 0 {
-		return false, fmt.Errorf("failed to send packet to decoder: %v", avErr2Str(err))
+		log.Printf("failed to send packet to decoder: %v", avErr2Str(err))
+		return false, nil
 	}
 
 	for {
