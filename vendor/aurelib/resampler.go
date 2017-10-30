@@ -57,10 +57,10 @@ func (rs *Resampler) Setup(
 
 	rs.swr = C.swr_alloc_set_opts(
 		rs.swr,
-		C.int64_t(sink.codecContext().channel_layout),
+		sink.codecContext().channelLayout(),
 		sink.codecContext().sample_fmt,
 		sink.codecContext().sample_rate,
-		C.int64_t(src.codecContext().channel_layout),
+		src.codecContext().channelLayout(),
 		src.codecContext().sample_fmt,
 		src.codecContext().sample_rate,
 		0, nil, // logging offset and context

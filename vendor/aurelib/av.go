@@ -27,3 +27,10 @@ func (packet *C.AVPacket) init() {
 	packet.data = nil
 	packet.size = 0
 }
+
+func (ctx *C.AVCodecContext) channelLayout() C.int64_t {
+	if ctx.channel_layout != 0 {
+		return C.int64_t(ctx.channel_layout)
+	}
+	return C.av_get_default_channel_layout(ctx.channels)
+}
