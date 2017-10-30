@@ -1,6 +1,9 @@
 package main
 
 // TODO:
+// - REST(?) API
+// - CLI client
+// - basic playlist management
 // - play silence when nothing is left to play
 // - make playAhead configurable
 // - figure out why timing is wrong when using MKV container
@@ -87,6 +90,9 @@ func stream(
 		return err
 	}
 
+	startTime := time.Now()
+	playedSamples := uint64(0)
+
 	playFile := func(path string) error {
 		var src *aurelib.FileSource
 		var err error
@@ -104,8 +110,6 @@ func stream(
 			return err
 		}
 
-		startTime := time.Now()
-		playedSamples := uint64(0)
 		done := false
 		for !done {
 			outFrameSize := sink.FrameSize()
