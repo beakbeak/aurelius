@@ -102,7 +102,7 @@ func stream(
 		defer src.Destroy()
 
 		src.DumpFormat()
-		log.Println(src.Tags)
+		debug.Println(src.Tags)
 
 		if err := resampler.Setup(
 			src, sink, src.ReplayGain(aurelib.ReplayGainTrack, true),
@@ -135,8 +135,9 @@ func stream(
 				return err
 			}
 
-			playedTime := (playedSamples * uint64(time.Second)) / uint64(sink.SampleRate())
-			timeToSleep := time.Duration(playedTime) - playAhead - time.Since(startTime)
+			// calculate playedTime with millisecond precision to prevent overflow
+			playedTime := time.Duration(((playedSamples * 1000) / uint64(sink.SampleRate())) * 1000000)
+			timeToSleep := playedTime - playAhead - time.Since(startTime)
 			if timeToSleep > time.Millisecond {
 				debug.Printf("sleeping %v", timeToSleep)
 				time.Sleep(timeToSleep)
