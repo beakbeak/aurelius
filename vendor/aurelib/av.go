@@ -34,3 +34,19 @@ func (ctx *C.AVCodecContext) channelLayout() C.int64_t {
 	}
 	return C.av_get_default_channel_layout(ctx.channels)
 }
+
+type Frame struct {
+	frame *C.struct_AVFrame
+	Size  uint
+}
+
+func (frame Frame) Destroy() {
+	if frame.frame != nil {
+		C.av_frame_free(&frame.frame)
+	}
+	frame.Size = 0
+}
+
+func (frame Frame) IsEmpty() bool {
+	return frame.frame == nil || frame.Size == 0
+}

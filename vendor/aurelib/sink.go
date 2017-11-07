@@ -109,8 +109,7 @@ type Sink interface {
 	Destroy()
 	FrameSize() int
 	SampleRate() int
-	Encode(fifo *Fifo) error
-	Flush(fifo *Fifo) error
+	Encode(frame Frame) (bool /*done*/, error)
 	WriteTrailer() error
 
 	codecContext() *C.struct_AVCodecContext
@@ -162,10 +161,14 @@ func (options *SinkOptions) getCodec() *C.struct_AVCodec {
 	return C.avcodec_find_encoder_by_name(cCodecName)
 }
 
+type sinkBase struct {
+	formatCtx *C.struct_AVFormatContext
+	codecCtx  *C.struct_AVCodecContext
+
+	runningTime C.int64_t
+}
+
 func (sink *sinkBase) Destroy() {
-	if sink.frame != nil {
-		C.av_frame_free(&sink.frame)
-	}
 	if sink.codecCtx != nil {
 		C.avcodec_free_context(&sink.codecCtx)
 	}
@@ -173,14 +176,6 @@ func (sink *sinkBase) Destroy() {
 		C.avformat_free_context(sink.formatCtx)
 		sink.formatCtx = nil
 	}
-}
-
-type sinkBase struct {
-	formatCtx *C.struct_AVFormatContext
-	codecCtx  *C.struct_AVCodecContext
-
-	runningTime C.int64_t
-	frame       *C.struct_AVFrame
 }
 
 type FileSink struct {
@@ -380,61 +375,29 @@ func (sink *sinkBase) SampleRate() int {
 	return int(sink.codecCtx.sample_rate)
 }
 
-func (sink *sinkBase) Encode(fifo *Fifo) error {
-	frameSize := sink.FrameSize()
-	if fifo.Size() < frameSize {
-		frameSize = fifo.Size()
-	}
-
-	if sink.frame == nil {
-		if sink.frame = C.av_frame_alloc(); sink.frame == nil {
-			return fmt.Errorf("failed to allocate input frame")
-		}
-	}
-	defer C.av_frame_unref(sink.frame)
-
-	sink.frame.nb_samples = C.int(frameSize)
-	sink.frame.channel_layout = sink.codecCtx.channel_layout
-	sink.frame.format = C.int(sink.codecCtx.sample_fmt)
-	sink.frame.sample_rate = sink.codecCtx.sample_rate
-
-	if err := C.av_frame_get_buffer(sink.frame, 0); err < 0 {
-		return fmt.Errorf("failed to allocate output frame buffer: %s", avErr2Str(err))
-	}
-
-	if fifo.read(
-		(*unsafe.Pointer)(unsafe.Pointer(&sink.frame.data[0])), C.int(frameSize),
-	) < C.int(frameSize) {
-		return fmt.Errorf("failed to read from FIFO")
-	}
+// consumes Frame
+func (sink *sinkBase) Encode(frame Frame) (bool /*done*/, error) {
+	defer frame.Destroy()
 
 	// XXX
-	sink.frame.pts = sink.runningTime
-	sink.runningTime += C.int64_t(frameSize)
+	if !frame.IsEmpty() {
+		frame.frame.pts = sink.runningTime
+		sink.runningTime += C.int64_t(frame.Size)
+	}
 
-	if err := C.avcodec_send_frame(sink.codecCtx, sink.frame); err < 0 {
-		return fmt.Errorf("failed to encode frame: %s", avErr2Str(err))
+	if err := C.avcodec_send_frame(sink.codecCtx, frame.frame); err < 0 {
+		return false, fmt.Errorf("failed to encode frame: %s", avErr2Str(err))
 	}
 
 	if eof, err := sink.write(); eof {
-		return fmt.Errorf("unexpected EOF from encoder")
-	} else if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (sink *sinkBase) Flush(fifo *Fifo) error {
-	for fifo.Size() > 0 {
-		if err := sink.Encode(fifo); err != nil {
-			return err
+		if !frame.IsEmpty() {
+			return true, fmt.Errorf("unexpected EOF from encoder")
 		}
+		return true, nil
+	} else if err != nil {
+		return false, err
 	}
-	if err := C.avcodec_send_frame(sink.codecCtx, nil); err < 0 {
-		return fmt.Errorf("failed to encode NULL frame: %s", avErr2Str(err))
-	}
-	_, err := sink.write()
-	return err
+	return frame.IsEmpty(), nil
 }
 
 func (sink *sinkBase) write() (bool /*eof*/, error) {

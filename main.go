@@ -1,14 +1,18 @@
 package main
 
 // TODO:
-// - REST(?) API
-// - CLI client
-// - basic playlist management
+// - allow multiple connections listening to same stream (same decoder+resampler, different encoders)
+//   - single decoder goroutine with multiple output FIFOs; breaks off Frames from each FIFO
+//     according to output frame size and pushes them to channels, which are consumed by the
+//     encoder goroutines
 // - play silence when nothing is left to play
-// - make playAhead configurable
-// - figure out why timing is wrong when using MKV container
-//   (maybe something to do with time base settings/conversion)
-// - support embedded images
+// - REST(?) API
+//   - support embedded images
+// - CLI client
+// - server configuration
+//   - make playAhead configurable
+//   - basic playlist management
+// - combine artists/etc. with different capitalizations/whitespace/accents?/brackets/etc.
 
 // WISHLIST:
 // - replaygain preamp?
@@ -16,6 +20,8 @@ package main
 //   - can't use m3u anymore
 // - tag editing
 // - get replaygain info from RVA2 mp3 tag (requires another library dependency)
+// - figure out why timing is wrong when using MKV container
+//   (maybe something to do with time base settings/conversion)
 
 import (
 	"aurelib"
@@ -127,7 +133,11 @@ func stream(
 			playedSamples += uint64(fifo.Size() - fifoSize)
 
 			for fifo.Size() >= outFrameSize {
-				if err = sink.Encode(fifo); err != nil {
+				var frame aurelib.Frame
+				if frame, err = fifo.ReadFrame(sink); err != nil {
+					return err
+				}
+				if _, err = sink.Encode(frame); err != nil {
 					return err
 				}
 			}
@@ -157,8 +167,21 @@ func stream(
 		}
 	}
 
-	if err = sink.Flush(fifo); err != nil {
-		log.Printf("failed to flush sink: %v\n", err)
+	// flush sink
+	for {
+		frame, err := fifo.ReadFrame(sink)
+		if err != nil {
+			log.Printf("failed to flush sink: %v\n", err)
+			break
+		}
+		done := false
+		if done, err = sink.Encode(frame); err != nil {
+			log.Printf("failed to flush sink: %v\n", err)
+			break
+		}
+		if done {
+			break
+		}
 	}
 	if err = sink.WriteTrailer(); err != nil {
 		log.Printf("failed to write trailer: %v\n", err)
