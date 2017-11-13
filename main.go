@@ -1,17 +1,16 @@
 package main
 
 // TODO:
-// - allow multiple connections listening to same stream (same decoder+resampler, different encoders)
-//   - single decoder goroutine with multiple output FIFOs; breaks off Frames from each FIFO
-//     according to output frame size and pushes them to channels, which are consumed by the
-//     encoder goroutines
 // - play silence when nothing is left to play
+// - implement pause
 // - REST(?) API
 //   - support embedded images
 // - CLI client
 // - server configuration
-//   - make playAhead configurable
+//   - make ReplayGain mode configurable
 //   - basic playlist management
+// - don't store Sinks in Player
+// - seeking
 // - combine artists/etc. with different capitalizations/whitespace/accents?/brackets/etc.
 
 // WISHLIST:
@@ -22,30 +21,85 @@ package main
 // - get replaygain info from RVA2 mp3 tag (requires another library dependency)
 // - figure out why timing is wrong when using MKV container
 //   (maybe something to do with time base settings/conversion)
+// - direct audio output
 
 import (
 	"aurelib"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
-const playAhead = 250 * time.Millisecond
+// TODO: make configurable
+const maxBufferedFrames = 32
 
 var debug *log.Logger
+var noise *log.Logger
+var player *Player
 
 func main() {
 	if len(os.Args) < 2 {
 		panic("not enough arguments")
 	}
 
+	debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
+	noise = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
+
+	noise.SetOutput(ioutil.Discard)
+	noise.SetFlags(0)
+
 	aurelib.Init()
 
-	debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
+	player = NewPlayer()
+	defer player.Destroy()
 
+	player.Play(NewFilePlaylist(os.Args[1:]))
+
+	debug.Println("waiting for connections")
 	http.HandleFunc("/", stream)
 	log.Fatal(http.ListenAndServe(":9090", nil))
+}
+
+type FilePlaylist struct {
+	paths []string
+	index int
+}
+
+func NewFilePlaylist(paths []string) *FilePlaylist {
+	return &FilePlaylist{paths: paths, index: -1}
+}
+
+func (p *FilePlaylist) get() aurelib.Source {
+	var src *aurelib.FileSource
+	var err error
+	if src, err = aurelib.NewFileSource(p.paths[p.index]); err != nil {
+		log.Printf("failed to open '%v': %v", p.paths[p.index], err)
+		return nil
+	}
+	src.DumpFormat()
+	debug.Println(src.Tags())
+	return src
+}
+
+func (p *FilePlaylist) Previous() aurelib.Source {
+	for p.index > 0 {
+		p.index--
+		if src := p.get(); src != nil {
+			return src
+		}
+	}
+	return nil
+}
+
+func (p *FilePlaylist) Next() aurelib.Source {
+	for p.index < len(p.paths) {
+		p.index++
+		if src := p.get(); src != nil {
+			return src
+		}
+	}
+	return nil
 }
 
 func stream(
@@ -57,30 +111,28 @@ func stream(
 		log.Printf(format, args...)
 	}
 
-	var resampler *aurelib.Resampler
-	var err error
-	if resampler, err = aurelib.NewResampler(); err != nil {
-		reject("failed to create resampler: %v\n", err)
-		return
-	}
-	defer resampler.Destroy()
-
 	options := aurelib.NewSinkOptions()
 	options.Codec = "pcm_s16le"
 
 	var sink *aurelib.BufferSink
+	var err error
 	if sink, err = aurelib.NewBufferSink("wav", options); err != nil {
 		reject("failed to create sink: %v\n", err)
 		return
 	}
 	defer sink.Destroy()
 
-	var fifo *aurelib.Fifo
-	if fifo, err = aurelib.NewFifo(sink); err != nil {
-		reject("failed to create FIFO: %v\n", err)
+	var frames chan aurelib.Frame
+	if frames, err = player.AddOutput(sink); err != nil {
+		reject("failed to add output: %v\n", err)
 		return
 	}
-	defer fifo.Destroy()
+	defer player.RemoveOutput(sink)
+
+	w.Header().Set("Content-Type", "audio/wav")
+	w.Header().Set("Connection", "close")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Cache-Control", "no-cache, no-store")
 
 	writeBuffer := func() error {
 		buffer := sink.Buffer()
@@ -89,104 +141,48 @@ func stream(
 		}
 
 		count, err := w.Write(buffer)
+		w.(http.Flusher).Flush()
+
 		if count > 0 {
 			sink.Drain(uint(count))
 		}
-		debug.Printf("wrote %v bytes\n", count)
+		noise.Printf("wrote %v bytes\n", count)
 		return err
 	}
 
-	startTime := time.Now()
-	playedSamples := uint64(0)
-
-	playFile := func(path string) error {
-		var src *aurelib.FileSource
-		var err error
-		if src, err = aurelib.NewFileSource(path); err != nil {
-			return err
-		}
-		defer src.Destroy()
-
-		src.DumpFormat()
-		debug.Println(src.Tags)
-
-		if err := resampler.Setup(
-			src, sink, src.ReplayGain(aurelib.ReplayGainTrack, true),
-		); err != nil {
-			return err
-		}
-
-		done := false
-		for !done {
-			outFrameSize := sink.FrameSize()
-			fifoSize := fifo.Size()
-
-			for fifo.Size() < outFrameSize {
-				if done, err = src.Decode(fifo, resampler); err != nil {
-					return err
-				}
-				if done {
-					break
-				}
-			}
-
-			playedSamples += uint64(fifo.Size() - fifoSize)
-
-			for fifo.Size() >= outFrameSize {
-				var frame aurelib.Frame
-				if frame, err = fifo.ReadFrame(sink); err != nil {
-					return err
-				}
-				if _, err = sink.Encode(frame); err != nil {
-					return err
-				}
-			}
-			if err = writeBuffer(); err != nil {
-				return err
-			}
-
-			// calculate playedTime with millisecond precision to prevent overflow
-			playedTime := time.Duration(((playedSamples * 1000) / uint64(sink.SampleRate())) * 1000000)
-			timeToSleep := playedTime - playAhead - time.Since(startTime)
-			if timeToSleep > time.Millisecond {
-				debug.Printf("sleeping %v", timeToSleep)
-				time.Sleep(timeToSleep)
-			}
-		}
-		return nil
-	}
-
-	w.Header().Set("Content-Type", "audio/wav")
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Cache-Control", "no-cache, no-store")
-
-	for _, path := range os.Args[1:] {
-		if err := playFile(path); err != nil {
-			log.Printf("failed to play '%v': %v\n", path, err)
-		}
-	}
-
-	// flush sink
-	for {
-		frame, err := fifo.ReadFrame(sink)
-		if err != nil {
-			log.Printf("failed to flush sink: %v\n", err)
+	for frame := range frames {
+		if _, err = sink.Encode(frame); err != nil {
+			log.Printf("failed to encode frame: %v\n", err)
 			break
 		}
-		done := false
-		if done, err = sink.Encode(frame); err != nil {
-			log.Printf("failed to flush sink: %v\n", err)
-			break
-		}
-		if done {
+		if err = writeBuffer(); err != nil {
+			log.Printf("failed to write buffer: %v\n", err)
 			break
 		}
 	}
-	if err = sink.WriteTrailer(); err != nil {
-		log.Printf("failed to write trailer: %v\n", err)
-	}
-	if err = writeBuffer(); err != nil {
-		log.Printf("failed to write buffer: %v\n", err)
-	}
+
+	/*
+		// flush sink
+		for {
+			frame, err := fifo.ReadFrame(sink)
+			if err != nil {
+				log.Printf("failed to flush sink: %v\n", err)
+				break
+			}
+			done := false
+			if done, err = sink.Encode(frame); err != nil {
+				log.Printf("failed to flush sink: %v\n", err)
+				break
+			}
+			if done {
+				break
+			}
+		}
+		if err = sink.WriteTrailer(); err != nil {
+			log.Printf("failed to write trailer: %v\n", err)
+		}
+		if err = writeBuffer(); err != nil {
+			log.Printf("failed to write buffer: %v\n", err)
+		}
+	*/
 }

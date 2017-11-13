@@ -386,7 +386,7 @@ func (sink *sinkBase) Encode(frame Frame) (bool /*done*/, error) {
 	}
 
 	if err := C.avcodec_send_frame(sink.codecCtx, frame.frame); err < 0 {
-		return false, fmt.Errorf("failed to encode frame: %s", avErr2Str(err))
+		return false, fmt.Errorf("%s", avErr2Str(err))
 	}
 
 	if eof, err := sink.write(); eof {
@@ -412,7 +412,7 @@ func (sink *sinkBase) write() (bool /*eof*/, error) {
 		} else if err == C.avErrorEOF() {
 			return true, nil
 		} else if err < 0 {
-			return false, fmt.Errorf("failed to receive packet from encoder: %v", avErr2Str(err))
+			return false, fmt.Errorf("failed to receive packet from encoder: %s", avErr2Str(err))
 		}
 
 		if err := C.av_write_frame(sink.formatCtx, &packet); err < 0 {

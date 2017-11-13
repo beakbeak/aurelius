@@ -22,7 +22,6 @@ static char const* strEmpty() {
 import "C"
 import (
 	"fmt"
-	"log"
 	"math"
 	"unsafe"
 )
@@ -35,7 +34,7 @@ const (
 )
 
 type sourceBase struct {
-	Tags map[string]string
+	tags map[string]string
 
 	formatCtx *C.struct_AVFormatContext
 	codecCtx  *C.struct_AVCodecContext
@@ -51,14 +50,44 @@ type FileSource struct {
 
 type Source interface {
 	Destroy()
+
+	// ReplayGain returns the [0,1] volume scale factor that should be applied
+	// based on the audio stream's ReplayGain metadata and the supplied
+	// arguments.
 	ReplayGain(
 		mode ReplayGainMode,
 		preventClipping bool,
 	) float64
-	Decode(
+
+	// Decode transfers an encoded packet from the input to the decoder.
+	// It must be followed by one or more calls to ReceiveFrame.
+	// The return value following an error will be true if the error is
+	// recoverable and Decode() can be safely called again.
+	Decode() (error, bool /*recoverable*/)
+
+	// ReceiveFrame receives a decoded frame from the decoder.
+	// * If it returns ReceiveFrameCopyAndCallAgain, it must be followed by a
+	//   call to CopyFrame and then called again.
+	// * If it returns ReceiveFrameEmpty, there was no frame to be received.
+	// * If it returns ReceiveFrameEof, all frames from this Source have been
+	//   decoded and received.
+	ReceiveFrame() (ReceiveFrameStatus, error)
+
+	// FrameSize returns the number of samples in the last fram received by a
+	// call to ReceiveFrame.
+	FrameSize() uint
+
+	// CopyFrame copies the data received by ReceiveFrame to the supplied FIFO,
+	// resampling it with the supplied Resampler if it is not nil.
+	// CopyFrame may be called multiple times to copy the data to multiple
+	// FIFOs.
+	CopyFrame(
 		fifo *Fifo,
 		rs *Resampler,
-	) (finished bool, err error)
+	) error
+
+	SampleRate() int
+	Tags() map[string]string
 
 	codecContext() *C.struct_AVCodecContext
 }
@@ -136,7 +165,11 @@ func (src *sourceBase) init() error {
 		return fmt.Errorf("failed to open decoder: %v", avErr2Str(err))
 	}
 
-	src.Tags = make(map[string]string)
+	if src.frame = C.av_frame_alloc(); src.frame == nil {
+		return fmt.Errorf("failed to allocate input frame")
+	}
+
+	src.tags = make(map[string]string)
 
 	gatherTagsFromDict := func(dict *C.struct_AVDictionary) {
 		var entry *C.struct_AVDictionaryEntry
@@ -144,7 +177,7 @@ func (src *sourceBase) init() error {
 			if entry = C.av_dict_get(
 				dict, C.strEmpty(), entry, C.AV_DICT_IGNORE_SUFFIX,
 			); entry != nil {
-				src.Tags[C.GoString(entry.key)] = C.GoString(entry.value)
+				src.tags[C.GoString(entry.key)] = C.GoString(entry.value)
 			} else {
 				break
 			}
@@ -166,8 +199,6 @@ func (src *FileSource) DumpFormat() {
 	C.av_dump_format(src.formatCtx, 0, cPath, 0)
 }
 
-// ReplayGain returns the [0,1] volume scale factor that should be applied
-// based on the audio stream's ReplayGain metadata and the supplied arguments.
 func (src *sourceBase) ReplayGain(
 	mode ReplayGainMode,
 	preventClipping bool,
@@ -226,51 +257,70 @@ func (src *sourceBase) ReplayGain(
 	}
 	return volume
 }
-
-func (src *sourceBase) Decode(
-	fifo *Fifo,
-	rs *Resampler,
-) (bool /*finished*/, error) {
-	if src.frame == nil {
-		if src.frame = C.av_frame_alloc(); src.frame == nil {
-			return false, fmt.Errorf("failed to allocate input frame")
-		}
-	}
-	defer C.av_frame_unref(src.frame)
-
+func (src *sourceBase) Decode() (error, bool /*recoverable*/) {
 	var packet C.AVPacket
 	packet.init()
 
 	if err := C.av_read_frame(src.formatCtx, &packet); err == C.avErrorEOF() {
 		// return?
 	} else if err < 0 {
-		return false, fmt.Errorf("failed to read frame: %v", avErr2Str(err))
+		return fmt.Errorf("failed to read frame: %v", avErr2Str(err)), false
 	}
 	defer C.av_packet_unref(&packet)
 
 	if err := C.avcodec_send_packet(src.codecCtx, &packet); err < 0 {
-		log.Printf("failed to send packet to decoder: %v", avErr2Str(err))
-		return false, nil
+		return fmt.Errorf("failed to send packet to decoder: %v", avErr2Str(err)), true
 	}
+	return nil, false
+}
 
-	for {
-		// calls av_frame_unref()
-		if err := C.avcodec_receive_frame(src.codecCtx, src.frame); err == C.avErrorEAGAIN() {
-			return false, nil
-		} else if err == C.avErrorEOF() {
-			return true, nil
-		} else if err < 0 {
-			return false, fmt.Errorf("failed to receive frame from decoder: %v", avErr2Str(err))
-		}
+type ReceiveFrameStatus int
 
-		if rs != nil {
-			if _, err := rs.convert(src.frame.extended_data, src.frame.nb_samples, fifo); err != nil {
-				return false, err
-			}
-		} else if fifo.write(
-			(*unsafe.Pointer)(unsafe.Pointer(src.frame.extended_data)), src.frame.nb_samples,
-		) < src.frame.nb_samples {
-			return false, fmt.Errorf("failed to write data to FIFO")
-		}
+const (
+	ReceiveFrameEmpty ReceiveFrameStatus = iota
+	ReceiveFrameCopyAndCallAgain
+	ReceiveFrameEof
+)
+
+func (src *sourceBase) ReceiveFrame() (ReceiveFrameStatus, error) {
+	// calls av_frame_unref()
+	if err := C.avcodec_receive_frame(src.codecCtx, src.frame); err == C.avErrorEAGAIN() {
+		return ReceiveFrameEmpty, nil
+	} else if err == C.avErrorEOF() {
+		return ReceiveFrameEof, nil
+	} else if err < 0 {
+		return ReceiveFrameEmpty, fmt.Errorf("%s", avErr2Str(err))
 	}
+	return ReceiveFrameCopyAndCallAgain, nil
+}
+
+func (src *sourceBase) FrameSize() uint {
+	if src.frame != nil {
+		return uint(src.frame.nb_samples)
+	}
+	return 0
+}
+
+func (src *sourceBase) CopyFrame(
+	fifo *Fifo,
+	rs *Resampler,
+) error {
+	if rs != nil {
+		if _, err := rs.convert(src.frame.extended_data, src.frame.nb_samples, fifo); err != nil {
+			return err
+		}
+	} else if fifo.write(
+		(*unsafe.Pointer)(unsafe.Pointer(src.frame.extended_data)), src.frame.nb_samples,
+	) < src.frame.nb_samples {
+		return fmt.Errorf("failed to write data to FIFO")
+	}
+	return nil
+}
+
+func (src *sourceBase) SampleRate() int {
+	return int(src.codecCtx.sample_rate)
+}
+
+func (src *sourceBase) Tags() map[string]string {
+	return src.tags
 }
