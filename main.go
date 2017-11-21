@@ -93,7 +93,7 @@ func (p *FilePlaylist) Previous() aurelib.Source {
 }
 
 func (p *FilePlaylist) Next() aurelib.Source {
-	for p.index < len(p.paths) {
+	for p.index < (len(p.paths) - 1) {
 		p.index++
 		if src := p.get(); src != nil {
 			return src
