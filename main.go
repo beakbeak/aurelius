@@ -9,7 +9,6 @@ package main
 // - server configuration
 //   - make ReplayGain mode configurable
 //   - basic playlist management
-// - don't store Sinks in Player
 // - seeking
 // - combine artists/etc. with different capitalizations/whitespace/accents?/brackets/etc.
 
@@ -123,11 +122,11 @@ func stream(
 	defer sink.Destroy()
 
 	var frames chan aurelib.Frame
-	if frames, err = player.AddOutput(sink); err != nil {
+	if frames, err = player.AddOutput(sink.StreamInfo(), sink.FrameSize()); err != nil {
 		reject("failed to add output: %v\n", err)
 		return
 	}
-	defer player.RemoveOutput(sink)
+	defer player.RemoveOutput(frames)
 
 	w.Header().Set("Content-Type", "audio/wav")
 	w.Header().Set("Connection", "close")

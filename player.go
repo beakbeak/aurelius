@@ -16,14 +16,15 @@ type PlaylistIterator interface {
 
 type Player struct {
 	playing  bool
-	outputs  map[aurelib.Sink]*playerOutput
+	outputs  map[chan aurelib.Frame]*playerOutput
 	commands chan playerCommandWrapper
 }
 
 type playerOutput struct {
-	sink      aurelib.Sink
-	fifo      *aurelib.Fifo
-	resampler *aurelib.Resampler
+	streamInfo aurelib.StreamInfo
+	frameSize  int
+	fifo       *aurelib.Fifo
+	resampler  *aurelib.Resampler
 
 	frames chan aurelib.Frame
 }
@@ -37,7 +38,7 @@ type playerCommandWrapper struct {
 
 func NewPlayer() *Player {
 	p := Player{}
-	p.outputs = make(map[aurelib.Sink]*playerOutput)
+	p.outputs = make(map[chan aurelib.Frame]*playerOutput)
 	p.commands = make(chan playerCommandWrapper, maxBufferedCommands)
 	return &p
 }
@@ -48,7 +49,7 @@ func (p *Player) Destroy() {
 	if p.playing {
 		<-p.sendCommand(playerCommandShutDown{})
 	}
-	for output := range p.outputs {
+	for _, output := range p.outputs {
 		output.Destroy()
 	}
 }
@@ -80,26 +81,16 @@ func (o *playerOutput) Destroy() {
 	o.frames = nil
 }
 
-func (p *Player) addOutputImpl(output *playerOutput) error {
-	if _, exists := p.outputs[output.sink]; exists {
-		return fmt.Errorf("output with provided sink already exists")
-	}
-	p.outputs[output.sink] = output
-	return nil
-}
-
 type playerCommandAddOutput struct {
 	output *playerOutput
 }
 
 // may be called before Play()
-// does not take ownership of Sink - it is used only to determine
-// sample rate, channel layout and frame size
-// (XXX if Sink is destroyed before output is removed or player is shut
-//  down, the program will probably crash when Sink attributes are
-//  fetched)
-func (p *Player) AddOutput(sink aurelib.Sink) (chan aurelib.Frame, error) {
-	output := playerOutput{sink: sink}
+func (p *Player) AddOutput(
+	streamInfo aurelib.StreamInfo,
+	frameSize int,
+) (chan aurelib.Frame, error) {
+	output := playerOutput{streamInfo: streamInfo, frameSize: frameSize}
 	success := false
 	defer func() {
 		if !success {
@@ -108,7 +99,7 @@ func (p *Player) AddOutput(sink aurelib.Sink) (chan aurelib.Frame, error) {
 	}()
 
 	var err error
-	if output.fifo, err = aurelib.NewFifo(sink); err != nil {
+	if output.fifo, err = aurelib.NewFifo(streamInfo); err != nil {
 		return nil, fmt.Errorf("failed to create FIFO: %v", err)
 	}
 	if output.resampler, err = aurelib.NewResampler(); err != nil {
@@ -120,33 +111,33 @@ func (p *Player) AddOutput(sink aurelib.Sink) (chan aurelib.Frame, error) {
 	if p.playing {
 		p.sendCommand(playerCommandAddOutput{output: &output})
 	} else {
-		p.addOutputImpl(&output)
+		p.outputs[output.frames] = &output
 	}
 	success = true
 	return output.frames, nil
 }
 
-func (p *Player) removeOutputImpl(sink aurelib.Sink) error {
-	output, ok := p.outputs[sink]
+func (p *Player) removeOutputImpl(frames chan aurelib.Frame) error {
+	output, ok := p.outputs[frames]
 	if !ok {
 		return fmt.Errorf("output does not exist")
 	}
 	output.Destroy()
-	delete(p.outputs, sink)
+	delete(p.outputs, frames)
 	return nil
 }
 
 type playerCommandRemoveOutput struct {
-	sink aurelib.Sink
+	frames chan aurelib.Frame
 }
 
 // may be called before Play()
-func (p *Player) RemoveOutput(sink aurelib.Sink) chan error {
+func (p *Player) RemoveOutput(frames chan aurelib.Frame) chan error {
 	if p.playing {
-		return p.sendCommand(playerCommandRemoveOutput{sink: sink})
+		return p.sendCommand(playerCommandRemoveOutput{frames: frames})
 	}
 	done := make(chan error, 1)
-	done <- p.removeOutputImpl(sink)
+	done <- p.removeOutputImpl(frames)
 	return done
 }
 
@@ -208,7 +199,8 @@ func (p *Player) mainLoop() {
 
 	trackPlayTime := func() time.Duration {
 		if src != nil {
-			return (time.Duration(trackPlayedSamples) * time.Second) / time.Duration(src.SampleRate())
+			return ((time.Duration(trackPlayedSamples) * time.Second) /
+				time.Duration(src.StreamInfo().SampleRate))
 		}
 		return 0
 	}
@@ -226,10 +218,10 @@ func (p *Player) mainLoop() {
 
 	// destroys output on callback error
 	forEachOutput := func(callback func(output *playerOutput) error) {
-		for sink, output := range p.outputs {
+		for frames, output := range p.outputs {
 			if err := callback(output); err != nil {
 				output.Destroy()
-				delete(p.outputs, sink)
+				delete(p.outputs, frames)
 			}
 		}
 	}
@@ -237,7 +229,7 @@ func (p *Player) mainLoop() {
 	setupResampler := func(output *playerOutput) error {
 		if src != nil {
 			if err := output.resampler.Setup(
-				src, output.sink, src.ReplayGain(aurelib.ReplayGainTrack, true),
+				src.StreamInfo(), output.streamInfo, src.ReplayGain(aurelib.ReplayGainTrack, true),
 			); err != nil {
 				log.Printf("failed to setup resampler: %v\n", err)
 				return err
@@ -263,13 +255,13 @@ func (p *Player) mainLoop() {
 		switch command := wrapper.command.(type) {
 		case playerCommandAddOutput:
 			if err = setupResampler(command.output); err == nil {
-				err = p.addOutputImpl(command.output)
+				p.outputs[command.output.frames] = command.output
 			}
 			if err != nil {
 				command.output.Destroy()
 			}
 		case playerCommandRemoveOutput:
-			err = p.removeOutputImpl(command.sink)
+			err = p.removeOutputImpl(command.frames)
 		case playerCommandPlay:
 			playlistIter = command.playlistIter
 			destroySource()
@@ -352,9 +344,9 @@ MainLoop:
 					return err
 				}
 
-				for output.fifo.Size() >= output.sink.FrameSize() {
+				for output.fifo.Size() >= output.frameSize {
 					var frame aurelib.Frame
-					if frame, err = output.fifo.ReadFrame(output.sink); err != nil {
+					if frame, err = output.fifo.ReadFrame(output.frameSize); err != nil {
 						log.Printf("failed to read frame from FIFO: %v\n", err)
 						return err
 					}

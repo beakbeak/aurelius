@@ -14,6 +14,7 @@ import (
 
 type Fifo struct {
 	fifo *C.AVAudioFifo
+	info StreamInfo
 }
 
 func (fifo *Fifo) Destroy() {
@@ -23,11 +24,11 @@ func (fifo *Fifo) Destroy() {
 	}
 }
 
-func NewFifo(sink Sink) (*Fifo, error) {
-	fifo := Fifo{}
+func NewFifo(info StreamInfo) (*Fifo, error) {
+	fifo := Fifo{info: info}
 
 	fifo.fifo = C.av_audio_fifo_alloc(
-		sink.codecContext().sample_fmt, sink.codecContext().channels, 1)
+		info.sampleFormat, info.channelCount(), 1)
 	if fifo.fifo == nil {
 		return nil, fmt.Errorf("failed to allocate FIFO")
 	}
@@ -53,12 +54,11 @@ func (fifo *Fifo) write(
 }
 
 // returned Frame must be Frame.Destroy()ed or Sink.Encode()ed
-func (fifo *Fifo) ReadFrame(sink Sink) (Frame, error) {
+func (fifo *Fifo) ReadFrame(frameSize int) (Frame, error) {
 	if fifo.Size() <= 0 {
 		return Frame{}, nil
 	}
 
-	frameSize := sink.FrameSize()
 	if fifo.Size() < frameSize {
 		frameSize = fifo.Size()
 	}
@@ -75,9 +75,9 @@ func (fifo *Fifo) ReadFrame(sink Sink) (Frame, error) {
 	}()
 
 	frame.frame.nb_samples = C.int(frameSize)
-	frame.frame.channel_layout = sink.codecContext().channel_layout
-	frame.frame.format = C.int(sink.codecContext().sample_fmt)
-	frame.frame.sample_rate = sink.codecContext().sample_rate
+	frame.frame.channel_layout = C.uint64_t(fifo.info.channelLayout)
+	frame.frame.format = C.int(fifo.info.sampleFormat)
+	frame.frame.sample_rate = C.int(fifo.info.SampleRate)
 
 	if err := C.av_frame_get_buffer(frame.frame, 0); err < 0 {
 		return Frame{}, fmt.Errorf("failed to allocate output frame buffer: %s", avErr2Str(err))

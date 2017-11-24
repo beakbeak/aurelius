@@ -59,6 +59,9 @@ type Source interface {
 		preventClipping bool,
 	) float64
 
+	Tags() map[string]string // may be nil
+	StreamInfo() StreamInfo
+
 	// Decode transfers an encoded packet from the input to the decoder.
 	// It must be followed by one or more calls to ReceiveFrame.
 	// The return value following an error will be true if the error is
@@ -85,11 +88,6 @@ type Source interface {
 		fifo *Fifo,
 		rs *Resampler,
 	) error
-
-	SampleRate() int
-	Tags() map[string]string
-
-	codecContext() *C.struct_AVCodecContext
 }
 
 func (src *sourceBase) Destroy() {
@@ -187,10 +185,6 @@ func (src *sourceBase) init() error {
 	gatherTagsFromDict(src.stream.metadata)
 
 	return nil
-}
-
-func (src *sourceBase) codecContext() *C.struct_AVCodecContext {
-	return src.codecCtx
 }
 
 func (src *FileSource) DumpFormat() {
@@ -317,10 +311,10 @@ func (src *sourceBase) CopyFrame(
 	return nil
 }
 
-func (src *sourceBase) SampleRate() int {
-	return int(src.codecCtx.sample_rate)
-}
-
 func (src *sourceBase) Tags() map[string]string {
 	return src.tags
+}
+
+func (src *sourceBase) StreamInfo() StreamInfo {
+	return src.codecCtx.streamInfo()
 }

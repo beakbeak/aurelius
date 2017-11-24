@@ -106,13 +106,12 @@ type SinkOptions struct {
 }
 
 type Sink interface {
-	Destroy()
 	FrameSize() int
-	SampleRate() int
+	StreamInfo() StreamInfo
+
+	Destroy()
 	Encode(frame Frame) (bool /*done*/, error)
 	WriteTrailer() error
-
-	codecContext() *C.struct_AVCodecContext
 }
 
 func NewSinkOptions() *SinkOptions {
@@ -359,20 +358,12 @@ func (sink *sinkBase) init(
 	return nil
 }
 
-func (sink *sinkBase) codecContext() *C.struct_AVCodecContext {
-	return sink.codecCtx
-}
-
 func (sink *sinkBase) FrameSize() int {
 	value := sink.codecCtx.frame_size
 	if value <= 0 {
 		return 4096
 	}
 	return int(value)
-}
-
-func (sink *sinkBase) SampleRate() int {
-	return int(sink.codecCtx.sample_rate)
 }
 
 // consumes Frame
@@ -427,4 +418,8 @@ func (sink *sinkBase) WriteTrailer() error {
 		return fmt.Errorf("failed to write trailer: %s", avErr2Str(err))
 	}
 	return nil
+}
+
+func (sink *sinkBase) StreamInfo() StreamInfo {
+	return sink.codecCtx.streamInfo()
 }

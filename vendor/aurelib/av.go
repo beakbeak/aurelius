@@ -35,6 +35,26 @@ func (ctx *C.AVCodecContext) channelLayout() C.int64_t {
 	return C.av_get_default_channel_layout(ctx.channels)
 }
 
+type StreamInfo struct {
+	SampleRate uint
+
+	// not exposed because they store FFMPEG enum values directly
+	sampleFormat  int32
+	channelLayout int64
+}
+
+func (ctx *C.struct_AVCodecContext) streamInfo() StreamInfo {
+	return StreamInfo{
+		SampleRate:    uint(ctx.sample_rate),
+		sampleFormat:  ctx.sample_fmt,
+		channelLayout: int64(ctx.channelLayout()),
+	}
+}
+
+func (info *StreamInfo) channelCount() C.int {
+	return C.av_get_channel_layout_nb_channels(C.uint64_t(info.channelLayout))
+}
+
 type Frame struct {
 	frame *C.struct_AVFrame
 	Size  uint
