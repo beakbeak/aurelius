@@ -1,10 +1,10 @@
 package main
 
 // TODO:
-// - implement pause
 // - REST(?) API
 //   - support embedded images
 // - CLI client
+// - implement pause (save current source, set it to SilenceSource; restore saved on unpause)
 // - server configuration
 //   - make ReplayGain mode configurable
 //   - basic playlist management

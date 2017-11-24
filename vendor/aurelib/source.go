@@ -66,7 +66,7 @@ type Source interface {
 	// It must be followed by one or more calls to ReceiveFrame.
 	// The return value following an error will be true if the error is
 	// recoverable and Decode() can be safely called again.
-	Decode() (error, bool /*recoverable*/)
+	Decode() (_ error, recoverable bool)
 
 	// ReceiveFrame receives a decoded frame from the decoder.
 	// * If it returns ReceiveFrameCopyAndCallAgain, it must be followed by a
@@ -251,7 +251,7 @@ func (src *sourceBase) ReplayGain(
 	}
 	return volume
 }
-func (src *sourceBase) Decode() (error, bool /*recoverable*/) {
+func (src *sourceBase) Decode() (_ error, recoverable bool) {
 	var packet C.AVPacket
 	packet.init()
 

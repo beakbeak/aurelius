@@ -112,7 +112,7 @@ func (rs *Resampler) convert(
 	in **C.uint8_t,
 	inSamples C.int,
 	out *Fifo,
-) (C.int /* samples written */, error) {
+) (writtenSamples C.int, _ error) {
 	if rs.buffer == nil {
 		return 0, fmt.Errorf("convert() called without Setup()")
 	}
@@ -131,7 +131,7 @@ func (rs *Resampler) convert(
 		return 0, fmt.Errorf("failed to convert samples: %v", avErr2Str(outSamples))
 	}
 
-	writtenSamples := out.write((*unsafe.Pointer)(unsafe.Pointer(rs.buffer)), outSamples)
+	writtenSamples = out.write((*unsafe.Pointer)(unsafe.Pointer(rs.buffer)), outSamples)
 	if writtenSamples < outSamples {
 		return writtenSamples, fmt.Errorf("failed to write data to FIFO")
 	}

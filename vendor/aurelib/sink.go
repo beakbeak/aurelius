@@ -110,7 +110,7 @@ type Sink interface {
 	StreamInfo() StreamInfo
 
 	Destroy()
-	Encode(frame Frame) (bool /*done*/, error)
+	Encode(frame Frame) (done bool, _ error)
 	WriteTrailer() error
 }
 
@@ -367,7 +367,7 @@ func (sink *sinkBase) FrameSize() uint {
 }
 
 // consumes Frame
-func (sink *sinkBase) Encode(frame Frame) (bool /*done*/, error) {
+func (sink *sinkBase) Encode(frame Frame) (done bool, _ error) {
 	defer frame.Destroy()
 
 	// XXX
@@ -391,7 +391,7 @@ func (sink *sinkBase) Encode(frame Frame) (bool /*done*/, error) {
 	return frame.IsEmpty(), nil
 }
 
-func (sink *sinkBase) write() (bool /*eof*/, error) {
+func (sink *sinkBase) write() (eof bool, _ error) {
 	var packet C.AVPacket
 	packet.init()
 	defer C.av_packet_unref(&packet)

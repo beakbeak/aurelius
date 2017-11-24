@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const maxBufferedCommands = 256
+const playerMaxBufferedCommands = 256
 
 type PlaylistIterator interface {
 	Next() aurelib.Source
@@ -39,7 +39,7 @@ type playerCommandWrapper struct {
 func NewPlayer() *Player {
 	p := Player{}
 	p.outputs = make(map[chan aurelib.Frame]*playerOutput)
-	p.commands = make(chan playerCommandWrapper, maxBufferedCommands)
+	p.commands = make(chan playerCommandWrapper, playerMaxBufferedCommands)
 	return &p
 }
 
