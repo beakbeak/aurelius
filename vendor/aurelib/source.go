@@ -59,7 +59,7 @@ type Source interface {
 		preventClipping bool,
 	) float64
 
-	Tags() map[string]string // may be nil
+	Tags() map[string]string
 	StreamInfo() StreamInfo
 
 	// Decode transfers an encoded packet from the input to the decoder.
@@ -76,7 +76,7 @@ type Source interface {
 	//   decoded and received.
 	ReceiveFrame() (ReceiveFrameStatus, error)
 
-	// FrameSize returns the number of samples in the last fram received by a
+	// FrameSize returns the number of samples in the last frame received by a
 	// call to ReceiveFrame.
 	FrameSize() uint
 

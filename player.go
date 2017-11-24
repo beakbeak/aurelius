@@ -242,8 +242,10 @@ func (p *Player) mainLoop() {
 		if src != nil {
 			destroySource()
 		}
+
 		src = inSource
 		if src != nil {
+			debug.Printf("new source: %v\n", inSource.StreamInfo())
 			forEachOutput(setupResampler)
 		}
 	}
@@ -309,7 +311,11 @@ MainLoop:
 			}
 			if src == nil {
 				playlistIter = nil
-				panic("TODO: create silence source")
+				if silenceSource, err := aurelib.NewSilenceSource(); err == nil {
+					setSource(silenceSource)
+				} else {
+					panic(fmt.Sprintf("failed to create silence source: %v\n", err))
+				}
 			}
 		}
 

@@ -1,7 +1,6 @@
 package main
 
 // TODO:
-// - play silence when nothing is left to play
 // - implement pause
 // - REST(?) API
 //   - support embedded images
