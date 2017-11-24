@@ -18,7 +18,7 @@ import (
 )
 
 type Resampler struct {
-	swr            *C.struct_SwrContext
+	swr            *C.SwrContext
 	buffer         **C.uint8_t
 	bufferSamples  C.int
 	bufferChannels C.int

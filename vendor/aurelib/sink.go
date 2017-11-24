@@ -153,7 +153,7 @@ func (options *SinkOptions) getSampleFormat(defaultFormat int32) int32 {
 	return defaultFormat
 }
 
-func (options *SinkOptions) getCodec() *C.struct_AVCodec {
+func (options *SinkOptions) getCodec() *C.AVCodec {
 	cCodecName := C.CString(options.Codec)
 	defer C.free(unsafe.Pointer(cCodecName))
 
@@ -161,8 +161,8 @@ func (options *SinkOptions) getCodec() *C.struct_AVCodec {
 }
 
 type sinkBase struct {
-	formatCtx *C.struct_AVFormatContext
-	codecCtx  *C.struct_AVCodecContext
+	formatCtx *C.AVFormatContext
+	codecCtx  *C.AVCodecContext
 
 	runningTime C.int64_t
 }
@@ -179,7 +179,7 @@ func (sink *sinkBase) Destroy() {
 
 type FileSink struct {
 	sinkBase
-	ioCtx *C.struct_AVIOContext
+	ioCtx *C.AVIOContext
 }
 
 func (sink *FileSink) Destroy() {
@@ -198,7 +198,7 @@ func NewFileSink(
 	defer C.free(unsafe.Pointer(cPath))
 
 	// guess the desired container format based on the file extension
-	var format *C.struct_AVOutputFormat
+	var format *C.AVOutputFormat
 	if format = C.av_guess_format(nil, cPath, nil); format == nil {
 		return nil, fmt.Errorf("failed to determine output file format")
 	}
@@ -225,8 +225,8 @@ func NewFileSink(
 
 type BufferSink struct {
 	sinkBase
-	ioCtx  *C.struct_AVIOContext
-	buffer *C.struct_Buffer
+	ioCtx  *C.AVIOContext
+	buffer *C.Buffer
 }
 
 func (sink *BufferSink) Destroy() {
@@ -250,7 +250,7 @@ func NewBufferSink(
 	cFormatName := C.CString(formatName)
 	defer C.free(unsafe.Pointer(cFormatName))
 
-	var format *C.struct_AVOutputFormat
+	var format *C.AVOutputFormat
 	if format = C.av_guess_format(cFormatName, nil, nil); format == nil {
 		return nil, fmt.Errorf("failed to determine container format")
 	}
@@ -296,8 +296,8 @@ func (sink *BufferSink) Drain(byteCount uint) uint {
 }
 
 func (sink *sinkBase) init(
-	format *C.struct_AVOutputFormat,
-	ioCtx *C.struct_AVIOContext,
+	format *C.AVOutputFormat,
+	ioCtx *C.AVIOContext,
 	options *SinkOptions,
 ) error {
 	if sink.formatCtx = C.avformat_alloc_context(); sink.formatCtx == nil {
@@ -307,7 +307,7 @@ func (sink *sinkBase) init(
 	sink.formatCtx.oformat = format
 	sink.formatCtx.pb = ioCtx
 
-	var stream *C.struct_AVStream
+	var stream *C.AVStream
 	if stream = C.avformat_new_stream(sink.formatCtx, nil); stream == nil {
 		return fmt.Errorf("failed to create output stream")
 	}
@@ -316,7 +316,7 @@ func (sink *sinkBase) init(
 	stream.time_base.num = 1
 	stream.time_base.den = C.int(options.SampleRate)
 
-	var codec *C.struct_AVCodec
+	var codec *C.AVCodec
 	if codec = options.getCodec(); codec == nil {
 		return fmt.Errorf("failed to find output encoder '%v'", options.Codec)
 	}

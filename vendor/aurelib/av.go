@@ -43,7 +43,7 @@ type StreamInfo struct {
 	channelLayout int64
 }
 
-func (ctx *C.struct_AVCodecContext) streamInfo() StreamInfo {
+func (ctx *C.AVCodecContext) streamInfo() StreamInfo {
 	return StreamInfo{
 		SampleRate:    uint(ctx.sample_rate),
 		sampleFormat:  ctx.sample_fmt,
@@ -56,7 +56,7 @@ func (info *StreamInfo) channelCount() C.int {
 }
 
 type Frame struct {
-	frame *C.struct_AVFrame
+	frame *C.AVFrame
 	Size  uint
 }
 

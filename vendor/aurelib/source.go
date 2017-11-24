@@ -36,11 +36,11 @@ const (
 type sourceBase struct {
 	tags map[string]string
 
-	formatCtx *C.struct_AVFormatContext
-	codecCtx  *C.struct_AVCodecContext
-	stream    *C.struct_AVStream
+	formatCtx *C.AVFormatContext
+	codecCtx  *C.AVCodecContext
+	stream    *C.AVStream
 
-	frame *C.struct_AVFrame
+	frame *C.AVFrame
 }
 
 type FileSource struct {
@@ -134,7 +134,7 @@ func (src *sourceBase) init() error {
 	// find first audio stream
 	{
 		streamCount := src.formatCtx.nb_streams
-		streams := (*[1 << 30]*C.struct_AVStream)(unsafe.Pointer(src.formatCtx.streams))[:streamCount:streamCount]
+		streams := (*[1 << 30]*C.AVStream)(unsafe.Pointer(src.formatCtx.streams))[:streamCount:streamCount]
 		for _, stream := range streams {
 			if stream.codecpar.codec_type == C.AVMEDIA_TYPE_AUDIO {
 				src.stream = stream
@@ -169,8 +169,8 @@ func (src *sourceBase) init() error {
 
 	src.tags = make(map[string]string)
 
-	gatherTagsFromDict := func(dict *C.struct_AVDictionary) {
-		var entry *C.struct_AVDictionaryEntry
+	gatherTagsFromDict := func(dict *C.AVDictionary) {
+		var entry *C.AVDictionaryEntry
 		for {
 			if entry = C.av_dict_get(
 				dict, C.strEmpty(), entry, C.AV_DICT_IGNORE_SUFFIX,
@@ -197,11 +197,11 @@ func (src *sourceBase) ReplayGain(
 	mode ReplayGainMode,
 	preventClipping bool,
 ) float64 {
-	var data *C.struct_AVPacketSideData
+	var data *C.AVPacketSideData
 	for i := C.int(0); i < src.stream.nb_side_data; i++ {
 		address := uintptr(unsafe.Pointer(src.stream.side_data))
 		address += uintptr(i) * unsafe.Sizeof(*src.stream.side_data)
-		localData := (*C.struct_AVPacketSideData)(unsafe.Pointer(address))
+		localData := (*C.AVPacketSideData)(unsafe.Pointer(address))
 
 		if localData._type == C.AV_PKT_DATA_REPLAYGAIN {
 			data = localData
@@ -212,7 +212,7 @@ func (src *sourceBase) ReplayGain(
 		return 1.
 	}
 
-	gainData := (*C.struct_AVReplayGain)(unsafe.Pointer(data.data))
+	gainData := (*C.AVReplayGain)(unsafe.Pointer(data.data))
 
 	var gain, peak float64
 	var gainValid, peakValid bool
