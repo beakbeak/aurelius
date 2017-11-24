@@ -22,7 +22,7 @@ type Player struct {
 
 type playerOutput struct {
 	streamInfo aurelib.StreamInfo
-	frameSize  int
+	frameSize  uint
 	fifo       *aurelib.Fifo
 	resampler  *aurelib.Resampler
 
@@ -88,7 +88,7 @@ type playerCommandAddOutput struct {
 // may be called before Play()
 func (p *Player) AddOutput(
 	streamInfo aurelib.StreamInfo,
-	frameSize int,
+	frameSize uint,
 ) (chan aurelib.Frame, error) {
 	output := playerOutput{streamInfo: streamInfo, frameSize: frameSize}
 	success := false

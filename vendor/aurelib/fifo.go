@@ -35,8 +35,8 @@ func NewFifo(info StreamInfo) (*Fifo, error) {
 	return &fifo, nil
 }
 
-func (fifo *Fifo) Size() int {
-	return int(C.av_audio_fifo_size(fifo.fifo))
+func (fifo *Fifo) Size() uint {
+	return uint(C.av_audio_fifo_size(fifo.fifo))
 }
 
 func (fifo *Fifo) read(
@@ -54,7 +54,7 @@ func (fifo *Fifo) write(
 }
 
 // returned Frame must be Frame.Destroy()ed or Sink.Encode()ed
-func (fifo *Fifo) ReadFrame(frameSize int) (Frame, error) {
+func (fifo *Fifo) ReadFrame(frameSize uint) (Frame, error) {
 	if fifo.Size() <= 0 {
 		return Frame{}, nil
 	}

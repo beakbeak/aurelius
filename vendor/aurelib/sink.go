@@ -106,7 +106,7 @@ type SinkOptions struct {
 }
 
 type Sink interface {
-	FrameSize() int
+	FrameSize() uint
 	StreamInfo() StreamInfo
 
 	Destroy()
@@ -358,12 +358,12 @@ func (sink *sinkBase) init(
 	return nil
 }
 
-func (sink *sinkBase) FrameSize() int {
+func (sink *sinkBase) FrameSize() uint {
 	value := sink.codecCtx.frame_size
 	if value <= 0 {
 		return 4096
 	}
-	return int(value)
+	return uint(value)
 }
 
 // consumes Frame
