@@ -423,3 +423,11 @@ func (sink *sinkBase) WriteTrailer() error {
 func (sink *sinkBase) StreamInfo() StreamInfo {
 	return sink.codecCtx.streamInfo()
 }
+
+// FlushSink flushes a Sink by Encode()ing an empty Frame and calling WriteTrailer().
+func FlushSink(sink Sink) error {
+	if _, err := sink.Encode(Frame{}); err != nil {
+		return fmt.Errorf("failed to encode empty frame: %v", err)
+	}
+	return sink.WriteTrailer()
+}

@@ -65,28 +65,9 @@ func stream(
 		}
 	}
 
-	/*
-		// flush sink
-		for {
-			frame, err := fifo.ReadFrame(sink)
-			if err != nil {
-				log.Printf("failed to flush sink: %v\n", err)
-				break
-			}
-			done := false
-			if done, err = sink.Encode(frame); err != nil {
-				log.Printf("failed to flush sink: %v\n", err)
-				break
-			}
-			if done {
-				break
-			}
-		}
-		if err = sink.WriteTrailer(); err != nil {
-			log.Printf("failed to write trailer: %v\n", err)
-		}
-		if err = writeBuffer(); err != nil {
-			log.Printf("failed to write buffer: %v\n", err)
-		}
-	*/
+	if err = aurelib.FlushSink(sink); err != nil {
+		log.Printf("failed to flush sink: %v\n", err)
+	} else if err = writeBuffer(); err != nil {
+		log.Printf("failed to write buffer: %v\n", err)
+	}
 }
