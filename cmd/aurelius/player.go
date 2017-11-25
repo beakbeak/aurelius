@@ -16,7 +16,7 @@ type PlaylistIterator interface {
 
 type Player struct {
 	playing  bool
-	outputs  map[chan aurelib.Frame]*playerOutput
+	outputs  map[<-chan aurelib.Frame]*playerOutput
 	commands chan playerCommandWrapper
 }
 
@@ -33,12 +33,12 @@ type playerCommand interface{}
 
 type playerCommandWrapper struct {
 	command playerCommand
-	done    chan error
+	done    chan<- error
 }
 
 func NewPlayer() *Player {
 	p := Player{}
-	p.outputs = make(map[chan aurelib.Frame]*playerOutput)
+	p.outputs = make(map[<-chan aurelib.Frame]*playerOutput)
 	p.commands = make(chan playerCommandWrapper, playerMaxBufferedCommands)
 	return &p
 }
@@ -54,7 +54,7 @@ func (p *Player) Destroy() {
 	}
 }
 
-func (p *Player) sendCommand(command playerCommand) chan error {
+func (p *Player) sendCommand(command playerCommand) <-chan error {
 	done := make(chan error, 1)
 	if !p.playing {
 		done <- fmt.Errorf("playback routine is not running")
@@ -89,7 +89,7 @@ type playerCommandAddOutput struct {
 func (p *Player) AddOutput(
 	streamInfo aurelib.StreamInfo,
 	frameSize uint,
-) (chan aurelib.Frame, error) {
+) (<-chan aurelib.Frame, error) {
 	output := playerOutput{streamInfo: streamInfo, frameSize: frameSize}
 	success := false
 	defer func() {
@@ -117,7 +117,7 @@ func (p *Player) AddOutput(
 	return output.frames, nil
 }
 
-func (p *Player) removeOutputImpl(frames chan aurelib.Frame) error {
+func (p *Player) removeOutputImpl(frames <-chan aurelib.Frame) error {
 	output, ok := p.outputs[frames]
 	if !ok {
 		return fmt.Errorf("output does not exist")
@@ -128,11 +128,11 @@ func (p *Player) removeOutputImpl(frames chan aurelib.Frame) error {
 }
 
 type playerCommandRemoveOutput struct {
-	frames chan aurelib.Frame
+	frames <-chan aurelib.Frame
 }
 
 // may be called before Play()
-func (p *Player) RemoveOutput(frames chan aurelib.Frame) chan error {
+func (p *Player) RemoveOutput(frames <-chan aurelib.Frame) <-chan error {
 	if p.playing {
 		return p.sendCommand(playerCommandRemoveOutput{frames: frames})
 	}
@@ -145,7 +145,7 @@ type playerCommandPlay struct {
 	playlistIter PlaylistIterator
 }
 
-func (p *Player) Play(playlistIter PlaylistIterator) chan error {
+func (p *Player) Play(playlistIter PlaylistIterator) <-chan error {
 	wasPlaying := p.playing
 	p.playing = true
 	command := playerCommandPlay{playlistIter: playlistIter}
@@ -159,25 +159,25 @@ func (p *Player) Play(playlistIter PlaylistIterator) chan error {
 
 type playerCommandStop struct{}
 
-func (p *Player) Stop() chan error {
+func (p *Player) Stop() <-chan error {
 	return p.sendCommand(playerCommandStop{})
 }
 
 type playerCommandNext struct{}
 
-func (p *Player) Next() chan error {
+func (p *Player) Next() <-chan error {
 	return p.sendCommand(playerCommandNext{})
 }
 
 type playerCommandPrevious struct{}
 
-func (p *Player) Previous() chan error {
+func (p *Player) Previous() <-chan error {
 	return p.sendCommand(playerCommandPrevious{})
 }
 
 type playerCommandTogglePause struct{}
 
-func (p *Player) TogglePause() chan error {
+func (p *Player) TogglePause() <-chan error {
 	return p.sendCommand(playerCommandTogglePause{})
 }
 

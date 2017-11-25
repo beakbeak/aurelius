@@ -26,7 +26,7 @@ func stream(
 	}
 	defer sink.Destroy()
 
-	var frames chan aurelib.Frame
+	var frames <-chan aurelib.Frame
 	if frames, err = player.AddOutput(sink.StreamInfo(), sink.FrameSize()); err != nil {
 		reject("failed to add output: %v\n", err)
 		return
