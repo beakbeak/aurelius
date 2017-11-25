@@ -22,11 +22,11 @@ package main
 // - direct audio output
 
 import (
-	"aurelib"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"sb/aurelius/aurelib"
 )
 
 // TODO: make configurable

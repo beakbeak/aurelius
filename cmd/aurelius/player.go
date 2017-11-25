@@ -1,9 +1,9 @@
 package main
 
 import (
-	"aurelib"
 	"fmt"
 	"log"
+	"sb/aurelius/aurelib"
 	"time"
 )
 
