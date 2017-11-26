@@ -10,6 +10,7 @@ import "C"
 
 func init() {
 	C.av_register_all()
+	C.av_log_set_level(C.AV_LOG_PANIC)
 }
 
 func NetworkInit() {
