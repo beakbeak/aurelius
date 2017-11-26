@@ -47,7 +47,8 @@ func main() {
 	noise.SetOutput(ioutil.Discard)
 	noise.SetFlags(0)
 
-	aurelib.Init()
+	aurelib.NetworkInit()
+	defer aurelib.NetworkDeinit()
 
 	player = NewPlayer()
 	defer player.Destroy()

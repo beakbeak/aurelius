@@ -8,10 +8,16 @@ package aurelib
 */
 import "C"
 
-func Init() {
+func init() {
 	C.av_register_all()
+}
+
+func NetworkInit() {
 	C.avformat_network_init()
-	defer C.avformat_network_deinit()
+}
+
+func NetworkDeinit() {
+	C.avformat_network_deinit()
 }
 
 func avErr2Str(code C.int) string {
