@@ -198,8 +198,8 @@ func NewFileSink(
 	defer C.free(unsafe.Pointer(cPath))
 
 	// guess the desired container format based on the file extension
-	var format *C.AVOutputFormat
-	if format = C.av_guess_format(nil, cPath, nil); format == nil {
+	format := C.av_guess_format(nil, cPath, nil)
+	if format == nil {
 		return nil, fmt.Errorf("failed to determine output file format")
 	}
 
@@ -250,8 +250,8 @@ func NewBufferSink(
 	cFormatName := C.CString(formatName)
 	defer C.free(unsafe.Pointer(cFormatName))
 
-	var format *C.AVOutputFormat
-	if format = C.av_guess_format(cFormatName, nil, nil); format == nil {
+	format := C.av_guess_format(cFormatName, nil, nil)
+	if format == nil {
 		return nil, fmt.Errorf("failed to determine container format")
 	}
 
@@ -307,8 +307,8 @@ func (sink *sinkBase) init(
 	sink.formatCtx.oformat = format
 	sink.formatCtx.pb = ioCtx
 
-	var stream *C.AVStream
-	if stream = C.avformat_new_stream(sink.formatCtx, nil); stream == nil {
+	stream := C.avformat_new_stream(sink.formatCtx, nil)
+	if stream == nil {
 		return fmt.Errorf("failed to create output stream")
 	}
 
@@ -316,8 +316,8 @@ func (sink *sinkBase) init(
 	stream.time_base.num = 1
 	stream.time_base.den = C.int(options.SampleRate)
 
-	var codec *C.AVCodec
-	if codec = options.getCodec(); codec == nil {
+	codec := options.getCodec()
+	if codec == nil {
 		return fmt.Errorf("failed to find output encoder '%v'", options.Codec)
 	}
 

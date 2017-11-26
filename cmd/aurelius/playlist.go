@@ -15,9 +15,8 @@ func NewFilePlaylist(paths []string) *FilePlaylist {
 }
 
 func (p *FilePlaylist) get() aurelib.Source {
-	var src *aurelib.FileSource
-	var err error
-	if src, err = aurelib.NewFileSource(p.paths[p.index]); err != nil {
+	src, err := aurelib.NewFileSource(p.paths[p.index])
+	if err != nil {
 		log.Printf("failed to open '%v': %v", p.paths[p.index], err)
 		return nil
 	}

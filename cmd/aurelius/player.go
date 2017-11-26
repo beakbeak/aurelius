@@ -329,8 +329,8 @@ MainLoop:
 
 		var receiveStatus aurelib.ReceiveFrameStatus
 		for {
-			var err error
-			if receiveStatus, err = src.ReceiveFrame(); err != nil {
+			receiveStatus, err := src.ReceiveFrame()
+			if err != nil {
 				debug.Printf("failed to receive frame: %v\n", err)
 				destroySource()
 				continue MainLoop
@@ -350,8 +350,8 @@ MainLoop:
 				}
 
 				for output.fifo.Size() >= output.frameSize {
-					var frame aurelib.Frame
-					if frame, err = output.fifo.ReadFrame(output.frameSize); err != nil {
+					frame, err := output.fifo.ReadFrame(output.frameSize)
+					if err != nil {
 						debug.Printf("failed to read frame from FIFO: %v\n", err)
 						return err
 					}
