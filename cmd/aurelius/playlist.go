@@ -21,8 +21,10 @@ func (p *FilePlaylist) get() aurelib.Source {
 		log.Printf("failed to open '%v': %v", p.paths[p.index], err)
 		return nil
 	}
-	src.DumpFormat()
-	debug.Println(src.Tags())
+	if debugEnabled {
+		src.DumpFormat()
+		debug.Println(src.Tags())
+	}
 	return src
 }
 

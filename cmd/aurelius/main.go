@@ -22,30 +22,56 @@ package main
 // - direct audio output
 
 import (
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"sb/aurelius/aurelib"
+
+	"github.com/gorilla/mux"
 )
 
 // TODO: make configurable
 const maxBufferedFrames = 32
 
+var debugEnabled = true
 var debug *log.Logger
 var noise *log.Logger
+
+func init() {
+	debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
+	noise = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
+}
+
 var player *Player
 
 func main() {
-	if len(os.Args) < 2 {
-		panic("not enough arguments")
+	var (
+		address = flag.String(
+			"address", "", "address at which to listen for connections; overrides port setting")
+		port      = flag.Int("port", 9090, "port on which to listen for connections")
+		cert      = flag.String("cert", "", "TLS certificate file")
+		key       = flag.String("key", "", "TLS key file")
+		showDebug = flag.Bool("debug", true, "enable debug logging")
+		showNoise = flag.Bool("debug2", false, "enable verbose debug logging")
+	)
+	flag.Parse()
+
+	if !*showDebug {
+		debugEnabled = false
+		debug.SetOutput(ioutil.Discard)
+		debug.SetFlags(0)
+	}
+	if !*showNoise {
+		noise.SetOutput(ioutil.Discard)
+		noise.SetFlags(0)
 	}
 
-	debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
-	noise = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
-
-	noise.SetOutput(ioutil.Discard)
-	noise.SetFlags(0)
+	if len(*address) == 0 {
+		*address = fmt.Sprintf(":%v", *port)
+	}
 
 	aurelib.NetworkInit()
 	defer aurelib.NetworkDeinit()
@@ -53,9 +79,21 @@ func main() {
 	player = NewPlayer()
 	defer player.Destroy()
 
-	player.Play(NewFilePlaylist(os.Args[1:]))
+	router := mux.NewRouter()
+	router.HandleFunc("/stream", stream).Methods("GET")
+	router.HandleFunc("/rpc", dispatchRpc).
+		Methods("POST").
+		Headers("Content-Type", "application/json")
+	http.Handle("/", router)
 
-	debug.Println("waiting for connections")
-	http.HandleFunc("/stream", stream)
-	log.Fatal(http.ListenAndServe(":9090", nil))
+	player.Play(NewFilePlaylist(flag.Args()))
+
+	log.Printf("listening on %s\n", *address)
+	if len(*cert) > 0 || len(*key) > 0 {
+		log.Printf("using HTTPS")
+		log.Fatal(http.ListenAndServeTLS(*address, *cert, *key, nil))
+	} else {
+		log.Printf("TLS certificate and key not provided; using HTTP")
+		log.Fatal(http.ListenAndServe(*address, nil))
+	}
 }

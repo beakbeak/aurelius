@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"sb/aurelius/aurelib"
 	"time"
 )
@@ -231,7 +230,7 @@ func (p *Player) mainLoop() {
 			if err := output.resampler.Setup(
 				src.StreamInfo(), output.streamInfo, src.ReplayGain(aurelib.ReplayGainTrack, true),
 			); err != nil {
-				log.Printf("failed to setup resampler: %v\n", err)
+				debug.Printf("failed to setup resampler: %v\n", err)
 				return err
 			}
 		}
@@ -283,7 +282,7 @@ func (p *Player) mainLoop() {
 		case playerCommandShutDown:
 			shutDown = true
 		default:
-			log.Printf("unknown player command: %v\n", command)
+			debug.Printf("unknown player command: %v\n", command)
 		}
 
 		wrapper.done <- err
@@ -321,7 +320,7 @@ MainLoop:
 
 		// decode a frame of audio data
 		if err, recoverable := src.Decode(); err != nil {
-			log.Printf("failed to decode frame: %v\n", err)
+			debug.Printf("failed to decode frame: %v\n", err)
 			if !recoverable {
 				destroySource()
 			}
@@ -332,7 +331,7 @@ MainLoop:
 		for {
 			var err error
 			if receiveStatus, err = src.ReceiveFrame(); err != nil {
-				log.Printf("failed to receive frame: %v\n", err)
+				debug.Printf("failed to receive frame: %v\n", err)
 				destroySource()
 				continue MainLoop
 			}
@@ -346,14 +345,14 @@ MainLoop:
 			// appropriate size into the output frames channel
 			forEachOutput(func(output *playerOutput) error {
 				if err = src.CopyFrame(output.fifo, output.resampler); err != nil {
-					log.Printf("failed to copy frame to output: %v\n", err)
+					debug.Printf("failed to copy frame to output: %v\n", err)
 					return err
 				}
 
 				for output.fifo.Size() >= output.frameSize {
 					var frame aurelib.Frame
 					if frame, err = output.fifo.ReadFrame(output.frameSize); err != nil {
-						log.Printf("failed to read frame from FIFO: %v\n", err)
+						debug.Printf("failed to read frame from FIFO: %v\n", err)
 						return err
 					}
 					select {
