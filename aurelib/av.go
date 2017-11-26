@@ -10,7 +10,48 @@ import "C"
 
 func init() {
 	C.av_register_all()
-	C.av_log_set_level(C.AV_LOG_PANIC)
+	SetLogLevel(LogPanic)
+}
+
+type LogLevel int
+
+const (
+	LogQuiet LogLevel = iota
+	LogPanic
+	LogFatal
+	LogError
+	LogWarning
+	LogInfo
+	LogVerbose
+	LogDebug
+	LogTrace
+)
+
+func SetLogLevel(level LogLevel) {
+	var avLevel C.int
+
+	switch level {
+	case LogQuiet:
+		avLevel = C.AV_LOG_QUIET
+	case LogPanic:
+		avLevel = C.AV_LOG_PANIC
+	case LogFatal:
+		avLevel = C.AV_LOG_FATAL
+	case LogError:
+		avLevel = C.AV_LOG_ERROR
+	case LogWarning:
+		avLevel = C.AV_LOG_WARNING
+	case LogInfo:
+		avLevel = C.AV_LOG_INFO
+	case LogVerbose:
+		avLevel = C.AV_LOG_VERBOSE
+	case LogDebug:
+		avLevel = C.AV_LOG_DEBUG
+	case LogTrace:
+		avLevel = C.AV_LOG_TRACE
+	}
+
+	C.av_log_set_level(avLevel)
 }
 
 func NetworkInit() {

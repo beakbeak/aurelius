@@ -51,22 +51,24 @@ func main() {
 	var (
 		address = flag.String(
 			"address", "", "address at which to listen for connections; overrides port setting")
-		port      = flag.Int("port", 9090, "port on which to listen for connections")
-		cert      = flag.String("cert", "", "TLS certificate file")
-		key       = flag.String("key", "", "TLS key file")
-		showDebug = flag.Bool("debug", true, "enable debug logging")
-		showNoise = flag.Bool("debug2", false, "enable verbose debug logging")
+		port     = flag.Int("port", 9090, "port on which to listen for connections")
+		cert     = flag.String("cert", "", "TLS certificate file")
+		key      = flag.String("key", "", "TLS key file")
+		logLevel = flag.Int("log", 2, "log verbosity (1-3)")
 	)
 	flag.Parse()
 
-	if !*showDebug {
+	if *logLevel < 2 {
 		debugEnabled = false
 		debug.SetOutput(ioutil.Discard)
 		debug.SetFlags(0)
 	}
-	if !*showNoise {
+	if *logLevel < 3 {
 		noise.SetOutput(ioutil.Discard)
 		noise.SetFlags(0)
+	}
+	if *logLevel > 1 {
+		aurelib.SetLogLevel(aurelib.LogInfo)
 	}
 
 	if len(*address) == 0 {
