@@ -178,46 +178,21 @@ func (options *SinkOptions) getSampleFormat(
 
 	format := C.av_get_sample_fmt(formatName)
 
-	for {
-		if findFormat(format) {
-			return format
-		}
-
-		if C.av_sample_fmt_is_planar(format) != 0 {
-			format = C.av_get_packed_sample_fmt(format)
-		} else {
-			format = C.av_get_planar_sample_fmt(format)
-		}
-
-		if findFormat(format) {
-			return format
-		}
-
-		switch format {
-		case C.AV_SAMPLE_FMT_DBL:
-			fallthrough
-		case C.AV_SAMPLE_FMT_DBLP:
-			format = C.AV_SAMPLE_FMT_FLT
-
-		case C.AV_SAMPLE_FMT_FLT:
-			fallthrough
-		case C.AV_SAMPLE_FMT_FLTP:
-			format = C.AV_SAMPLE_FMT_S32
-
-		case C.AV_SAMPLE_FMT_S32:
-			fallthrough
-		case C.AV_SAMPLE_FMT_S32P:
-			format = C.AV_SAMPLE_FMT_S16
-
-		case C.AV_SAMPLE_FMT_U8:
-			fallthrough
-		case C.AV_SAMPLE_FMT_U8P:
-			return C.AV_SAMPLE_FMT_S16
-
-		default:
-			return C.AV_SAMPLE_FMT_NONE
-		}
+	if findFormat(format) {
+		return format
 	}
+
+	if C.av_sample_fmt_is_planar(format) != 0 {
+		format = C.av_get_packed_sample_fmt(format)
+	} else {
+		format = C.av_get_planar_sample_fmt(format)
+	}
+
+	if findFormat(format) {
+		return format
+	}
+
+	return allowedFormats[0]
 }
 
 func (options *SinkOptions) getCodec() *C.AVCodec {
