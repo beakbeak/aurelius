@@ -12,10 +12,8 @@ import (
 	"time"
 )
 
-// TODO: disallow looking outside DB root!
-
 const (
-	Prefix    = "/db/"
+	Prefix    = "/db"
 	playAhead = 10000 * time.Millisecond // TODO: make configurable
 )
 
@@ -41,10 +39,10 @@ var (
 
 func init() {
 	var err error
-	if reDirPath, err = regexp.Compile(`^` + Prefix + `(.*)$`); err != nil {
+	if reDirPath, err = regexp.Compile(`^` + Prefix + `/(.*)$`); err != nil {
 		panic(err)
 	}
-	if reFilePath, err = regexp.Compile(`^` + Prefix + `(.+?)/([^/]+)$`); err != nil {
+	if reFilePath, err = regexp.Compile(`^` + Prefix + `/(.+?)/([^/]+)$`); err != nil {
 		panic(err)
 	}
 
@@ -149,6 +147,11 @@ func (db *Database) HandleRequest(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
+	if req.URL.Path == Prefix {
+		http.Redirect(w, req, Prefix+"/", http.StatusFound)
+		return
+	}
+
 	reject := func(format string, args ...interface{}) {
 		w.WriteHeader(http.StatusNotFound)
 		aurelog.Debug.Printf(format, args...)
