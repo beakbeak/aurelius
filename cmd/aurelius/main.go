@@ -1,15 +1,14 @@
 package main
 
 // TODO:
-// - REST(?) API
-//   - support embedded images
-// - CLI client
-// - implement pause (save current source, set it to SilenceSource; restore saved on unpause)
-// - server configuration
-//   - make ReplayGain mode configurable
-//   - basic playlist management
+// - basic playlist management
+// - stream mp3/ogg/flac without re-encoding (must apply ReplayGain on client side)
+//   - have to throttle using a fixed bit rate
+// - embedded images
 // - seeking
 // - combine artists/etc. with different capitalizations/whitespace/accents?/brackets/etc.
+// - tag overrides in a text file? (necessary for streaming audio track of a video file)
+// - DB WAV output
 
 // WISHLIST:
 // - replaygain preamp?
@@ -19,33 +18,18 @@ package main
 // - get replaygain info from RVA2 mp3 tag (requires another library dependency)
 // - figure out why timing is wrong when using MKV container
 //   (maybe something to do with time base settings/conversion)
-// - direct audio output
 
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sb/aurelius/aurelib"
+	"sb/aurelius/aurelog"
+	dbPkg "sb/aurelius/db"
 
 	"github.com/gorilla/mux"
 )
-
-// TODO: make configurable
-const maxBufferedFrames = 32
-
-var debugEnabled = true
-var debug *log.Logger
-var noise *log.Logger
-
-func init() {
-	debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
-	noise = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
-}
-
-var player *Player
 
 func main() {
 	var (
@@ -55,18 +39,11 @@ func main() {
 		cert     = flag.String("cert", "", "TLS certificate file")
 		key      = flag.String("key", "", "TLS key file")
 		logLevel = flag.Int("log", 2, "log verbosity (1-3)")
+		dbPath   = flag.String("db", ".", "path to database root")
 	)
 	flag.Parse()
 
-	if *logLevel < 2 {
-		debugEnabled = false
-		debug.SetOutput(ioutil.Discard)
-		debug.SetFlags(0)
-	}
-	if *logLevel < 3 {
-		noise.SetOutput(ioutil.Discard)
-		noise.SetFlags(0)
-	}
+	aurelog.SetLevel(*logLevel)
 	if *logLevel > 1 {
 		aurelib.SetLogLevel(aurelib.LogInfo)
 	}
@@ -78,17 +55,35 @@ func main() {
 	aurelib.NetworkInit()
 	defer aurelib.NetworkDeinit()
 
-	player = NewPlayer()
-	defer player.Destroy()
+	db, err := dbPkg.NewDatabase(*dbPath)
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+
+	dbHandleRequest := func(w http.ResponseWriter, req *http.Request) {
+		db.HandleRequest(w, req)
+	}
+
+	/*
+		player := playerPkg.NewPlayer()
+		defer player.Destroy()
+
+		playerHandleRpc := func(w http.ResponseWriter, req *http.Request) {
+			player.HandleRpc(w, req)
+		}
+	*/
 
 	router := mux.NewRouter()
-	router.HandleFunc("/stream", stream).Methods("GET")
-	router.HandleFunc("/rpc", dispatchRpc).
-		Methods("POST").
-		Headers("Content-Type", "application/json")
+	router.PathPrefix(dbPkg.Prefix).Methods("GET").HandlerFunc(dbHandleRequest)
+	/*
+		router.HandleFunc("/rpc", playerHandleRpc).
+			Methods("POST").
+			Headers("Content-Type", "application/json")
+	*/
+
 	http.Handle("/", router)
 
-	player.Play(NewFilePlaylist(flag.Args()))
+	//player.Play(playerPkg.NewFilePlaylist(flag.Args()))
 
 	log.Printf("listening on %s\n", *address)
 	if len(*cert) > 0 || len(*key) > 0 {

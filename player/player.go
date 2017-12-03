@@ -1,12 +1,23 @@
-package main
+package player
+
+// TODO:
+// - implement pause (save current source, set it to SilenceSource; restore saved on unpause)
+// - server configuration
+//   - make ReplayGain mode configurable
+// - seeking
+// - direct audio output
 
 import (
 	"fmt"
 	"sb/aurelius/aurelib"
+	"sb/aurelius/aurelog"
 	"time"
 )
 
-const playerMaxBufferedCommands = 256
+const (
+	maxBufferedFrames   = 32 // TODO: make configurable
+	maxBufferedCommands = 256
+)
 
 type PlaylistIterator interface {
 	Next() aurelib.Source
@@ -38,7 +49,7 @@ type playerCommandWrapper struct {
 func NewPlayer() *Player {
 	p := Player{}
 	p.outputs = make(map[<-chan aurelib.Frame]*playerOutput)
-	p.commands = make(chan playerCommandWrapper, playerMaxBufferedCommands)
+	p.commands = make(chan playerCommandWrapper, maxBufferedCommands)
 	return &p
 }
 
@@ -150,7 +161,7 @@ func (p *Player) Play(playlistIter PlaylistIterator) <-chan error {
 	command := playerCommandPlay{playlistIter: playlistIter}
 	done := p.sendCommand(command)
 	if !wasPlaying {
-		debug.Println("starting player routine")
+		aurelog.Debug.Println("starting player routine")
 		go p.mainLoop()
 	}
 	return done
@@ -181,7 +192,7 @@ func (p *Player) TogglePause() <-chan error {
 }
 
 func (p *Player) mainLoop() {
-	debug.Println("player routine started")
+	aurelog.Debug.Println("player routine started")
 
 	var src aurelib.Source
 	var playlistIter PlaylistIterator
@@ -230,7 +241,7 @@ func (p *Player) mainLoop() {
 			if err := output.resampler.Setup(
 				src.StreamInfo(), output.streamInfo, src.ReplayGain(aurelib.ReplayGainTrack, true),
 			); err != nil {
-				debug.Printf("failed to setup resampler: %v\n", err)
+				aurelog.Debug.Printf("failed to setup resampler: %v\n", err)
 				return err
 			}
 		}
@@ -244,7 +255,7 @@ func (p *Player) mainLoop() {
 
 		src = inSource
 		if src != nil {
-			debug.Printf("new source: %v\n", inSource.StreamInfo())
+			aurelog.Debug.Printf("new source: %v\n", inSource.StreamInfo())
 			forEachOutput(setupResampler)
 		}
 	}
@@ -282,7 +293,7 @@ func (p *Player) mainLoop() {
 		case playerCommandShutDown:
 			shutDown = true
 		default:
-			debug.Printf("unknown player command: %v\n", command)
+			aurelog.Debug.Printf("unknown player command: %v\n", command)
 		}
 
 		wrapper.done <- err
@@ -320,7 +331,7 @@ MainLoop:
 
 		// decode a frame of audio data
 		if err, recoverable := src.Decode(); err != nil {
-			debug.Printf("failed to decode frame: %v\n", err)
+			aurelog.Debug.Printf("failed to decode frame: %v\n", err)
 			if !recoverable {
 				destroySource()
 			}
@@ -331,7 +342,7 @@ MainLoop:
 		for {
 			receiveStatus, err := src.ReceiveFrame()
 			if err != nil {
-				debug.Printf("failed to receive frame: %v\n", err)
+				aurelog.Debug.Printf("failed to receive frame: %v\n", err)
 				destroySource()
 				continue MainLoop
 			}
@@ -345,14 +356,14 @@ MainLoop:
 			// appropriate size into the output frames channel
 			forEachOutput(func(output *playerOutput) error {
 				if err = src.CopyFrame(output.fifo, output.resampler); err != nil {
-					debug.Printf("failed to copy frame to output: %v\n", err)
+					aurelog.Debug.Printf("failed to copy frame to output: %v\n", err)
 					return err
 				}
 
 				for output.fifo.Size() >= output.frameSize {
 					frame, err := output.fifo.ReadFrame(output.frameSize)
 					if err != nil {
-						debug.Printf("failed to read frame from FIFO: %v\n", err)
+						aurelog.Debug.Printf("failed to read frame from FIFO: %v\n", err)
 						return err
 					}
 					select {
@@ -371,7 +382,7 @@ MainLoop:
 		playTime := totalPlayTime + trackPlayTime()
 		timeToSleep := playTime - time.Since(startTime)
 		if timeToSleep > time.Millisecond {
-			noise.Printf("sleeping %v\n", timeToSleep)
+			aurelog.Noise.Printf("sleeping %v\n", timeToSleep)
 			time.Sleep(timeToSleep)
 		}
 	}
