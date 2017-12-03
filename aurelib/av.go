@@ -7,6 +7,7 @@ package aurelib
 #include <libavcodec/avcodec.h>
 */
 import "C"
+import "fmt"
 
 func init() {
 	C.av_register_all()
@@ -86,7 +87,6 @@ func (ctx *C.AVCodecContext) channelLayout() C.int64_t {
 type StreamInfo struct {
 	SampleRate uint
 
-	// not exposed because they store FFMPEG enum values directly
 	sampleFormat  int32
 	channelLayout int64
 }
@@ -101,6 +101,22 @@ func (ctx *C.AVCodecContext) streamInfo() StreamInfo {
 
 func (info *StreamInfo) channelCount() C.int {
 	return C.av_get_channel_layout_nb_channels(C.uint64_t(info.channelLayout))
+}
+
+func channelLayoutToString(channelLayout int64) string {
+	return fmt.Sprintf("0x%x", channelLayout)
+}
+
+func (info *StreamInfo) ChannelLayout() string {
+	return channelLayoutToString(info.channelLayout)
+}
+
+func sampleFormatToString(sampleFormat int32) string {
+	return C.GoString(C.av_get_sample_fmt_name(C.enum_AVSampleFormat(sampleFormat)))
+}
+
+func (info *StreamInfo) SampleFormat() string {
+	return sampleFormatToString(info.sampleFormat)
 }
 
 type Frame struct {

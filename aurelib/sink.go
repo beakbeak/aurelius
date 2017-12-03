@@ -99,7 +99,7 @@ type SinkOptions struct {
 	ChannelLayout    string  // optional; overrides Channels
 	SampleRate       uint    // default 44100
 	SampleFormat     string  // default is codec-dependent
-	Codec            string  // default "flac"
+	Codec            string  // default "pcm_s16le"
 	CompressionLevel int     // used for flac
 	Quality          float32 // used for libmp3lame, libvorbis
 	BitRate          uint
@@ -118,7 +118,7 @@ func NewSinkOptions() *SinkOptions {
 	return &SinkOptions{
 		Channels:         2,
 		SampleRate:       44100,
-		Codec:            "flac",
+		Codec:            "pcm_s16le",
 		CompressionLevel: -1,
 		Quality:          -2,
 	}
@@ -143,14 +143,81 @@ func (options *SinkOptions) getChannels() (C.int, C.uint64_t) {
 	return channels, channelLayout
 }
 
-func (options *SinkOptions) getSampleFormat(defaultFormat int32) int32 {
-	if options.SampleFormat != "" {
-		formatName := C.CString(options.SampleFormat)
-		defer C.free(unsafe.Pointer(formatName))
-
-		return C.av_get_sample_fmt(formatName)
+func (codec *C.AVCodec) allowedFormats() []C.enum_AVSampleFormat {
+	if codec.sample_fmts == nil {
+		return []C.enum_AVSampleFormat{C.AV_SAMPLE_FMT_NONE}
 	}
-	return defaultFormat
+
+	formatArray := (*[1 << 30]C.enum_AVSampleFormat)(unsafe.Pointer(codec.sample_fmts))
+	formatCount := 0
+	for formatArray[formatCount] != -1 {
+		formatCount++
+	}
+
+	return formatArray[:formatCount:formatCount]
+}
+
+func (options *SinkOptions) getSampleFormat(
+	allowedFormats []C.enum_AVSampleFormat,
+) C.enum_AVSampleFormat {
+	if options.SampleFormat == "" {
+		return allowedFormats[0]
+	}
+
+	findFormat := func(format C.enum_AVSampleFormat) bool {
+		for _, allowedFormat := range allowedFormats {
+			if allowedFormat == format {
+				return true
+			}
+		}
+		return false
+	}
+
+	formatName := C.CString(options.SampleFormat)
+	defer C.free(unsafe.Pointer(formatName))
+
+	format := C.av_get_sample_fmt(formatName)
+
+	for {
+		if findFormat(format) {
+			return format
+		}
+
+		if C.av_sample_fmt_is_planar(format) != 0 {
+			format = C.av_get_packed_sample_fmt(format)
+		} else {
+			format = C.av_get_planar_sample_fmt(format)
+		}
+
+		if findFormat(format) {
+			return format
+		}
+
+		switch format {
+		case C.AV_SAMPLE_FMT_DBL:
+			fallthrough
+		case C.AV_SAMPLE_FMT_DBLP:
+			format = C.AV_SAMPLE_FMT_FLT
+
+		case C.AV_SAMPLE_FMT_FLT:
+			fallthrough
+		case C.AV_SAMPLE_FMT_FLTP:
+			format = C.AV_SAMPLE_FMT_S32
+
+		case C.AV_SAMPLE_FMT_S32:
+			fallthrough
+		case C.AV_SAMPLE_FMT_S32P:
+			format = C.AV_SAMPLE_FMT_S16
+
+		case C.AV_SAMPLE_FMT_U8:
+			fallthrough
+		case C.AV_SAMPLE_FMT_U8P:
+			return C.AV_SAMPLE_FMT_S16
+
+		default:
+			return C.AV_SAMPLE_FMT_NONE
+		}
+	}
 }
 
 func (options *SinkOptions) getCodec() *C.AVCodec {
@@ -327,7 +394,7 @@ func (sink *sinkBase) init(
 
 	sink.codecCtx.channels, sink.codecCtx.channel_layout = options.getChannels()
 	sink.codecCtx.sample_rate = C.int(options.SampleRate)
-	sink.codecCtx.sample_fmt = options.getSampleFormat(*codec.sample_fmts)
+	sink.codecCtx.sample_fmt = options.getSampleFormat(codec.allowedFormats())
 	sink.codecCtx.time_base = stream.time_base
 
 	if options.CompressionLevel >= 0 {
