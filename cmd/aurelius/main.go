@@ -59,11 +59,16 @@ func main() {
 	aurelib.NetworkInit()
 	defer aurelib.NetworkDeinit()
 
-	executable, err := os.Executable()
-	if err != nil {
-		panic(err)
+	var assetsDir string
+	{
+		executable, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		assetsDir = filepath.Dir(executable)
 	}
-	templateGlob := filepath.Join(filepath.Dir(executable), "templates/*")
+
+	templateGlob := filepath.Join(assetsDir, "templates", "*")
 
 	var templateProxy util.TemplateProxy
 	if *reload {
@@ -91,7 +96,8 @@ func main() {
 	*/
 
 	router := mux.NewRouter()
-	router.PathPrefix(db.Prefix()).Methods("GET").HandlerFunc(dbHandleRequest)
+	router.PathPrefix(db.Prefix() + "/").Methods("GET").HandlerFunc(dbHandleRequest)
+	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 	/*
 		router.HandleFunc("/rpc", playerHandleRpc).
 			Methods("POST").
@@ -110,4 +116,20 @@ func main() {
 		log.Printf("TLS certificate and key not provided; using HTTP")
 		log.Fatal(http.ListenAndServe(*address, nil))
 	}
+}
+
+type fileOnlyServer struct {
+	root string
+}
+
+func (srv fileOnlyServer) ServeHTTP(
+	w http.ResponseWriter,
+	req *http.Request,
+) {
+	path := filepath.Join(srv.root, req.URL.Path)
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
+		http.ServeFile(w, req, path)
+		return
+	}
+	http.NotFound(w, req)
 }

@@ -38,6 +38,7 @@ func New(
 	}
 
 	db := Database{
+		prefix:        prefix,
 		root:          rootPath,
 		templateProxy: templateProxy,
 	}
@@ -145,7 +146,7 @@ func (db *Database) HandleRequest(
 	}
 
 	reject := func(format string, args ...interface{}) {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, req)
 		util.Debug.Printf(format, args...)
 	}
 
