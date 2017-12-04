@@ -136,7 +136,7 @@ func (db *Database) handleDirRequest(
 	return true, nil
 }
 
-func (db *Database) HandleRequest(
+func (db *Database) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {

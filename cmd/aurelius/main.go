@@ -63,10 +63,6 @@ func main() {
 		log.Fatalf("failed to open database: %v", err)
 	}
 
-	dbHandleRequest := func(w http.ResponseWriter, req *http.Request) {
-		db.HandleRequest(w, req)
-	}
-
 	/*
 		player := player.New()
 		defer player.Destroy()
@@ -77,7 +73,7 @@ func main() {
 	*/
 
 	router := mux.NewRouter()
-	router.PathPrefix(db.Prefix() + "/").Methods("GET").HandlerFunc(dbHandleRequest)
+	router.PathPrefix(db.Prefix() + "/").Methods("GET").Handler(db)
 	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 	/*
 		router.HandleFunc("/rpc", playerHandleRpc).
