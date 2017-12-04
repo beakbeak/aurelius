@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <a href="..">Parent directory</a>
+    <br/><br/>
+
+    {{- if .Dirs}}
+        {{- range $dir := .Dirs}}
+            <a href="{{$dir}}/">{{$dir}}/</a><br/>
+        {{- end}}
+        <br/>
+    {{- end}}
+
+    {{- if .Files}}
+        {{- range $file := .Files}}
+            <a href="{{$file}}/stream">{{$file}}</a><br/>
+        {{- end}}
+    {{- end}}
+</body>
+</html>

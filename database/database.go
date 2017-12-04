@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,36 +16,10 @@ const (
 	playAhead = 10000 * time.Millisecond // TODO: make configurable
 )
 
-var (
-	tmplDir *template.Template
-
-	tmplDirStr = `<!DOCTYPE html>
-<html>
-<body>
-{{if .Dirs}}
-{{range $dir := .Dirs}}
-<a href="{{$dir}}">{{$dir}}</a>/<br/>
-{{end}}
-<br/>
-{{end}}
-{{if .Files}}
-{{range $file := .Files}}<a href="{{$file}}/stream">{{$file}}</a><br/>{{end}}
-{{end}}
-</body>
-</html>`
-)
-
-func init() {
-	var err error
-	tmplDir, err = template.New("dir").Parse(tmplDirStr)
-	if err != nil {
-		panic(err)
-	}
-}
-
 type Database struct {
-	prefix string
-	root   string
+	prefix        string
+	root          string
+	templateProxy util.TemplateProxy
 
 	reDirPath  *regexp.Regexp
 	reFilePath *regexp.Regexp
@@ -55,6 +28,7 @@ type Database struct {
 func New(
 	prefix string,
 	rootPath string,
+	templateProxy util.TemplateProxy,
 ) (*Database, error) {
 	rootPath = filepath.Clean(rootPath)
 	if info, err := os.Stat(rootPath); err != nil {
@@ -63,7 +37,10 @@ func New(
 		return nil, fmt.Errorf("not a directory: %v", rootPath)
 	}
 
-	db := Database{root: rootPath}
+	db := Database{
+		root:          rootPath,
+		templateProxy: templateProxy,
+	}
 
 	var err error
 	if db.reDirPath, err = regexp.Compile(`^` + prefix + `/(.*)$`); err != nil {
@@ -152,7 +129,9 @@ func (db *Database) handleDirRequest(
 		// TODO: handle symlinks
 	}
 
-	tmplDir.Execute(w, data)
+	if err := db.templateProxy.ExecuteTemplate(w, "db-dir.html", data); err != nil {
+		util.Debug.Printf("failed to execute template: %v\n", err)
+	}
 	return true, nil
 }
 

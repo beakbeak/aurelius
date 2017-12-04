@@ -22,8 +22,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/database"
 	"sb/aurelius/util"
@@ -40,6 +43,7 @@ func main() {
 		key      = flag.String("key", "", "TLS key file")
 		logLevel = flag.Int("log", 2, "log verbosity (1-3)")
 		dbPath   = flag.String("db", ".", "path to database root")
+		reload   = flag.Bool("reload", false, "reload templates on every use")
 	)
 	flag.Parse()
 
@@ -55,7 +59,20 @@ func main() {
 	aurelib.NetworkInit()
 	defer aurelib.NetworkDeinit()
 
-	db, err := database.New("/db", *dbPath)
+	executable, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	templateGlob := filepath.Join(filepath.Dir(executable), "templates/*")
+
+	var templateProxy util.TemplateProxy
+	if *reload {
+		templateProxy = util.DynamicTemplateProxy{templateGlob}
+	} else {
+		templateProxy = util.StaticTemplateProxy{template.Must(template.ParseGlob(templateGlob))}
+	}
+
+	db, err := database.New("/db", *dbPath, templateProxy)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
