@@ -46,7 +46,7 @@ type playerCommandWrapper struct {
 	done    chan<- error
 }
 
-func NewPlayer() *Player {
+func New() *Player {
 	p := Player{}
 	p.outputs = make(map[<-chan aurelib.Frame]*playerOutput)
 	p.commands = make(chan playerCommandWrapper, maxBufferedCommands)

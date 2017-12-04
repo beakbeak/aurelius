@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"fmt"
@@ -13,21 +13,20 @@ import (
 )
 
 const (
-	Prefix    = "/db"
+	prefix    = "/db"
 	playAhead = 10000 * time.Millisecond // TODO: make configurable
 )
 
 var (
-	reDirPath  *regexp.Regexp
-	reFilePath *regexp.Regexp
-
 	tmplDir *template.Template
 
 	tmplDirStr = `<!DOCTYPE html>
 <html>
 <body>
 {{if .Dirs}}
-{{range $dir := .Dirs}}<a href="{{$dir}}">{{$dir}}</a>/<br/>{{end}}
+{{range $dir := .Dirs}}
+<a href="{{$dir}}">{{$dir}}</a>/<br/>
+{{end}}
 <br/>
 {{end}}
 {{if .Files}}
@@ -39,13 +38,6 @@ var (
 
 func init() {
 	var err error
-	if reDirPath, err = regexp.Compile(`^` + Prefix + `/(.*)$`); err != nil {
-		panic(err)
-	}
-	if reFilePath, err = regexp.Compile(`^` + Prefix + `/(.+?)/([^/]+)$`); err != nil {
-		panic(err)
-	}
-
 	tmplDir, err = template.New("dir").Parse(tmplDirStr)
 	if err != nil {
 		panic(err)
@@ -53,10 +45,17 @@ func init() {
 }
 
 type Database struct {
-	root string
+	prefix string
+	root   string
+
+	reDirPath  *regexp.Regexp
+	reFilePath *regexp.Regexp
 }
 
-func NewDatabase(rootPath string) (*Database, error) {
+func New(
+	prefix string,
+	rootPath string,
+) (*Database, error) {
 	rootPath = filepath.Clean(rootPath)
 	if info, err := os.Stat(rootPath); err != nil {
 		return nil, err
@@ -64,7 +63,21 @@ func NewDatabase(rootPath string) (*Database, error) {
 		return nil, fmt.Errorf("not a directory: %v", rootPath)
 	}
 
-	return &Database{root: rootPath}, nil
+	db := Database{root: rootPath}
+
+	var err error
+	if db.reDirPath, err = regexp.Compile(`^` + prefix + `/(.*)$`); err != nil {
+		return nil, err
+	}
+	if db.reFilePath, err = regexp.Compile(`^` + prefix + `/(.+?)/([^/]+)$`); err != nil {
+		return nil, err
+	}
+
+	return &db, nil
+}
+
+func (db *Database) Prefix() string {
+	return db.prefix
 }
 
 func (db *Database) expandPath(path string) string {
@@ -75,7 +88,7 @@ func (db *Database) handleFileRequest(
 	w http.ResponseWriter,
 	req *http.Request,
 ) (handled bool, _ error) {
-	groups := reFilePath.FindStringSubmatch(req.URL.Path)
+	groups := db.reFilePath.FindStringSubmatch(req.URL.Path)
 	if groups == nil {
 		return false, nil
 	}
@@ -112,7 +125,7 @@ func (db *Database) handleDirRequest(
 	w http.ResponseWriter,
 	req *http.Request,
 ) (handled bool, _ error) {
-	groups := reDirPath.FindStringSubmatch(req.URL.Path)
+	groups := db.reDirPath.FindStringSubmatch(req.URL.Path)
 	if groups == nil {
 		return false, nil
 	}
@@ -147,8 +160,8 @@ func (db *Database) HandleRequest(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	if req.URL.Path == Prefix {
-		http.Redirect(w, req, Prefix+"/", http.StatusFound)
+	if req.URL.Path == db.prefix {
+		http.Redirect(w, req, db.prefix+"/", http.StatusFound)
 		return
 	}
 

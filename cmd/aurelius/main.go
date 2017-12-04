@@ -26,7 +26,7 @@ import (
 	"net/http"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/aurelog"
-	dbPkg "sb/aurelius/db"
+	"sb/aurelius/database"
 
 	"github.com/gorilla/mux"
 )
@@ -55,7 +55,7 @@ func main() {
 	aurelib.NetworkInit()
 	defer aurelib.NetworkDeinit()
 
-	db, err := dbPkg.NewDatabase(*dbPath)
+	db, err := database.New("/db", *dbPath)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
@@ -65,7 +65,7 @@ func main() {
 	}
 
 	/*
-		player := playerPkg.NewPlayer()
+		player := player.New()
 		defer player.Destroy()
 
 		playerHandleRpc := func(w http.ResponseWriter, req *http.Request) {
@@ -74,7 +74,7 @@ func main() {
 	*/
 
 	router := mux.NewRouter()
-	router.PathPrefix(dbPkg.Prefix).Methods("GET").HandlerFunc(dbHandleRequest)
+	router.PathPrefix(db.Prefix()).Methods("GET").HandlerFunc(dbHandleRequest)
 	/*
 		router.HandleFunc("/rpc", playerHandleRpc).
 			Methods("POST").
