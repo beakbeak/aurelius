@@ -1,24 +1,5 @@
 package main
 
-// TODO:
-// - basic playlist management
-// - stream mp3/ogg/flac without re-encoding (must apply ReplayGain on client side)
-//   - have to throttle using a fixed bit rate
-// - embedded images
-// - seeking
-// - combine artists/etc. with different capitalizations/whitespace/accents?/brackets/etc.
-// - tag overrides in a text file? (necessary for streaming audio track of a video file)
-// - DB WAV output
-
-// WISHLIST:
-// - replaygain preamp?
-// - treat sections of a file as playlist entries (e.g. pieces of a long live set, a hidden track)
-//   - can't use m3u anymore
-// - tag editing
-// - get replaygain info from RVA2 mp3 tag (requires another library dependency)
-// - figure out why timing is wrong when using MKV container
-//   (maybe something to do with time base settings/conversion)
-
 import (
 	"flag"
 	"fmt"

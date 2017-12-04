@@ -1,12 +1,5 @@
 package player
 
-// TODO:
-// - implement pause (save current source, set it to SilenceSource; restore saved on unpause)
-// - server configuration
-//   - make ReplayGain mode configurable
-// - seeking
-// - direct audio output
-
 import (
 	"fmt"
 	"sb/aurelius/aurelib"
