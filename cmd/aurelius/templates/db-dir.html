@@ -1,5 +1,18 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <style>
+        .footer {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            height: 15%;
+        }
+        .footer img {
+            height: 100%;
+        }
+        </style>
+    </head>
 <body>
     <a href="..">Parent directory</a>
     <br/><br/>
@@ -16,5 +29,9 @@
             <a href="{{$file}}/stream">{{$file}}</a><br/>
         {{- end}}
     {{- end}}
+
+    <div class="footer">
+        <img src="/static/aurelius.png">
+    </div>
 </body>
 </html>
