@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/aurelog"
+	"sb/aurelius/util"
 	"time"
 )
 
@@ -113,7 +113,7 @@ func (db *Database) handleFileRequest(
 
 	switch subRequest {
 	case "stream":
-		aurelog.Noise.Printf("stream %v\n", path)
+		util.Noise.Printf("stream %v\n", path)
 		db.Stream(path, w, req)
 	default:
 		return false, fmt.Errorf("invalid DB request: %v", subRequest)
@@ -167,10 +167,10 @@ func (db *Database) HandleRequest(
 
 	reject := func(format string, args ...interface{}) {
 		w.WriteHeader(http.StatusNotFound)
-		aurelog.Debug.Printf(format, args...)
+		util.Debug.Printf(format, args...)
 	}
 
-	aurelog.Debug.Printf("DB request: %v\n", req.URL.Path)
+	util.Debug.Printf("DB request: %v\n", req.URL.Path)
 
 	handled, err := db.handleFileRequest(w, req)
 	if err != nil {
@@ -190,5 +190,5 @@ func (db *Database) HandleRequest(
 		return
 	}
 
-	aurelog.Debug.Printf("unhandled DB request: %v\n", req.URL.Path)
+	util.Debug.Printf("unhandled DB request: %v\n", req.URL.Path)
 }

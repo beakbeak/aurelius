@@ -10,7 +10,7 @@ package player
 import (
 	"fmt"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/aurelog"
+	"sb/aurelius/util"
 	"time"
 )
 
@@ -161,7 +161,7 @@ func (p *Player) Play(playlistIter PlaylistIterator) <-chan error {
 	command := playerCommandPlay{playlistIter: playlistIter}
 	done := p.sendCommand(command)
 	if !wasPlaying {
-		aurelog.Debug.Println("starting player routine")
+		util.Debug.Println("starting player routine")
 		go p.mainLoop()
 	}
 	return done
@@ -192,7 +192,7 @@ func (p *Player) TogglePause() <-chan error {
 }
 
 func (p *Player) mainLoop() {
-	aurelog.Debug.Println("player routine started")
+	util.Debug.Println("player routine started")
 
 	var src aurelib.Source
 	var playlistIter PlaylistIterator
@@ -241,7 +241,7 @@ func (p *Player) mainLoop() {
 			if err := output.resampler.Setup(
 				src.StreamInfo(), output.streamInfo, src.ReplayGain(aurelib.ReplayGainTrack, true),
 			); err != nil {
-				aurelog.Debug.Printf("failed to setup resampler: %v\n", err)
+				util.Debug.Printf("failed to setup resampler: %v\n", err)
 				return err
 			}
 		}
@@ -255,7 +255,7 @@ func (p *Player) mainLoop() {
 
 		src = inSource
 		if src != nil {
-			aurelog.Debug.Printf("new source: %v\n", inSource.StreamInfo())
+			util.Debug.Printf("new source: %v\n", inSource.StreamInfo())
 			forEachOutput(setupResampler)
 		}
 	}
@@ -293,7 +293,7 @@ func (p *Player) mainLoop() {
 		case playerCommandShutDown:
 			shutDown = true
 		default:
-			aurelog.Debug.Printf("unknown player command: %v\n", command)
+			util.Debug.Printf("unknown player command: %v\n", command)
 		}
 
 		wrapper.done <- err
@@ -331,7 +331,7 @@ MainLoop:
 
 		// decode a frame of audio data
 		if err, recoverable := src.Decode(); err != nil {
-			aurelog.Debug.Printf("failed to decode frame: %v\n", err)
+			util.Debug.Printf("failed to decode frame: %v\n", err)
 			if !recoverable {
 				destroySource()
 			}
@@ -342,7 +342,7 @@ MainLoop:
 		for {
 			receiveStatus, err := src.ReceiveFrame()
 			if err != nil {
-				aurelog.Debug.Printf("failed to receive frame: %v\n", err)
+				util.Debug.Printf("failed to receive frame: %v\n", err)
 				destroySource()
 				continue MainLoop
 			}
@@ -356,14 +356,14 @@ MainLoop:
 			// appropriate size into the output frames channel
 			forEachOutput(func(output *playerOutput) error {
 				if err = src.CopyFrame(output.fifo, output.resampler); err != nil {
-					aurelog.Debug.Printf("failed to copy frame to output: %v\n", err)
+					util.Debug.Printf("failed to copy frame to output: %v\n", err)
 					return err
 				}
 
 				for output.fifo.Size() >= output.frameSize {
 					frame, err := output.fifo.ReadFrame(output.frameSize)
 					if err != nil {
-						aurelog.Debug.Printf("failed to read frame from FIFO: %v\n", err)
+						util.Debug.Printf("failed to read frame from FIFO: %v\n", err)
 						return err
 					}
 					select {
@@ -382,7 +382,7 @@ MainLoop:
 		playTime := totalPlayTime + trackPlayTime()
 		timeToSleep := playTime - time.Since(startTime)
 		if timeToSleep > time.Millisecond {
-			aurelog.Noise.Printf("sleeping %v\n", timeToSleep)
+			util.Noise.Printf("sleeping %v\n", timeToSleep)
 			time.Sleep(timeToSleep)
 		}
 	}

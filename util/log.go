@@ -1,4 +1,4 @@
-package aurelog
+package util
 
 import (
 	"io/ioutil"
@@ -17,7 +17,7 @@ func init() {
 	Noise = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
 }
 
-func SetLevel(level int) {
+func SetLogLevel(level int) {
 	if level < 2 {
 		DebugEnabled = false
 		Debug.SetOutput(ioutil.Discard)

@@ -3,7 +3,7 @@ package player
 import (
 	"log"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/aurelog"
+	"sb/aurelius/util"
 )
 
 type FilePlaylist struct {
@@ -21,9 +21,9 @@ func (p *FilePlaylist) get() aurelib.Source {
 		log.Printf("failed to open '%v': %v", p.paths[p.index], err)
 		return nil
 	}
-	if aurelog.DebugEnabled {
+	if util.DebugEnabled {
 		src.DumpFormat()
-		aurelog.Debug.Println(src.Tags())
+		util.Debug.Println(src.Tags())
 	}
 	return src
 }

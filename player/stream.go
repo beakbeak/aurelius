@@ -3,7 +3,7 @@ package player
 import (
 	"net/http"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/aurelog"
+	"sb/aurelius/util"
 )
 
 func (player *Player) Stream(
@@ -12,7 +12,7 @@ func (player *Player) Stream(
 ) {
 	reject := func(format string, args ...interface{}) {
 		w.WriteHeader(http.StatusInternalServerError)
-		aurelog.Debug.Printf(format, args...)
+		util.Debug.Printf(format, args...)
 	}
 
 	options := aurelib.NewSinkOptions()
@@ -47,24 +47,24 @@ func (player *Player) Stream(
 		if count > 0 {
 			sink.Drain(uint(count))
 		}
-		aurelog.Noise.Printf("wrote %v bytes\n", count)
+		util.Noise.Printf("wrote %v bytes\n", count)
 		return err
 	}
 
 	for frame := range frames {
 		if _, err = sink.Encode(frame); err != nil {
-			aurelog.Debug.Printf("failed to encode frame: %v\n", err)
+			util.Debug.Printf("failed to encode frame: %v\n", err)
 			break
 		}
 		if err = writeBuffer(); err != nil {
-			aurelog.Debug.Printf("failed to write buffer: %v\n", err)
+			util.Debug.Printf("failed to write buffer: %v\n", err)
 			break
 		}
 	}
 
 	if err = aurelib.FlushSink(sink); err != nil {
-		aurelog.Debug.Printf("failed to flush sink: %v\n", err)
+		util.Debug.Printf("failed to flush sink: %v\n", err)
 	} else if err = writeBuffer(); err != nil {
-		aurelog.Debug.Printf("failed to write buffer: %v\n", err)
+		util.Debug.Printf("failed to write buffer: %v\n", err)
 	}
 }

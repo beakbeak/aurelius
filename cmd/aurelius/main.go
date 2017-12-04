@@ -25,8 +25,8 @@ import (
 	"log"
 	"net/http"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/aurelog"
 	"sb/aurelius/database"
+	"sb/aurelius/util"
 
 	"github.com/gorilla/mux"
 )
@@ -43,7 +43,7 @@ func main() {
 	)
 	flag.Parse()
 
-	aurelog.SetLevel(*logLevel)
+	util.SetLogLevel(*logLevel)
 	if *logLevel > 1 {
 		aurelib.SetLogLevel(aurelib.LogInfo)
 	}

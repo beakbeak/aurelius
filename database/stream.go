@@ -3,7 +3,7 @@ package database
 import (
 	"net/http"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/aurelog"
+	"sb/aurelius/util"
 	"strconv"
 	"time"
 )
@@ -15,7 +15,7 @@ func (db *Database) Stream(
 ) {
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)
-		aurelog.Debug.Printf(format, args...)
+		util.Debug.Printf(format, args...)
 	}
 	internalError := func(format string, args ...interface{}) {
 		reject(http.StatusInternalServerError, format, args...)
@@ -36,7 +36,7 @@ func (db *Database) Stream(
 	defer src.Destroy()
 
 	srcStreamInfo := src.StreamInfo()
-	if aurelog.DebugEnabled {
+	if util.DebugEnabled {
 		src.DumpFormat()
 	}
 
@@ -173,7 +173,7 @@ func (db *Database) Stream(
 		if count > 0 {
 			sink.Drain(uint(count))
 		}
-		aurelog.Noise.Printf("wrote %v bytes\n", count)
+		util.Noise.Printf("wrote %v bytes\n", count)
 		return err
 	}
 
@@ -189,7 +189,7 @@ PlayLoop:
 	DecodeLoop:
 		for fifo.Size() < sink.FrameSize() {
 			if err, recoverable := src.Decode(); err != nil {
-				aurelog.Debug.Printf("failed to decode frame: %v\n", err)
+				util.Debug.Printf("failed to decode frame: %v\n", err)
 				if !recoverable {
 					done = true
 					break DecodeLoop
@@ -199,7 +199,7 @@ PlayLoop:
 			for {
 				receiveStatus, err := src.ReceiveFrame()
 				if err != nil {
-					aurelog.Debug.Printf("failed to receive frame: %v\n", err)
+					util.Debug.Printf("failed to receive frame: %v\n", err)
 					done = true
 					break DecodeLoop
 				}
@@ -211,7 +211,7 @@ PlayLoop:
 					break
 				}
 				if err = src.CopyFrame(fifo, resampler); err != nil {
-					aurelog.Debug.Printf("failed to copy frame to output: %v\n", err)
+					util.Debug.Printf("failed to copy frame to output: %v\n", err)
 					done = true
 					break DecodeLoop
 				}
@@ -230,16 +230,16 @@ PlayLoop:
 		for fifo.Size() >= outFrameSize {
 			frame, err := fifo.ReadFrame(sink.FrameSize())
 			if err != nil {
-				aurelog.Debug.Printf("failed to read frame from FIFO: %v\n", err)
+				util.Debug.Printf("failed to read frame from FIFO: %v\n", err)
 				break PlayLoop
 			}
 			if _, err = sink.Encode(frame); err != nil {
-				aurelog.Debug.Printf("failed to encode frame: %v\n", err)
+				util.Debug.Printf("failed to encode frame: %v\n", err)
 				break PlayLoop
 			}
 		}
 		if err = writeBuffer(); err != nil {
-			aurelog.Debug.Printf("failed to write buffer: %v\n", err)
+			util.Debug.Printf("failed to write buffer: %v\n", err)
 			break PlayLoop
 		}
 
@@ -248,15 +248,15 @@ PlayLoop:
 			uint64(sinkStreamInfo.SampleRate)) * 1000000)
 		timeToSleep := playedTime - playAhead - time.Since(startTime)
 		if timeToSleep > time.Millisecond {
-			aurelog.Noise.Printf("sleeping %v", timeToSleep)
+			util.Noise.Printf("sleeping %v", timeToSleep)
 			time.Sleep(timeToSleep)
 		}
 	}
 
 	if err = aurelib.FlushSink(sink); err != nil {
-		aurelog.Debug.Printf("failed to flush sink: %v\n", err)
+		util.Debug.Printf("failed to flush sink: %v\n", err)
 	}
 	if err = writeBuffer(); err != nil {
-		aurelog.Debug.Printf("failed to write buffer: %v\n", err)
+		util.Debug.Printf("failed to write buffer: %v\n", err)
 	}
 }

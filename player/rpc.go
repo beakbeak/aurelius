@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"sb/aurelius/aurelog"
+	"sb/aurelius/util"
 )
 
 type rpcCommand struct {
@@ -31,21 +31,21 @@ func (player *Player) HandleRpc(
 ) {
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		aurelog.Debug.Println("failed to read RPC request body")
+		util.Debug.Println("failed to read RPC request body")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	var command rpcCommand
 	if err = json.Unmarshal(body, &command); err != nil {
-		aurelog.Debug.Printf("malformed RPC command: %v\n%v\n", err, string(body))
+		util.Debug.Printf("malformed RPC command: %v\n%v\n", err, string(body))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	handler, ok := rpcHandlers[command.Name]
 	if !ok {
-		aurelog.Debug.Printf("unknown RPC command: %v\n", command.Name)
+		util.Debug.Printf("unknown RPC command: %v\n", command.Name)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -53,7 +53,7 @@ func (player *Player) HandleRpc(
 	response := handler(player, body)
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
-		aurelog.Debug.Printf("failed to marshal RPC response: %v\n", response)
+		util.Debug.Printf("failed to marshal RPC response: %v\n", response)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -62,9 +62,9 @@ func (player *Player) HandleRpc(
 	w.Header().Set("Cache-Control", "no-cache, no-store")
 
 	if bytesWritten, err := w.Write(responseBytes); err != nil {
-		aurelog.Debug.Printf("failed to write RPC response: %v\n", err)
+		util.Debug.Printf("failed to write RPC response: %v\n", err)
 	} else if bytesWritten < len(responseBytes) {
-		aurelog.Debug.Printf("wrote only %v/%v bytes of RPC response\n", bytesWritten, len(responseBytes))
+		util.Debug.Printf("wrote only %v/%v bytes of RPC response\n", bytesWritten, len(responseBytes))
 	}
 }
 
