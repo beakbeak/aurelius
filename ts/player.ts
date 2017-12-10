@@ -1,8 +1,36 @@
+interface FileInfo {
+    name: string;
+    tags: {[key: string]: string | undefined};
+}
+
+function fetchJson(url: string): Promise<any> {
+    const req = new XMLHttpRequest();
+    req.open("GET", url);
+    return new Promise((resolve, reject) => {
+        req.onreadystatechange = () => {
+            if (req.readyState !== XMLHttpRequest.DONE) {
+                return;
+            }
+            if (req.status === 200) {
+                try {
+                    resolve(JSON.parse(req.responseText));
+                } catch (e) {
+                    reject(e);
+                }
+            } else {
+                reject(new Error("request failed"));
+            }
+        }
+        req.send();
+    });
+}
+
 class Player {
     //private _container: HTMLElement;
     private _playButton: HTMLElement;
     private _pauseButton: HTMLElement;
     private _audio: HTMLAudioElement | undefined;
+    private _statusRight: HTMLElement;
 
     constructor(containerId: string) {
         const container = document.getElementById(containerId);
@@ -11,7 +39,13 @@ class Player {
         }
         //this._container = container;
 
-        const playButton = document.querySelector("#play-button");
+        const statusRight = container.querySelector("#status-right");
+        if (statusRight === null) {
+            throw new Error("missing status-right");
+        }
+        this._statusRight = statusRight as HTMLElement;
+
+        const playButton = container.querySelector("#play-button");
         if (playButton === null) {
             throw new Error("missing play-button");
         }
@@ -20,7 +54,7 @@ class Player {
             this.unpause();
         };
 
-        const pauseButton = document.querySelector("#pause-button");
+        const pauseButton = container.querySelector("#pause-button");
         if (pauseButton === null) {
             throw new Error("missing pause-button");
         }
@@ -31,15 +65,46 @@ class Player {
         };
     }
 
-    public play(url: string): void {
+    private async _getInfo(url: string): Promise<FileInfo> {
+        const info = await fetchJson(url);
+        if (typeof info !== "object") {
+            throw new Error("invalid format");
+        }
+        return info;
+    }
+
+    private _setStatus(info: FileInfo): void {
+        let text = "";
+        if (info.tags["artist"] !== undefined) {
+            text = `${text}${info.tags["artist"]} - `;
+        }
+        if (info.tags["title"] !== undefined) {
+            text = `${text}${info.tags["title"]}`;
+        } else {
+            text = `${text}${info.name}`
+        }
+        if (info.tags["album"] !== undefined) {
+            let track = "";
+            if (info.tags["track"] !== undefined) {
+                track = ` #${info.tags["track"]}`;
+            }
+            text = `${text} [${info.tags["album"]}${track}]`;
+        }
+
+        this._statusRight.textContent = text;
+    }
+
+    public async play(url: string): Promise<void> {
         if (this._audio !== undefined) {
             this._audio.pause();
         }
-        this._audio = new Audio(url);
+        this._audio = new Audio(`${url}/stream`);
         this._audio.autoplay = true;
 
         this._playButton.style.display = "none";
         this._pauseButton.style.display = "";
+
+        this._setStatus(await this._getInfo(`${url}/info`));
     }
 
     public pause(): void {

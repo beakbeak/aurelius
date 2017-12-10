@@ -1,91 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<style>
-		body {
-			background-color: #fff2d9;
-			color: #000000;
-		}
-		ul {
-			list-style: none;
-		}
-
-		#header {
-			display: flex;
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 3rem;
-			box-shadow: 0px 0px .5rem black;
-		}
-
-		#controls {
-			flex-grow: 1;
-			display: flex;
-			height: 100%;
-		}
-		#controls .clickable {
-			cursor: pointer;
-		}
-		#controls i {
-			font-size: 3rem;
-		}
-		#progress-bar-container {
-			flex-grow: 1;
-			display: flex;
-			flex-direction: column;
-			justify-content: center;
-		}
-		#progress-bar-empty {
-			position: relative;
-			height: .5rem;
-			border: 1px solid rgba(0,0,0,.54);
-			margin: 0 .5rem;
-		}
-		#progress-bar-fill {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-		}
-		#seek-slider {
-			position: absolute;
-			width: 3rem;
-			height: 200%;
-			top: -50%;
-			background-color: #756f64;
-		}
-
-		#content {
-			margin-top: 4rem;
-		}
-
-		#footer {
-			position: fixed;
-			right: 0;
-			bottom: 0;
-			height: 15%;
-		}
-		#footer img {
-			height: 100%;
-		}
-
-		.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
-		.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
-	</style>
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link href="/static/css/db-dir.css" rel="stylesheet">
 
 	<script src="/static/js/player.js"></script>
 	<script>
 		window.onload = function() {
-			player = new Player("controls");
+			player = new Player("header");
 		};
 	</script>
 </head>
 <body>
 	<div id="header">
+		<div id="status">
+			<div id="status-left">aurelius</div>
+			<div id="status-right"></div>
+		</div>
 		<div id="controls">
 			<div id="play-button" class="clickable">
 				<i class="material-icons md-dark">play_arrow</i>
@@ -121,7 +52,7 @@
 		<ul id="files">
 			{{- if .Files}}
 				{{- range $file := .Files}}
-					<li><a onclick="player.play('{{$file}}/stream')" href="javascript:void(0);">{{$file}}</a></li>
+					<li><a onclick="player.play('{{$file}}')" href="javascript:void(0);">{{$file}}</a></li>
 				{{- end}}
 			{{- end}}
 		</ul>

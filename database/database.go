@@ -1,12 +1,14 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sb/aurelius/aurelib"
 	"sb/aurelius/util"
 	"time"
 )
@@ -93,6 +95,9 @@ func (db *Database) handleFileRequest(
 	case "stream":
 		util.Noise.Printf("stream %v\n", path)
 		db.Stream(path, w, req)
+	case "info":
+		util.Noise.Printf("info %v\n", path)
+		db.Info(path, w, req)
 	default:
 		return false, fmt.Errorf("invalid DB request: %v", subRequest)
 	}
@@ -171,4 +176,38 @@ func (db *Database) ServeHTTP(
 	}
 
 	util.Debug.Printf("unhandled DB request: %v\n", req.URL.Path)
+}
+
+func (db *Database) Info(
+	path string,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
+	src, err := aurelib.NewFileSource(path)
+	if err != nil {
+		util.Debug.Printf("failed to open source: %v\n", path)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer src.Destroy()
+
+	type Result struct {
+		Name string            `json:"name"`
+		Tags map[string]string `json:"tags"`
+	}
+
+	result := Result{
+		Name: filepath.Base(path),
+		Tags: util.LowerCaseKeys(src.Tags()),
+	}
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		util.Debug.Printf("failed to marshal info JSON: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := w.Write(resultJson); err != nil {
+		util.Debug.Printf("failed to write info response: %v\n", err)
+	}
 }
