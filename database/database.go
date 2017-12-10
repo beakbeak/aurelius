@@ -186,19 +186,21 @@ func (db *Database) Info(
 	src, err := aurelib.NewFileSource(path)
 	if err != nil {
 		util.Debug.Printf("failed to open source: %v\n", path)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.NotFound(w, req)
 		return
 	}
 	defer src.Destroy()
 
 	type Result struct {
-		Name string            `json:"name"`
-		Tags map[string]string `json:"tags"`
+		Name     string            `json:"name"`
+		Duration float64           `json:"duration"`
+		Tags     map[string]string `json:"tags"`
 	}
 
 	result := Result{
-		Name: filepath.Base(path),
-		Tags: util.LowerCaseKeys(src.Tags()),
+		Name:     filepath.Base(path),
+		Duration: float64(src.Duration()) / float64(time.Second),
+		Tags:     util.LowerCaseKeys(src.Tags()),
 	}
 	resultJson, err := json.Marshal(result)
 	if err != nil {

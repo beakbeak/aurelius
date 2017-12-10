@@ -23,6 +23,7 @@ import "C"
 import (
 	"fmt"
 	"math"
+	"time"
 	"unsafe"
 )
 
@@ -61,6 +62,7 @@ type Source interface {
 
 	Tags() map[string]string
 	StreamInfo() StreamInfo
+	Duration() time.Duration
 
 	// Decode transfers an encoded packet from the input to the decoder.
 	// It must be followed by one or more calls to ReceiveFrame.
@@ -251,6 +253,7 @@ func (src *sourceBase) ReplayGain(
 	}
 	return volume
 }
+
 func (src *sourceBase) Decode() (_ error, recoverable bool) {
 	var packet C.AVPacket
 	packet.init()
@@ -317,4 +320,15 @@ func (src *sourceBase) Tags() map[string]string {
 
 func (src *sourceBase) StreamInfo() StreamInfo {
 	return src.codecCtx.streamInfo()
+}
+
+func (src *sourceBase) Duration() time.Duration {
+	if src.formatCtx.duration <= 0 {
+		return 0
+	}
+
+	if C.AV_TIME_BASE > time.Second || (time.Second%C.AV_TIME_BASE) != 0 {
+		panic("time base conversion is incorrect")
+	}
+	return time.Duration(src.formatCtx.duration) * (time.Second / time.Duration(C.AV_TIME_BASE))
 }
