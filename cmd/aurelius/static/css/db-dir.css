@@ -1,6 +1,9 @@
 body {
-	background-color: #fff2d9;
+	background-color: rgb(255, 242, 217);
 	color: black;
+}
+#header {
+	background-color: rgba(255, 242, 217, .85);
 }
 
 a {
@@ -85,12 +88,16 @@ a:hover {
 .listing {
 	list-style: none;
 }
+.listing i {
+	margin-right: .25em;
+}
 .listing i, .listing a {
 	vertical-align: middle;
 }
 
 #footer {
 	position: fixed;
+	z-index: -1;
 	right: 0;
 	bottom: 0;
 	height: 8rem;
