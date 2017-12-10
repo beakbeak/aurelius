@@ -6,8 +6,16 @@
 
 	<script src="/static/js/player.js"></script>
 	<script>
-		window.onload = function() {
-			player = new Player("header");
+		window.onload = () => {
+			const player = new Player("header");
+
+			const files = document.getElementById("files");
+			for (const file of files.getElementsByTagName("a")) {
+				file.onclick = () => {
+					player.play(file.href);
+					return false;
+				};
+			}
 		};
 	</script>
 </head>
@@ -52,7 +60,7 @@
 		<ul id="files">
 			{{- if .Files}}
 				{{- range $file := .Files}}
-					<li><a onclick="player.play('{{$file}}')" href="javascript:void(0);">{{$file}}</a></li>
+					<li><a href="{{$file}}">{{$file}}</a></li>
 				{{- end}}
 			{{- end}}
 		</ul>
