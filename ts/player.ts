@@ -26,7 +26,6 @@ function fetchJson(url: string): Promise<any> {
 }
 
 class Player {
-    //private _container: HTMLElement;
     private _playButton: HTMLElement;
     private _pauseButton: HTMLElement;
     private _audio: HTMLAudioElement | undefined;
@@ -37,7 +36,6 @@ class Player {
         if (container === null) {
             throw new Error("invalid container");
         }
-        //this._container = container;
 
         const statusRight = container.querySelector("#status-right");
         if (statusRight === null) {
@@ -95,16 +93,27 @@ class Player {
     }
 
     public async play(url: string): Promise<void> {
+        const audio = new Audio(`${url}/stream?codec=vorbis&quality=8`);
+        const [, info] = await Promise.all([
+            new Promise<void>((resolve) => {
+                audio.oncanplay = () => {
+                    resolve();
+                }
+            }),
+            this._getInfo(`${url}/info`)
+        ]);
+
         if (this._audio !== undefined) {
             this._audio.pause();
         }
-        this._audio = new Audio(`${url}/stream`);
-        this._audio.autoplay = true;
+        this._audio = audio;
+
+        audio.play();
 
         this._playButton.style.display = "none";
         this._pauseButton.style.display = "";
 
-        this._setStatus(await this._getInfo(`${url}/info`));
+        this._setStatus(info);
     }
 
     public pause(): void {
