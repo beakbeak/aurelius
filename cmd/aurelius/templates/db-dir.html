@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<title>aurelius</title>
+
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 	<link href="/static/css/db-dir.css" rel="stylesheet">
 
@@ -48,19 +50,19 @@
 	</div>
 
 	<div id="content">
-		<ul id="dirs">
-			<li><a href="..">Parent directory</a></li>
+		<ul id="dirs" class="listing">
+			<li><i class="material-icons md-dark">arrow_back</i><a href="..">Parent directory</a></li>
 			{{- if .Dirs}}
 				{{- range $dir := .Dirs}}
-					<li><a href="{{$dir}}/">{{$dir}}/</a></li>
+					<li><i class="material-icons md-dark">folder_open</i><a href="{{$dir}}/">{{$dir}}/</a></li>
 				{{- end}}
 			{{- end}}
 		</ul>
 
-		<ul id="files">
+		<ul id="files" class="listing">
 			{{- if .Files}}
 				{{- range $file := .Files}}
-					<li><a href="{{$file}}">{{$file}}</a></li>
+					<li><i class="material-icons md-dark">music_note</i><a href="{{$file}}">{{$file}}</a></li>
 				{{- end}}
 			{{- end}}
 		</ul>

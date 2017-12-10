@@ -2,8 +2,16 @@ body {
 	background-color: #fff2d9;
 	color: black;
 }
-ul {
-	list-style: none;
+
+a {
+	text-decoration: none;
+	color: black;
+}
+a:focus {
+	outline: medium dashed rgba(0,0,0,.54);
+}
+a:hover {
+	box-shadow: 0 1px rgba(0,0,0,.54);
 }
 
 #header {
@@ -72,6 +80,13 @@ ul {
 
 #content {
 	margin-top: 5rem;
+}
+
+.listing {
+	list-style: none;
+}
+.listing i, .listing a {
+	vertical-align: middle;
 }
 
 #footer {
