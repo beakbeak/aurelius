@@ -185,7 +185,9 @@ class Player {
             this.next();
         };
 
-        audio.volume = info.replayGainTrack;
+        if (info.replayGainTrack < 1) {
+            audio.volume = info.replayGainTrack;
+        }
         audio.play();
 
         this._progressBarFill.style.left = "0";

@@ -133,6 +133,8 @@ func (db *Database) Stream(
 	options.Codec = "flac"
 	formatName := "flac"
 	mimeType := "audio/flac"
+	replayGainStr := "track"
+	preventClipping := true
 
 	query := req.URL.Query()
 
@@ -187,6 +189,35 @@ func (db *Database) Stream(
 	if channelLayoutArgs, ok := query["channelLayout"]; ok {
 		options.ChannelLayout = channelLayoutArgs[0]
 	}
+	if replayGainArgs, ok := query["replayGain"]; ok {
+		replayGainStr = replayGainArgs[0]
+	}
+
+	if preventClippingArgs, ok := query["preventClipping"]; ok {
+		if preventClipping, err = strconv.ParseBool(preventClippingArgs[0]); err != nil {
+			badRequest("invalid value for preventClipping: %v\n", preventClippingArgs[0])
+			return
+		}
+	}
+
+	volume := 1.
+	switch replayGainStr {
+	case "track":
+		volume = src.ReplayGain(aurelib.ReplayGainTrack, preventClipping)
+	case "album":
+		volume = src.ReplayGain(aurelib.ReplayGainAlbum, preventClipping)
+	case "off":
+		// already set up
+	default:
+		badRequest("invalid ReplayGain mode: %v\n", replayGainStr)
+		return
+	}
+
+	// volume < 1 is applied on the client side for better quality
+	// volume > 1 is applied on the server side due to limitations in the HTML5 media API
+	if volume < 1 {
+		volume = 1.
+	}
 
 	sink, err := aurelib.NewBufferSink(formatName, options)
 	if err != nil {
@@ -213,7 +244,7 @@ func (db *Database) Stream(
 	}
 	defer resampler.Destroy()
 
-	if err := resampler.Setup(srcStreamInfo, sinkStreamInfo, 1); err != nil {
+	if err := resampler.Setup(srcStreamInfo, sinkStreamInfo, volume); err != nil {
 		internalError("failed to setup resampler: %v\n", err)
 		return
 	}
