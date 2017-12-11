@@ -12,19 +12,23 @@
 			const player = new Player("header");
 
 			const playlists = document.getElementById("playlists");
-			for (const file of playlists.getElementsByTagName("a")) {
-				file.onclick = () => {
-					player.playList(file.href);
-					return false;
-				};
+			if (playlists !== null) {
+				for (const file of playlists.getElementsByTagName("a")) {
+					file.onclick = () => {
+						player.playList(file.href);
+						return false;
+					};
+				}
 			}
 
 			const tracks = document.getElementById("tracks");
-			for (const file of tracks.getElementsByTagName("a")) {
-				file.onclick = () => {
-					player.playTrack(file.href);
-					return false;
-				};
+			if (tracks !== null) {
+				for (const file of tracks.getElementsByTagName("a")) {
+					file.onclick = () => {
+						player.playTrack(file.href);
+						return false;
+					};
+				}
 			}
 		};
 	</script>

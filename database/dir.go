@@ -1,6 +1,8 @@
 package database
 
 import (
+	"os"
+	"path/filepath"
 	"io/ioutil"
 	"net/http"
 	"sb/aurelius/util"
@@ -30,6 +32,16 @@ func (db *Database) handleDirRequest(
 
 	for _, info := range infos {
 		mode := info.Mode()
+		if (mode & os.ModeSymlink) != 0 {
+			linkName := filepath.Join(path, info.Name())
+			info, err = os.Stat(linkName)
+			if err != nil {
+				util.Debug.Printf("stat '%v' failed: %v\n", linkName, err)
+				continue
+			}
+			mode = info.Mode()
+		}
+
 		if mode.IsDir() {
 			data.Dirs = append(data.Dirs, info.Name())
 		} else if mode.IsRegular() {
