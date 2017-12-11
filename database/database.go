@@ -58,7 +58,7 @@ func New(
 		return nil, err
 	}
 	if db.reIgnore, err = regexp.Compile(
-		`\.(:?[jJ][pP][eE]?[gG]|[pP][nN][gG]|[tT][xX][tT]|[lL][oO][gG]|[cC][uU][eE]|[gG][iI][fF])$`,
+		`\.(:?[jJ][pP][eE]?[gG]|[pP][nN][gG]|[tT][xX][tT]|[lL][oO][gG]|[cC][uU][eE]|[gG][iI][fF]|[pP][dD][fF])$`,
 	); err != nil {
 		return nil, err
 	}

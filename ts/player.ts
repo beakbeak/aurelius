@@ -1,6 +1,8 @@
 interface FileInfo {
     name: string;
     duration: number;
+    replayGainTrack: number;
+    replayGainAlbum: number;
     tags: {[key: string]: string | undefined};
 }
 
@@ -18,11 +20,7 @@ function fetchJson(url: string): Promise<any> {
                 return;
             }
             if (req.status === 200) {
-                try {
-                    resolve(JSON.parse(req.responseText));
-                } catch (e) {
-                    reject(e);
-                }
+                resolve(JSON.parse(req.responseText));
             } else {
                 reject(new Error("request failed"));
             }
@@ -187,6 +185,7 @@ class Player {
             this.next();
         };
 
+        audio.volume = info.replayGainTrack;
         audio.play();
 
         this._progressBarFill.style.left = "0";

@@ -66,15 +66,19 @@ func (db *Database) Info(
 	defer src.Destroy()
 
 	type Result struct {
-		Name     string            `json:"name"`
-		Duration float64           `json:"duration"`
-		Tags     map[string]string `json:"tags"`
+		Name            string            `json:"name"`
+		Duration        float64           `json:"duration"`
+		ReplayGainTrack float64           `json:"replayGainTrack"`
+		ReplayGainAlbum float64           `json:"replayGainAlbum"`
+		Tags            map[string]string `json:"tags"`
 	}
 
 	result := Result{
-		Name:     filepath.Base(path),
-		Duration: float64(src.Duration()) / float64(time.Second),
-		Tags:     util.LowerCaseKeys(src.Tags()),
+		Name:            filepath.Base(path),
+		Duration:        float64(src.Duration()) / float64(time.Second),
+		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
+		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
+		Tags:            util.LowerCaseKeys(src.Tags()),
 	}
 	resultJson, err := json.Marshal(result)
 	if err != nil {
@@ -129,8 +133,6 @@ func (db *Database) Stream(
 	options.Codec = "flac"
 	formatName := "flac"
 	mimeType := "audio/flac"
-	replayGainStr := "track"
-	preventClipping := true
 
 	query := req.URL.Query()
 
@@ -185,29 +187,6 @@ func (db *Database) Stream(
 	if channelLayoutArgs, ok := query["channelLayout"]; ok {
 		options.ChannelLayout = channelLayoutArgs[0]
 	}
-	if replayGainArgs, ok := query["replayGain"]; ok {
-		replayGainStr = replayGainArgs[0]
-	}
-
-	if preventClippingArgs, ok := query["preventClipping"]; ok {
-		if preventClipping, err = strconv.ParseBool(preventClippingArgs[0]); err != nil {
-			badRequest("invalid value for preventClipping: %v\n", preventClippingArgs[0])
-			return
-		}
-	}
-
-	volume := 1.
-	switch replayGainStr {
-	case "track":
-		volume = src.ReplayGain(aurelib.ReplayGainTrack, preventClipping)
-	case "album":
-		volume = src.ReplayGain(aurelib.ReplayGainAlbum, preventClipping)
-	case "off":
-		// already set up
-	default:
-		badRequest("invalid ReplayGain mode: %v\n", replayGainStr)
-		return
-	}
 
 	sink, err := aurelib.NewBufferSink(formatName, options)
 	if err != nil {
@@ -234,7 +213,7 @@ func (db *Database) Stream(
 	}
 	defer resampler.Destroy()
 
-	if err := resampler.Setup(srcStreamInfo, sinkStreamInfo, volume); err != nil {
+	if err := resampler.Setup(srcStreamInfo, sinkStreamInfo, 1); err != nil {
 		internalError("failed to setup resampler: %v\n", err)
 		return
 	}
