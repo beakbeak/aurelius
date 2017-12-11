@@ -11,10 +11,18 @@
 		window.onload = () => {
 			const player = new Player("header");
 
-			const files = document.getElementById("files");
-			for (const file of files.getElementsByTagName("a")) {
+			const playlists = document.getElementById("playlists");
+			for (const file of playlists.getElementsByTagName("a")) {
 				file.onclick = () => {
-					player.play(file.href);
+					player.playList(file.href);
+					return false;
+				};
+			}
+
+			const tracks = document.getElementById("tracks");
+			for (const file of tracks.getElementsByTagName("a")) {
+				file.onclick = () => {
+					player.playTrack(file.href);
 					return false;
 				};
 			}
@@ -64,13 +72,21 @@
 			{{- end}}
 		</ul>
 
-		<ul id="files" class="listing">
-			{{- if .Files}}
-				{{- range $file := .Files}}
+		{{- if .Playlists}}
+			<ul id="playlists" class="listing">
+				{{- range $file := .Playlists}}
+					<li><i class="material-icons md-dark">playlist_play</i><a href="{{$file}}">{{$file}}</a></li>
+				{{- end}}
+			</ul>
+		{{- end}}
+
+		{{- if .Tracks}}
+			<ul id="tracks" class="listing">
+				{{- range $file := .Tracks}}
 					<li><i class="material-icons md-dark">music_note</i><a href="{{$file}}">{{$file}}</a></li>
 				{{- end}}
-			{{- end}}
-		</ul>
+			</ul>
+		{{- end}}
 	</div>
 
 	<div id="footer">

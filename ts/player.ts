@@ -4,6 +4,11 @@ interface FileInfo {
     tags: {[key: string]: string | undefined};
 }
 
+interface PlaylistItem {
+    path: string;
+    pos: number;
+}
+
 function fetchJson(url: string): Promise<any> {
     const req = new XMLHttpRequest();
     req.open("GET", url);
@@ -29,6 +34,7 @@ function fetchJson(url: string): Promise<any> {
 class Player {
     private _playButton: HTMLElement;
     private _pauseButton: HTMLElement;
+    private _nextButton: HTMLElement;
     private _progressBarFill: HTMLElement;
     private _seekSlider: HTMLElement;
     private _statusRight: HTMLElement;
@@ -36,6 +42,8 @@ class Player {
 
     private _audio?: HTMLAudioElement;
     private _info?: FileInfo;
+    private _playlistUrl: string = "";
+    private _playlistPos: number = 0;
 
     private _getElement(
         container: HTMLElement,
@@ -57,6 +65,7 @@ class Player {
         this._statusRight = this._getElement(container, "status-right");
         this._playButton = this._getElement(container, "play-button");
         this._pauseButton = this._getElement(container, "pause-button");
+        this._nextButton = this._getElement(container, "next-button");
         this._progressBarFill = this._getElement(container, "progress-bar-fill");
         this._seekSlider = this._getElement(container, "seek-slider");
         this._duration = this._getElement(container, "duration");
@@ -68,6 +77,10 @@ class Player {
         this._pauseButton.style.display = "none";
         this._pauseButton.onclick = () => {
             this.pause();
+        };
+
+        this._nextButton.onclick = () => {
+            this.next();
         };
     }
 
@@ -146,7 +159,7 @@ class Player {
         }
     }
 
-    public async play(url: string): Promise<void> {
+    private async _play(url: string): Promise<void> {
         const audio = new Audio(`${url}/stream?codec=vorbis&quality=8`);
         const [, info] = await Promise.all([
             new Promise<void>((resolve) => {
@@ -170,6 +183,9 @@ class Player {
             this._onTimeUpdate();
             this._onBufferProgress();
         };
+        audio.onended = () => {
+            this.next();
+        };
 
         audio.play();
 
@@ -179,6 +195,23 @@ class Player {
         this._pauseButton.style.display = "";
 
         this._setStatus(info);
+    }
+
+    public playTrack(url: string): Promise<void> {
+        this._playlistUrl = "";
+        return this._play(url);
+    }
+
+    public playList(url: string): Promise<void> {
+        this._playlistUrl = url;
+        this._playlistPos = -1;
+        return this.next();
+    }
+
+    public async next(): Promise<void> {
+        const item = await fetchJson(`${this._playlistUrl}?pos=${this._playlistPos + 1}`);
+        this._playlistPos = item.pos;
+        await this._play(item.path);
     }
 
     public pause(): void {

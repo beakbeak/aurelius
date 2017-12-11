@@ -1,12 +1,92 @@
 package database
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/util"
 	"strconv"
 	"time"
 )
+
+func (db *Database) handleTrackRequest(
+	w http.ResponseWriter,
+	req *http.Request,
+) (handled bool, _ error) {
+	groups := db.reTrackPath.FindStringSubmatch(req.URL.Path)
+	if groups == nil {
+		return false, nil
+	}
+
+	path := db.expandPath(groups[1])
+	subRequest := groups[2]
+
+	{
+		info, err := os.Stat(path)
+		if err != nil {
+			return false, nil
+		}
+
+		mode := info.Mode()
+		if mode.IsDir() {
+			return false, nil
+		}
+		if !mode.IsRegular() {
+			return false, fmt.Errorf("not a symlink or regular file: %v", path)
+		}
+	}
+
+	switch subRequest {
+	case "stream":
+		util.Noise.Printf("stream %v\n", path)
+		db.Stream(path, w, req)
+	case "info":
+		util.Noise.Printf("info %v\n", path)
+		db.Info(path, w, req)
+	default:
+		return false, fmt.Errorf("invalid DB request: %v", subRequest)
+	}
+	return true, nil
+}
+
+func (db *Database) Info(
+	path string,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
+	src, err := aurelib.NewFileSource(path)
+	if err != nil {
+		util.Debug.Printf("failed to open source: %v\n", path)
+		http.NotFound(w, req)
+		return
+	}
+	defer src.Destroy()
+
+	type Result struct {
+		Name     string            `json:"name"`
+		Duration float64           `json:"duration"`
+		Tags     map[string]string `json:"tags"`
+	}
+
+	result := Result{
+		Name:     filepath.Base(path),
+		Duration: float64(src.Duration()) / float64(time.Second),
+		Tags:     util.LowerCaseKeys(src.Tags()),
+	}
+	resultJson, err := json.Marshal(result)
+	if err != nil {
+		util.Debug.Printf("failed to marshal info JSON: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := w.Write(resultJson); err != nil {
+		util.Debug.Printf("failed to write info response: %v\n", err)
+	}
+}
 
 func (db *Database) Stream(
 	path string,

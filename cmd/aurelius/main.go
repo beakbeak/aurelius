@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/database"
 	"sb/aurelius/util"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -32,6 +34,8 @@ func main() {
 	if *logLevel > 1 {
 		aurelib.SetLogLevel(aurelib.LogInfo)
 	}
+
+	rand.Seed(time.Now().UTC().UnixNano())
 
 	if len(*address) == 0 {
 		*address = fmt.Sprintf(":%v", *port)
