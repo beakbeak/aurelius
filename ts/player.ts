@@ -1,5 +1,6 @@
 interface FileInfo {
     name: string;
+    duration: number;
     tags: {[key: string]: string | undefined};
 }
 
@@ -28,8 +29,24 @@ function fetchJson(url: string): Promise<any> {
 class Player {
     private _playButton: HTMLElement;
     private _pauseButton: HTMLElement;
-    private _audio: HTMLAudioElement | undefined;
+    private _progressBarFill: HTMLElement;
+    private _seekSlider: HTMLElement;
     private _statusRight: HTMLElement;
+    private _duration: HTMLElement;
+
+    private _audio?: HTMLAudioElement;
+    private _info?: FileInfo;
+
+    private _getElement(
+        container: HTMLElement,
+        id: string,
+    ): HTMLElement {
+        const element = container.querySelector(`#${id}`);
+        if (element === null) {
+            throw new Error(`missing ${id}`);
+        }
+        return element as HTMLElement;
+    }
 
     constructor(containerId: string) {
         const container = document.getElementById(containerId);
@@ -37,26 +54,17 @@ class Player {
             throw new Error("invalid container");
         }
 
-        const statusRight = container.querySelector("#status-right");
-        if (statusRight === null) {
-            throw new Error("missing status-right");
-        }
-        this._statusRight = statusRight as HTMLElement;
+        this._statusRight = this._getElement(container, "status-right");
+        this._playButton = this._getElement(container, "play-button");
+        this._pauseButton = this._getElement(container, "pause-button");
+        this._progressBarFill = this._getElement(container, "progress-bar-fill");
+        this._seekSlider = this._getElement(container, "seek-slider");
+        this._duration = this._getElement(container, "duration");
 
-        const playButton = container.querySelector("#play-button");
-        if (playButton === null) {
-            throw new Error("missing play-button");
-        }
-        this._playButton = playButton as HTMLElement;
         this._playButton.onclick = () => {
             this.unpause();
         };
 
-        const pauseButton = container.querySelector("#pause-button");
-        if (pauseButton === null) {
-            throw new Error("missing pause-button");
-        }
-        this._pauseButton = pauseButton as HTMLElement;
         this._pauseButton.style.display = "none";
         this._pauseButton.onclick = () => {
             this.pause();
@@ -92,6 +100,52 @@ class Player {
         this._statusRight.textContent = text;
     }
 
+    private _secondsToString(totalSeconds: number): string {
+        const minutes = (totalSeconds / 60) | 0;
+        const seconds = (totalSeconds - minutes * 60) | 0;
+        if (seconds < 10) {
+            return `${minutes}:0${seconds}`;
+        } else {
+            return `${minutes}:${seconds}`;
+        }
+    }
+
+    private _onTimeUpdate(): void {
+        if (this._audio === undefined || this._info === undefined) {
+            return;
+        }
+
+        const currentTime = this._audio.currentTime;
+        const duration = this._info.duration;
+        const currentTimeStr = this._secondsToString(currentTime);
+        const durationStr = this._secondsToString(duration);
+
+        this._duration.textContent = `${currentTimeStr} / ${durationStr}`;
+
+        if (duration > 0) {
+            this._seekSlider.style.left = `${(currentTime / duration) * 100}%`;
+        } else {
+            this._seekSlider.style.left = "0";
+        }
+    }
+
+    private _onBufferProgress(): void {
+        if (this._audio === undefined || this._info === undefined) {
+            return;
+        }
+
+        const ranges = this._audio.buffered;
+        if (ranges.length > 0 && this._info.duration > 0) {
+            const start = ranges.start(0);
+            const end = ranges.end(ranges.length - 1);
+            this._progressBarFill.style.left = `${(start / this._info.duration) * 100}%`;
+            this._progressBarFill.style.width = `${((end - start) / this._info.duration) * 100}%`;
+        } else {
+            this._progressBarFill.style.left = "0";
+            this._progressBarFill.style.width = "0";
+        }
+    }
+
     public async play(url: string): Promise<void> {
         const audio = new Audio(`${url}/stream?codec=vorbis&quality=8`);
         const [, info] = await Promise.all([
@@ -107,9 +161,20 @@ class Player {
             this._audio.pause();
         }
         this._audio = audio;
+        this._info = info;
+
+        audio.onprogress = () => {
+            this._onBufferProgress();
+        };
+        audio.ontimeupdate = () => {
+            this._onTimeUpdate();
+            this._onBufferProgress();
+        };
 
         audio.play();
 
+        this._progressBarFill.style.left = "0";
+        this._progressBarFill.style.width = "0";
         this._playButton.style.display = "none";
         this._pauseButton.style.display = "";
 

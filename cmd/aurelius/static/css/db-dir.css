@@ -54,6 +54,7 @@ a:hover {
 #controls i {
 	font-size: 3rem;
 }
+
 #progress-bar-container {
 	flex-grow: 1;
 	display: flex;
@@ -70,7 +71,14 @@ a:hover {
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 100%;
+	width: 0;
+	height: 100%;
+	background-color: rgba(0,0,0,.27);
+}
+#seek-slider-area {
+	position: absolute;
+	left: 0;
+	width: calc(100% - 3rem);
 	height: 100%;
 }
 #seek-slider {
@@ -81,12 +89,24 @@ a:hover {
 	background-color: #756f64;
 }
 
+#duration {
+	width: 6em;
+	color: black;
+	text-align: right;
+	margin-right: 1em;
+
+	position: relative;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
 #content {
 	margin-top: 5rem;
 }
 
 .listing {
 	list-style: none;
+	padding: 0;
 }
 .listing i {
 	margin-right: .25em;
