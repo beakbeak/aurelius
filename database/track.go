@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const favoritesPath = "Favorites.m3u"
+
 func (db *Database) handleTrackRequest(
 	w http.ResponseWriter,
 	req *http.Request,
@@ -21,11 +23,12 @@ func (db *Database) handleTrackRequest(
 		return false, nil
 	}
 
-	path := db.expandPath(groups[1])
+	urlPath := groups[1]
+	filePath := db.expandPath(urlPath)
 	subRequest := groups[2]
 
 	{
-		info, err := os.Stat(path)
+		info, err := os.Stat(filePath)
 		if err != nil {
 			return false, nil
 		}
@@ -35,31 +38,70 @@ func (db *Database) handleTrackRequest(
 			return false, nil
 		}
 		if !mode.IsRegular() {
-			return false, fmt.Errorf("not a symlink or regular file: %v", path)
+			return false, fmt.Errorf("not a symlink or regular file: %v", filePath)
 		}
 	}
 
-	switch subRequest {
-	case "stream":
-		util.Noise.Printf("stream %v\n", path)
-		db.Stream(path, w, req)
-	case "info":
-		util.Noise.Printf("info %v\n", path)
-		db.Info(path, w, req)
+	handled = true
+
+	switch req.Method {
+	case http.MethodGet:
+		switch subRequest {
+		case "stream":
+			db.Stream(filePath, w, req)
+		case "info":
+			db.Info(urlPath, filePath, w, req)
+		default:
+			handled = false
+		}
+	case http.MethodPost:
+		switch subRequest {
+		case "favorite":
+			if err := db.Favorite(urlPath); err != nil {
+				util.Debug.Printf("Favorite failed: %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+		case "unfavorite":
+			if err := db.Unfavorite(urlPath); err != nil {
+				util.Debug.Printf("Unfavorite failed: %v\n", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+		default:
+			handled = false
+		}
 	default:
-		return false, fmt.Errorf("invalid DB request: %v", subRequest)
+		handled = false
 	}
-	return true, nil
+
+	if handled {
+		return true, nil
+	}
+	return false, fmt.Errorf("invalid DB request: %v %v", req.Method, subRequest)
+}
+
+func (db *Database) isFavorite(path string) (bool, error) {
+	favorites, err := db.playlistCache.Get(db.expandPath(favoritesPath))
+	if err != nil {
+		return false, err
+	}
+
+	for _, line := range favorites {
+		if line == path {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (db *Database) Info(
-	path string,
+	urlPath string,
+	filePath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	src, err := aurelib.NewFileSource(path)
+	src, err := aurelib.NewFileSource(filePath)
 	if err != nil {
-		util.Debug.Printf("failed to open source: %v\n", path)
+		util.Debug.Printf("failed to open source: %v\n", filePath)
 		http.NotFound(w, req)
 		return
 	}
@@ -70,16 +112,24 @@ func (db *Database) Info(
 		Duration        float64           `json:"duration"`
 		ReplayGainTrack float64           `json:"replayGainTrack"`
 		ReplayGainAlbum float64           `json:"replayGainAlbum"`
+		Favorite        bool              `json:"favorite"`
 		Tags            map[string]string `json:"tags"`
 	}
 
 	result := Result{
-		Name:            filepath.Base(path),
+		Name:            filepath.Base(filePath),
 		Duration:        float64(src.Duration()) / float64(time.Second),
 		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
 		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
 		Tags:            util.LowerCaseKeys(src.Tags()),
 	}
+
+	if favorite, err := db.isFavorite(urlPath); err != nil {
+		util.Debug.Printf("isFavorite failed: %v", err)
+	} else {
+		result.Favorite = favorite
+	}
+
 	resultJson, err := json.Marshal(result)
 	if err != nil {
 		util.Debug.Printf("failed to marshal info JSON: %v\n", err)
@@ -87,9 +137,40 @@ func (db *Database) Info(
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache, no-store")
+
 	if _, err := w.Write(resultJson); err != nil {
 		util.Debug.Printf("failed to write info response: %v\n", err)
 	}
+}
+
+func (db *Database) Favorite(path string) error {
+	return db.playlistCache.Modify(
+		db.expandPath(favoritesPath),
+		func(favorites []string) ([]string, error) {
+			for _, line := range favorites {
+				if line == path {
+					return nil, nil
+				}
+			}
+			return append(favorites, path), nil
+		},
+	)
+}
+
+func (db *Database) Unfavorite(path string) error {
+	return db.playlistCache.Modify(
+		db.expandPath(favoritesPath),
+		func(favorites []string) ([]string, error) {
+			for index, line := range favorites {
+				if line == path {
+					return append(favorites[:index], favorites[index+1:]...), nil
+				}
+			}
+			return nil, nil
+		},
+	)
 }
 
 func (db *Database) Stream(

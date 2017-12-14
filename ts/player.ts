@@ -3,6 +3,7 @@ interface FileInfo {
     duration: number;
     replayGainTrack: number;
     replayGainAlbum: number;
+    favorite: boolean;
     tags: {[key: string]: string | undefined};
 }
 
@@ -11,22 +12,43 @@ interface PlaylistItem {
     pos: number;
 }
 
-function fetchJson(url: string): Promise<any> {
+function sendJsonRequest(
+    method: string,
+    url: string,
+    data?: any,
+): Promise<any> {
     const req = new XMLHttpRequest();
-    req.open("GET", url);
+    req.open(method, url);
     return new Promise((resolve, reject) => {
         req.onreadystatechange = () => {
             if (req.readyState !== XMLHttpRequest.DONE) {
                 return;
             }
             if (req.status === 200) {
-                resolve(JSON.parse(req.responseText));
+                resolve(req.responseText !== "" ? JSON.parse(req.responseText) : undefined);
             } else {
                 reject(new Error("request failed"));
             }
         }
-        req.send();
+
+        if (data !== undefined) {
+            req.setRequestHeader("Content-Type", "application/json");
+            req.send(JSON.stringify(data));
+        } else {
+            req.send();
+        }
     });
+}
+
+function fetchJson(url: string): Promise<any> {
+    return sendJsonRequest("GET", url);
+}
+
+function postJson(
+    url: string,
+    data?: any,
+): Promise<any> {
+    return sendJsonRequest("POST", url, data);
 }
 
 class Player {
@@ -37,9 +59,12 @@ class Player {
     private _seekSlider: HTMLElement;
     private _statusRight: HTMLElement;
     private _duration: HTMLElement;
+    private _favoriteButton: HTMLElement;
+    private _unfavoriteButton: HTMLElement;
 
     private _audio?: HTMLAudioElement;
     private _info?: FileInfo;
+    private _trackUrl: string = "";
     private _playlistUrl: string = "";
     private _playlistPos: number = 0;
 
@@ -67,6 +92,8 @@ class Player {
         this._progressBarFill = this._getElement(container, "progress-bar-fill");
         this._seekSlider = this._getElement(container, "seek-slider");
         this._duration = this._getElement(container, "duration");
+        this._favoriteButton = this._getElement(container, "favorite-button");
+        this._unfavoriteButton = this._getElement(container, "unfavorite-button");
 
         this._playButton.onclick = () => {
             this.unpause();
@@ -79,6 +106,15 @@ class Player {
 
         this._nextButton.onclick = () => {
             this.next();
+        };
+
+        this._favoriteButton.onclick = () => {
+            this.favorite();
+        };
+
+        this._unfavoriteButton.style.display = "none";
+        this._unfavoriteButton.onclick = () => {
+            this.unfavorite();
         };
     }
 
@@ -109,6 +145,14 @@ class Player {
         }
 
         this._statusRight.textContent = text;
+
+        if (info.favorite) {
+            this._favoriteButton.style.display = "none";
+            this._unfavoriteButton.style.display = "";
+        } else {
+            this._favoriteButton.style.display = "";
+            this._unfavoriteButton.style.display = "none";
+        }
     }
 
     private _secondsToString(totalSeconds: number): string {
@@ -173,6 +217,7 @@ class Player {
         }
         this._audio = audio;
         this._info = info;
+        this._trackUrl = url;
 
         audio.onprogress = () => {
             this._onBufferProgress();
@@ -231,5 +276,23 @@ class Player {
         this._audio.play();
         this._playButton.style.display = "none";
         this._pauseButton.style.display = "";
+    }
+
+    public async favorite(): Promise<void> {
+        if (this._info === undefined) {
+            return Promise.resolve();
+        }
+        await postJson(`${this._trackUrl}/favorite`);
+        this._info.favorite = true;
+        this._setStatus(this._info);
+    }
+
+    public async unfavorite(): Promise<void> {
+        if (this._info === undefined) {
+            return Promise.resolve();
+        }
+        await postJson(`${this._trackUrl}/unfavorite`);
+        this._info.favorite = false;
+        this._setStatus(this._info);
     }
 }

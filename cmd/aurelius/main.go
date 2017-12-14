@@ -77,7 +77,7 @@ func main() {
 	*/
 
 	router := mux.NewRouter()
-	router.PathPrefix(db.Prefix() + "/").Methods("GET").Handler(db)
+	router.PathPrefix(db.Prefix() + "/").Handler(db)
 	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 	/*
 		router.HandleFunc("/rpc", playerHandleRpc).
