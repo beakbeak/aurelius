@@ -341,8 +341,10 @@ class Player {
         }
     }
 
-    private _onTimeUpdate(): void {
+    private _updateTime(): void {
         if (this._track === undefined) {
+            this._duration.textContent = "";
+            this._seekSlider.style.left = "0";
             return;
         }
 
@@ -360,8 +362,10 @@ class Player {
         }
     }
 
-    private _onBufferProgress(): void {
+    private _updateBuffer(): void {
         if (this._track === undefined) {
+            this._progressBarFill.style.left = "0";
+            this._progressBarFill.style.width = "0";
             return;
         }
 
@@ -388,14 +392,22 @@ class Player {
         this._track = track;
 
         track.addEventListener("progress", () => {
-            this._onBufferProgress();
+            this._updateBuffer();
         });
         track.addEventListener("timeupdate", () => {
-            this._onTimeUpdate();
-            this._onBufferProgress();
+            this._updateTime();
+            this._updateBuffer();
         });
-        track.addEventListener("ended", () => {
-            this.next();
+        track.addEventListener("ended", async () => {
+            if (!await this.next()) {
+                this.pause();
+                if (this._track !== undefined) {
+                    this._track.audio.currentTime = 0;
+                }
+                this._updateBuffer();
+                this._updateTime();
+                this._updateStatus();
+            }
         });
 
         track.audio.play();
@@ -417,13 +429,13 @@ class Player {
         return this._play(url);
     }
 
-    public async playList(url: string): Promise<void> {
+    public async playList(url: string): Promise<boolean> {
         this._playlist = await Playlist.fetch(url);
         this._history = new PlayHistory();
         return this.next();
     }
 
-    public async next(): Promise<void> {
+    public async next(): Promise<boolean> {
         let url = this._history.next();
         if (url === undefined) {
             if (this._playlist !== undefined) {
@@ -433,19 +445,21 @@ class Player {
                 }
             }
             if (url === undefined) {
-                return;
+                return false;
             }
             this._history.push(url);
         }
         await this._play(url);
+        return true;
     }
 
-    public async previous(): Promise<void> {
+    public async previous(): Promise<boolean> {
         let url = this._history.previous();
         if (url === undefined) {
-            return;
+            return false;
         }
         await this._play(url);
+        return true;
     }
 
     public pause(): void {
