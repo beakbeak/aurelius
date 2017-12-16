@@ -42,24 +42,24 @@
 			<div id="status-left">aurelius</div>
 			<div id="status-right"></div>
 			<div id="favorite-button" class="clickable">
-				<i class="material-icons md-dark">favorite_border</i>
+				<i class="material-icons">favorite_border</i>
 			</div>
 			<div id="unfavorite-button" class="clickable">
-				<i class="material-icons md-dark">favorite</i>
+				<i class="material-icons">favorite</i>
 			</div>
 		</div>
 		<div id="controls">
 			<div id="play-button" class="clickable">
-				<i class="material-icons md-dark">play_arrow</i>
+				<i class="material-icons">play_arrow</i>
 			</div>
 			<div id="pause-button" class="clickable">
-				<i class="material-icons md-dark">pause</i>
+				<i class="material-icons">pause</i>
 			</div>
 			<div id="prev-button" class="clickable">
-				<i class="material-icons md-dark">skip_previous</i>
+				<i class="material-icons">skip_previous</i>
 			</div>
 			<div id="next-button" class="clickable">
-				<i class="material-icons md-dark">skip_next</i>
+				<i class="material-icons">skip_next</i>
 			</div>
 			<div id="progress-bar-container">
 				<div id="progress-bar-empty" class="clickable">
@@ -77,10 +77,10 @@
 
 	<div id="content">
 		<ul id="dirs" class="listing">
-			<li><i class="material-icons md-dark">arrow_back</i><a href="..">Parent directory</a></li>
+			<li><i class="material-icons">arrow_back</i><a href="..">Parent directory</a></li>
 			{{- if .Dirs}}
 				{{- range $dir := .Dirs}}
-					<li><i class="material-icons md-dark">folder_open</i><a href="{{$dir}}/">{{$dir}}/</a></li>
+					<li><i class="material-icons">folder_open</i><a href="{{$dir}}/">{{$dir}}/</a></li>
 				{{- end}}
 			{{- end}}
 		</ul>
@@ -88,7 +88,7 @@
 		{{- if .Playlists}}
 			<ul id="playlists" class="listing">
 				{{- range $file := .Playlists}}
-					<li><i class="material-icons md-dark">playlist_play</i><a href="{{$file}}">{{$file}}</a></li>
+					<li><i class="material-icons">playlist_play</i><a href="{{$file}}">{{$file}}</a></li>
 				{{- end}}
 			</ul>
 		{{- end}}
@@ -96,7 +96,7 @@
 		{{- if .Tracks}}
 			<ul id="tracks" class="listing">
 				{{- range $file := .Tracks}}
-					<li><i class="material-icons md-dark">music_note</i><a href="{{$file}}">{{$file}}</a></li>
+					<li><i class="material-icons">music_note</i><a href="{{$file}}">{{$file}}</a></li>
 				{{- end}}
 			</ul>
 		{{- end}}

@@ -1,21 +1,33 @@
-body {
-	background-color: rgb(255, 242, 217);
-	color: black;
-}
-#header {
-	background-color: rgba(255, 242, 217, .85);
+html {
+	min-height: 100%;
 }
 
-a {
-	text-decoration: none;
+body {
+	background: linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
+	color: hsl(39, 100%, 93%);
+}
+#header {
+	background-color: hsl(39, 100%, 93%);
 	color: black;
 }
-a:focus {
+
+body a {
+	text-decoration: none;
+	color: hsl(39, 100%, 93%);
+}
+body a:focus {
 	outline: medium dashed rgba(0,0,0,.54);
 }
-a:hover {
+body a:hover {
 	box-shadow: 0 1px rgba(0,0,0,.54);
 }
+
+body .material-icons {
+	color: black;
+}
+
+#header .material-icons { color: rgba(0, 0, 0, 0.54); }
+#header .material-icons.inactive { color: rgba(0, 0, 0, 0.26); }
 
 .clickable {
 	cursor: pointer;
@@ -90,7 +102,7 @@ a:hover {
 	width: 3rem;
 	height: 200%;
 	top: -50%;
-	background-color: #756f64;
+	background-color: hsl(39, 8%, 43%);
 }
 
 #duration {
@@ -125,10 +137,8 @@ a:hover {
 	right: 0;
 	bottom: 0;
 	height: 8rem;
+	margin: .5rem;
 }
 #footer img {
 	height: 100%;
 }
-
-.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
-.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
