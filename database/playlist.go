@@ -1,10 +1,10 @@
 package database
 
 import (
-	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
+	"sb/aurelius/util"
+	"strconv"
 )
 
 func (db *Database) handlePlaylistRequestImpl(
@@ -12,25 +12,41 @@ func (db *Database) handlePlaylistRequestImpl(
 	w http.ResponseWriter,
 	req *http.Request,
 ) error {
-	if len(lines) < 1 {
-		w.Write([]byte("null"))
-		return nil
-	}
+	query := req.URL.Query()
+	if posStr, ok := query["pos"]; ok {
+		if len(lines) < 1 {
+			return util.WriteJson(w, nil)
+		}
 
-	type Result struct {
-		Pos  uint64 `json:"pos"`
-		Path string `json:"path"`
-	}
+		pos64, err := strconv.ParseInt(posStr[0], 0, 0)
+		if err != nil {
+			util.Debug.Printf("failed to parse playlist position '%v': %v\n", posStr, err)
+			return util.WriteJson(w, nil)
+		}
+		pos := int(pos64)
 
-	result := Result{Pos: rand.Uint64() % uint64(len(lines))}
-	result.Path = lines[result.Pos]
+		if pos < 0 || pos >= len(lines) {
+			return util.WriteJson(w, nil)
+		}
 
-	resultBytes, err := json.Marshal(result)
-	if err != nil {
-		return err
+		type Result struct {
+			Pos  int    `json:"pos"`
+			Path string `json:"path"`
+		}
+
+		return util.WriteJson(w, Result{
+			Pos:  pos,
+			Path: lines[pos],
+		})
+	} else {
+		type Result struct {
+			Length int `json:"length"`
+		}
+
+		return util.WriteJson(w, Result{
+			Length: len(lines),
+		})
 	}
-	w.Write(resultBytes)
-	return nil
 }
 
 func (db *Database) handlePlaylistRequest(

@@ -1,7 +1,6 @@
 package database
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -48,9 +47,9 @@ func (db *Database) handleTrackRequest(
 	case http.MethodGet:
 		switch subRequest {
 		case "stream":
-			db.Stream(filePath, w, req)
+			db.handleStreamRequest(filePath, w, req)
 		case "info":
-			db.Info(urlPath, filePath, w, req)
+			db.handleInfoRequest(urlPath, filePath, w, req)
 		default:
 			handled = false
 		}
@@ -60,11 +59,15 @@ func (db *Database) handleTrackRequest(
 			if err := db.Favorite(urlPath); err != nil {
 				util.Debug.Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				util.WriteJson(w, nil)
 			}
 		case "unfavorite":
 			if err := db.Unfavorite(urlPath); err != nil {
 				util.Debug.Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				util.WriteJson(w, nil)
 			}
 		default:
 			handled = false
@@ -79,7 +82,7 @@ func (db *Database) handleTrackRequest(
 	return false, fmt.Errorf("invalid DB request: %v %v", req.Method, subRequest)
 }
 
-func (db *Database) isFavorite(path string) (bool, error) {
+func (db *Database) IsFavorite(path string) (bool, error) {
 	favorites, err := db.playlistCache.Get(db.expandPath(favoritesPath))
 	if err != nil {
 		return false, err
@@ -93,7 +96,7 @@ func (db *Database) isFavorite(path string) (bool, error) {
 	return false, nil
 }
 
-func (db *Database) Info(
+func (db *Database) handleInfoRequest(
 	urlPath string,
 	filePath string,
 	w http.ResponseWriter,
@@ -124,25 +127,13 @@ func (db *Database) Info(
 		Tags:            util.LowerCaseKeys(src.Tags()),
 	}
 
-	if favorite, err := db.isFavorite(urlPath); err != nil {
+	if favorite, err := db.IsFavorite(urlPath); err != nil {
 		util.Debug.Printf("isFavorite failed: %v", err)
 	} else {
 		result.Favorite = favorite
 	}
 
-	resultJson, err := json.Marshal(result)
-	if err != nil {
-		util.Debug.Printf("failed to marshal info JSON: %v\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-cache, no-store")
-
-	if _, err := w.Write(resultJson); err != nil {
-		util.Debug.Printf("failed to write info response: %v\n", err)
-	}
+	util.WriteJson(w, result)
 }
 
 func (db *Database) Favorite(path string) error {
@@ -173,7 +164,7 @@ func (db *Database) Unfavorite(path string) error {
 	)
 }
 
-func (db *Database) Stream(
+func (db *Database) handleStreamRequest(
 	path string,
 	w http.ResponseWriter,
 	req *http.Request,

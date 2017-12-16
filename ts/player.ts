@@ -1,22 +1,11 @@
-interface FileInfo {
-    name: string;
-    duration: number;
-    replayGainTrack: number;
-    replayGainAlbum: number;
-    favorite: boolean;
-    tags: {[key: string]: string | undefined};
-}
-
-interface PlaylistItem {
-    path: string;
-    pos: number;
-}
-
-function sendJsonRequest(
+//
+// Utilities ///////////////////////////////////////////////////////////////////
+//
+function sendJsonRequest<Response>(
     method: string,
     url: string,
     data?: any,
-): Promise<any> {
+): Promise<Response> {
     const req = new XMLHttpRequest();
     req.open(method, url);
     return new Promise((resolve, reject) => {
@@ -25,7 +14,7 @@ function sendJsonRequest(
                 return;
             }
             if (req.status === 200) {
-                resolve(req.responseText !== "" ? JSON.parse(req.responseText) : undefined);
+                resolve(JSON.parse(req.responseText));
             } else {
                 reject(new Error("request failed"));
             }
@@ -40,21 +29,209 @@ function sendJsonRequest(
     });
 }
 
-function fetchJson(url: string): Promise<any> {
-    return sendJsonRequest("GET", url);
+function fetchJson<Response>(url: string): Promise<Response> {
+    return sendJsonRequest<Response>("GET", url);
 }
 
-function postJson(
+function nullToUndefined<T>(value: T | null): T | undefined {
+    return value !== null ? value : undefined;
+}
+
+function postJson<Response>(
     url: string,
     data?: any,
-): Promise<any> {
-    return sendJsonRequest("POST", url, data);
+): Promise<Response> {
+    return sendJsonRequest<Response>("POST", url, data);
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+// The maximum is exclusive and the minimum is inclusive
+function randomInt(
+    min: number,
+    max: number,
+): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+//
+// Player //////////////////////////////////////////////////////////////////////
+//
+interface PlaylistItem {
+    readonly path: string;
+    readonly pos: number;
+}
+
+class Playlist {
+    public readonly url: string;
+    public readonly length: number;
+
+    private constructor(
+        url: string,
+        length: number,
+    ) {
+        this.url = url;
+        this.length = length;
+    }
+
+    public static async fetch(url: string): Promise<Playlist> {
+        interface Info {
+            length: number;
+        }
+        const info = await fetchJson<Info>(url);
+        return new Playlist(url, info.length);
+    }
+
+    public async at(pos: number): Promise<PlaylistItem | undefined> {
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(
+            `${this.url}?pos=${pos}`
+        ));
+    }
+
+    public async random(): Promise<PlaylistItem | undefined> {
+        if (this.length < 1) {
+            return Promise.resolve(undefined);
+        }
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(
+            `${this.url}?pos=${randomInt(0, this.length)}`
+        ));
+    }
+}
+
+class PlayHistory {
+    private static readonly _maxLength = 1024;
+
+    private _urls: string[] = [];
+    private _index = 0;
+
+    public push(url: string): void {
+        this._urls.splice(this._index + 1, this._urls.length - (this._index + 1), url);
+        if (this._urls.length > PlayHistory._maxLength) {
+            this._urls.shift();
+        } else if (this._urls.length > 1) {
+            ++this._index;
+        }
+    }
+
+    public previous(): string | undefined {
+        if (this._index === 0) {
+            return undefined;
+        }
+        --this._index;
+        return this._urls[this._index];
+    }
+
+    public next(): string | undefined {
+        if (this._index >= (this._urls.length - 1)) {
+            return undefined;
+        }
+        ++this._index;
+        return this._urls[this._index];
+    }
+}
+
+interface TrackInfo {
+    readonly name: string;
+    readonly duration: number;
+    readonly replayGainTrack: number;
+    readonly replayGainAlbum: number;
+    readonly tags: {[key: string]: string | undefined};
+
+    favorite: boolean;
+}
+
+interface StreamOptions {
+    readonly codec?: "mp3" | "vorbis" | "flac";
+    readonly quality?: number;
+    readonly bitRate?: number;
+    readonly sampleRate?: number;
+    readonly sampleFormat?: string;
+    readonly channelLayout?: string;
+//    readonly replayGain?: "track" | "album" | "off";
+//    readonly preventClipping?: boolean;
+}
+
+class Track {
+    public readonly url: string;
+    public readonly info: TrackInfo;
+    public readonly audio: HTMLAudioElement;
+
+    private _listeners: { name: string; func: any; }[] = [];
+
+    private constructor(
+        url: string,
+        info: TrackInfo,
+        audio: HTMLAudioElement,
+    ) {
+        this.url = url;
+        this.info = info;
+        this.audio = audio;
+    }
+
+    public destroy(): void {
+        for (const listener of this._listeners) {
+            this.audio.removeEventListener(listener.name, listener.func);
+        }
+        this.audio.pause();
+        this.audio.src = "";
+    }
+
+    private static streamQuery(options: StreamOptions): string {
+        const keys = Object.keys(options) as (keyof StreamOptions)[];
+        let query = "";
+        for (let i = 0; i < keys.length; ++i) {
+            query += `${i === 0 ? "?" : "&"}${keys[i]}=${options[keys[i]]}`;
+        }
+        return query;
+    }
+
+    public static async fetch(
+        url: string,
+        options: StreamOptions,
+    ): Promise<Track> {
+        const [info, audio] = await Promise.all([
+            fetchJson<TrackInfo>(`${url}/info`),
+            new Promise<HTMLAudioElement>((resolve) => {
+                const audio = new Audio(`${url}/stream${Track.streamQuery(options)}`);
+                audio.oncanplay = () => {
+                    resolve(audio);
+                };
+            }),
+        ]);
+
+        if (info.replayGainTrack < 1) {
+            audio.volume = info.replayGainTrack;
+        }
+
+        return new Track(url, info, audio);
+    }
+
+    public addEventListener<K extends keyof HTMLMediaElementEventMap>(
+        name: K,
+        func: (this: HTMLAudioElement, ev: HTMLMediaElementEventMap[K]) => any,
+        useCapture?: boolean,
+    ): void {
+        this._listeners.push({ name: name, func: func });
+        this.audio.addEventListener(name, func, useCapture);
+    }
+
+    public async favorite(): Promise<void> {
+        await postJson(`${this.url}/favorite`);
+        this.info.favorite = true;
+    }
+
+    public async unfavorite(): Promise<void> {
+        await postJson(`${this.url}/unfavorite`);
+        this.info.favorite = false;
+    }
 }
 
 class Player {
     private _playButton: HTMLElement;
     private _pauseButton: HTMLElement;
     private _nextButton: HTMLElement;
+    private _prevButton: HTMLElement;
     private _progressBarFill: HTMLElement;
     private _seekSlider: HTMLElement;
     private _statusRight: HTMLElement;
@@ -62,11 +239,9 @@ class Player {
     private _favoriteButton: HTMLElement;
     private _unfavoriteButton: HTMLElement;
 
-    private _audio?: HTMLAudioElement;
-    private _info?: FileInfo;
-    private _trackUrl: string = "";
-    private _playlistUrl: string = "";
-    private _playlistPos: number = 0;
+    private _track?: Track;
+    private _playlist?: Playlist;
+    private _history = new PlayHistory(); 
 
     private _getElement(
         container: HTMLElement,
@@ -89,6 +264,7 @@ class Player {
         this._playButton = this._getElement(container, "play-button");
         this._pauseButton = this._getElement(container, "pause-button");
         this._nextButton = this._getElement(container, "next-button");
+        this._prevButton = this._getElement(container, "prev-button");
         this._progressBarFill = this._getElement(container, "progress-bar-fill");
         this._seekSlider = this._getElement(container, "seek-slider");
         this._duration = this._getElement(container, "duration");
@@ -107,6 +283,9 @@ class Player {
         this._nextButton.onclick = () => {
             this.next();
         };
+        this._prevButton.onclick = () => {
+            this.previous();
+        };
 
         this._favoriteButton.onclick = () => {
             this.favorite();
@@ -118,15 +297,12 @@ class Player {
         };
     }
 
-    private async _getInfo(url: string): Promise<FileInfo> {
-        const info = await fetchJson(url);
-        if (typeof info !== "object") {
-            throw new Error("invalid format");
+    private _updateStatus(): void {
+        if (this._track === undefined) {
+            return;
         }
-        return info;
-    }
+        const info = this._track.info;
 
-    private _setStatus(info: FileInfo): void {
         let text = "";
         if (info.tags["artist"] !== undefined) {
             text = `${text}${info.tags["artist"]} - `;
@@ -166,12 +342,12 @@ class Player {
     }
 
     private _onTimeUpdate(): void {
-        if (this._audio === undefined || this._info === undefined) {
+        if (this._track === undefined) {
             return;
         }
 
-        const currentTime = this._audio.currentTime;
-        const duration = this._info.duration;
+        const currentTime = this._track.audio.currentTime;
+        const duration = this._track.info.duration;
         const currentTimeStr = this._secondsToString(currentTime);
         const durationStr = this._secondsToString(duration);
 
@@ -185,16 +361,18 @@ class Player {
     }
 
     private _onBufferProgress(): void {
-        if (this._audio === undefined || this._info === undefined) {
+        if (this._track === undefined) {
             return;
         }
 
-        const ranges = this._audio.buffered;
-        if (ranges.length > 0 && this._info.duration > 0) {
+        const ranges = this._track.audio.buffered;
+        if (ranges.length > 0 && this._track.info.duration > 0) {
             const start = ranges.start(0);
             const end = ranges.end(ranges.length - 1);
-            this._progressBarFill.style.left = `${(start / this._info.duration) * 100}%`;
-            this._progressBarFill.style.width = `${((end - start) / this._info.duration) * 100}%`;
+            this._progressBarFill.style.left =
+                `${(start / this._track.info.duration) * 100}%`;
+            this._progressBarFill.style.width =
+                `${((end - start) / this._track.info.duration) * 100}%`;
         } else {
             this._progressBarFill.style.left = "0";
             this._progressBarFill.style.width = "0";
@@ -202,97 +380,105 @@ class Player {
     }
 
     private async _play(url: string): Promise<void> {
-        const audio = new Audio(`${url}/stream?codec=vorbis&quality=8`);
-        const [, info] = await Promise.all([
-            new Promise<void>((resolve) => {
-                audio.oncanplay = () => {
-                    resolve();
-                }
-            }),
-            this._getInfo(`${url}/info`)
-        ]);
+        const track = await Track.fetch(url, { codec: "vorbis", quality: 8 });
 
-        if (this._audio !== undefined) {
-            this._audio.pause();
+        if (this._track !== undefined) {
+            this._track.destroy();
         }
-        this._audio = audio;
-        this._info = info;
-        this._trackUrl = url;
+        this._track = track;
 
-        audio.onprogress = () => {
+        track.addEventListener("progress", () => {
             this._onBufferProgress();
-        };
-        audio.ontimeupdate = () => {
+        });
+        track.addEventListener("timeupdate", () => {
             this._onTimeUpdate();
             this._onBufferProgress();
-        };
-        audio.onended = () => {
+        });
+        track.addEventListener("ended", () => {
             this.next();
-        };
+        });
 
-        if (info.replayGainTrack < 1) {
-            audio.volume = info.replayGainTrack;
-        }
-        audio.play();
+        track.audio.play();
 
         this._progressBarFill.style.left = "0";
         this._progressBarFill.style.width = "0";
         this._playButton.style.display = "none";
         this._pauseButton.style.display = "";
 
-        this._setStatus(info);
+        this._updateStatus();
     }
 
     public playTrack(url: string): Promise<void> {
-        this._playlistUrl = "";
+        if (this._playlist !== undefined) {
+            this._playlist = undefined;
+            this._history = new PlayHistory();
+        }
+        this._history.push(url);
         return this._play(url);
     }
 
-    public playList(url: string): Promise<void> {
-        this._playlistUrl = url;
-        this._playlistPos = -1;
+    public async playList(url: string): Promise<void> {
+        this._playlist = await Playlist.fetch(url);
+        this._history = new PlayHistory();
         return this.next();
     }
 
     public async next(): Promise<void> {
-        const item = await fetchJson(`${this._playlistUrl}?pos=${this._playlistPos + 1}`);
-        this._playlistPos = item.pos;
-        await this._play(item.path);
+        let url = this._history.next();
+        if (url === undefined) {
+            if (this._playlist !== undefined) {
+                const item = await this._playlist.random();
+                if (item !== undefined) {
+                    url = item.path;
+                }
+            }
+            if (url === undefined) {
+                return;
+            }
+            this._history.push(url);
+        }
+        await this._play(url);
+    }
+
+    public async previous(): Promise<void> {
+        let url = this._history.previous();
+        if (url === undefined) {
+            return;
+        }
+        await this._play(url);
     }
 
     public pause(): void {
-        if (this._audio === undefined) {
+        if (this._track === undefined) {
             return;
         }
-        this._audio.pause();
+        this._track.audio.pause();
         this._pauseButton.style.display = "none";
         this._playButton.style.display = "";
     }
 
     public unpause(): void {
-        if (this._audio === undefined) {
+        if (this._track === undefined) {
             return;
         }
-        this._audio.play();
+        this._track.audio.play();
         this._playButton.style.display = "none";
         this._pauseButton.style.display = "";
     }
 
     public async favorite(): Promise<void> {
-        if (this._info === undefined) {
-            return Promise.resolve();
+        if (this._track === undefined) {
+            return;
         }
-        await postJson(`${this._trackUrl}/favorite`);
-        this._info.favorite = true;
-        this._setStatus(this._info);
+        await this._track.favorite();
+        this._updateStatus();
     }
 
     public async unfavorite(): Promise<void> {
-        if (this._info === undefined) {
-            return Promise.resolve();
+        if (this._track === undefined) {
+            return;
         }
-        await postJson(`${this._trackUrl}/unfavorite`);
-        this._info.favorite = false;
-        this._setStatus(this._info);
+        await this._track.unfavorite();
+        this._updateStatus();
     }
 }
