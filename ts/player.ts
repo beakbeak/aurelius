@@ -298,6 +298,7 @@ class Player {
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
+    private _streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
 
     private _getElement(
         container: HTMLElement,
@@ -487,7 +488,7 @@ class Player {
     }
 
     private async _play(url: string): Promise<void> {
-        const track = await Track.fetch(url, { codec: "vorbis", quality: 8 });
+        const track = await Track.fetch(url, this._streamOptions);
 
         if (this._track !== undefined) {
             this._track.destroy();
@@ -627,5 +628,9 @@ class Player {
         }
         await this._track.unfavorite();
         this._updateStatus();
+    }
+
+    public setStreamOptions(options: StreamOptions): void {
+        this._streamOptions = options;
     }
 }

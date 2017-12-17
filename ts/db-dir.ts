@@ -13,6 +13,11 @@ function getTrackUrls(): string[] {
 window.onload = () => {
     const player = new Player("header");
 
+    // XXX hack alert
+    if (/([0-9]+\.){3}[0-9]+/.test(window.location.hostname)) {
+        player.setStreamOptions({ codec: "flac" });
+    }
+
     const playlists = document.getElementById("playlists")!;
     {
         const currentDirLink = document.getElementById("current-dir") as HTMLAnchorElement;
