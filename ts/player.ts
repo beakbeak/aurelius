@@ -153,6 +153,13 @@ class PlayHistory {
         }
     }
 
+    public pushFront(item: PlaylistItem): void {
+        this._items.splice(this._index, 0, item);
+        if (this._items.length > PlayHistory._maxLength) {
+            this._items.pop();
+        }
+    }
+
     public hasPrevious(): boolean {
         return this._items.length > 1 && this._index > 0;
     }
@@ -602,7 +609,17 @@ class Player {
     public async previous(): Promise<boolean> {
         let item = this._history.previous();
         if (item === undefined) {
+            if (this._playlist === undefined || this._playlist.length() < 1
+                || this._playlistPos <= 0)
+            {
             return false;
+        }
+
+            item = await this._playlist.at(this._playlistPos - 1);
+            if (item === undefined) {
+                return false;
+            }
+            this._history.pushFront(item);
         }
         this._playlistPos = item.pos;
         await this._play(item.path);
