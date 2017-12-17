@@ -375,17 +375,22 @@ class Player {
             this._favoriteButton.classList.add("inactive");
             return;
         }
-        const info = this._track.info;
 
+        const info = this._track.info;
         let text = "";
-        if (info.tags["artist"] !== undefined) {
+
+        if (info.tags["composer"] !== undefined) {
+            text = `${text}${info.tags["composer"]} - `;
+        } else if (info.tags["artist"] !== undefined) {
             text = `${text}${info.tags["artist"]} - `;
         }
+
         if (info.tags["title"] !== undefined) {
             text = `${text}${info.tags["title"]}`;
         } else {
             text = `${text}${info.name}`
         }
+
         if (info.tags["album"] !== undefined) {
             let track = "";
             if (info.tags["track"] !== undefined) {
