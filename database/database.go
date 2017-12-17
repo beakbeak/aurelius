@@ -48,7 +48,7 @@ func New(
 	}
 
 	var err error
-	if db.reDirPath, err = regexp.Compile(`^` + prefix + `/(.*)$`); err != nil {
+	if db.reDirPath, err = regexp.Compile(`^` + prefix + `/(:?(.*?)/)?$`); err != nil {
 		return nil, err
 	}
 	if db.rePlaylistPath, err = regexp.Compile(`^` + prefix + `/(.+?\.[mM]3[uU])`); err != nil {
@@ -86,39 +86,25 @@ func (db *Database) ServeHTTP(
 		return
 	}
 
-	reject := func(format string, args ...interface{}) {
-		http.NotFound(w, req)
-		util.Debug.Printf(format, args...)
-	}
-
 	util.Debug.Printf("DB request: %v\n", req.URL.Path)
 
-	handled, err := db.handlePlaylistRequest(w, req)
-	if err != nil {
-		reject("playlist request failed: %v\n", err)
-		return
-	}
-	if handled {
+	if matches := db.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
+		util.Debug.Println("dir request")
+		db.handleDirRequest(matches, w, req)
 		return
 	}
 
-	handled, err = db.handleTrackRequest(w, req)
-	if err != nil {
-		reject("track request failed: %v\n", err)
-		return
-	}
-	if handled {
+	if matches := db.rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
+		util.Debug.Println("playlist request")
+		db.handlePlaylistRequest(matches, w, req)
 		return
 	}
 
-	handled, err = db.handleDirRequest(w, req)
-	if err != nil {
-		reject("directory request failed: %v\n", err)
-		return
-	}
-	if handled {
+	if matches := db.reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
+		util.Debug.Println("track request")
+		db.handleTrackRequest(matches, w, req)
 		return
 	}
 
-	util.Debug.Printf("unhandled DB request: %v\n", req.URL.Path)
+	http.NotFound(w, req)
 }

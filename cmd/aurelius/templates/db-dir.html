@@ -10,42 +10,7 @@
 	<link href="/static/css/db-dir.css" rel="stylesheet">
 
 	<script src="/static/js/player.js"></script>
-	<script>
-		window.onload = () => {
-			const player = new Player("header");
-
-			const playlists = document.getElementById("playlists");
-			if (playlists !== null) {
-				const files = Array.prototype.slice.apply(playlists.getElementsByTagName("a"));
-				for (const file of files) {
-					file.onclick = () => {
-						player.playList(file.href);
-						return false;
-					};
-
-					const randomLink = document.createElement("a");
-					randomLink.textContent = "random";
-					randomLink.href = file.href;
-					randomLink.classList.add("aux-link");
-					randomLink.onclick = () => {
-						player.playList(randomLink.href, true);
-						return false;
-					};
-					file.parentElement.appendChild(randomLink);
-				}
-			}
-
-			const tracks = document.getElementById("tracks");
-			if (tracks !== null) {
-				for (const file of tracks.getElementsByTagName("a")) {
-					file.onclick = () => {
-						player.playTrack(file.href);
-						return false;
-					};
-				}
-			}
-		};
-	</script>
+	<script src="/static/js/db-dir.js"></script>
 </head>
 <body>
 	<div id="header">
@@ -96,13 +61,12 @@
 			{{- end}}
 		</ul>
 
-		{{- if .Playlists}}
-			<ul id="playlists" class="listing">
-				{{- range $file := .Playlists}}
-					<li><i class="material-icons">playlist_play</i><a href="{{$file}}">{{$file}}</a></li>
-				{{- end}}
-			</ul>
-		{{- end}}
+		<ul id="playlists" class="listing">
+			<li><i class="material-icons">playlist_play</i><a id="current-dir">Current directory</a></li>
+			{{- range $file := .Playlists}}
+				<li><i class="material-icons">playlist_play</i><a href="{{$file}}">{{$file}}</a></li>
+			{{- end}}
+		</ul>
 
 		{{- if .Tracks}}
 			<ul id="tracks" class="listing">

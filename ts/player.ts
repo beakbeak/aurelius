@@ -63,16 +63,51 @@ interface PlaylistItem {
     readonly pos: number;
 }
 
-class Playlist {
+interface Playlist {
+    length(): number;
+    at(pos: number): Promise<PlaylistItem | undefined>;
+    random(): Promise<PlaylistItem | undefined>;
+}
+
+class LocalPlaylist implements Playlist {
+    private readonly _urls: string[];
+
+    public constructor(urls: string[]) {
+        this._urls = urls;
+    }
+
+    public length(): number {
+        return this._urls.length;
+    }
+
+    public at(pos: number): Promise<PlaylistItem | undefined> {
+        const url = this._urls[pos];
+        if (url === undefined) {
+            return Promise.resolve(undefined);
+        }
+        return Promise.resolve({ path: url, pos: pos });
+    }
+
+    public random(): Promise<PlaylistItem | undefined> {
+        if (this._urls.length < 1) {
+            return Promise.resolve(undefined);
+        }
+        const pos = randomInt(0, this._urls.length);
+        return Promise.resolve({ path: this._urls[pos], pos: pos });
+    }
+}
+
+class RemotePlaylist implements Playlist {
     public readonly url: string;
-    public readonly length: number;
+
+    private readonly _length: number;
 
     private constructor(
         url: string,
         length: number,
     ) {
         this.url = url;
-        this.length = length;
+        this._length = length;
     }
 
     public static async fetch(url: string): Promise<Playlist> {
@@ -80,7 +115,11 @@ class Playlist {
             length: number;
         }
         const info = await fetchJson<Info>(url);
-        return new Playlist(url, info.length);
+        return new RemotePlaylist(url, info.length);
+    }
+
+    public length(): number {
+        return this._length;
     }
 
     public async at(pos: number): Promise<PlaylistItem | undefined> {
@@ -90,11 +129,11 @@ class Playlist {
     }
 
     public async random(): Promise<PlaylistItem | undefined> {
-        if (this.length < 1) {
+        if (this._length < 1) {
             return Promise.resolve(undefined);
         }
         return nullToUndefined(await fetchJson<PlaylistItem | null>(
-            `${this.url}?pos=${randomInt(0, this.length)}`
+            `${this.url}?pos=${randomInt(0, this._length)}`
         ));
     }
 }
@@ -487,13 +526,21 @@ class Player {
     }
 
     public async playList(
-        url: string,
+        playlistUrlOrTrackUrls: string | string[],
         random = false,
     ): Promise<boolean> {
-        this._playlist = await Playlist.fetch(url);
+        if (typeof playlistUrlOrTrackUrls === "string") {
+            const url = playlistUrlOrTrackUrls;
+            this._playlist = await RemotePlaylist.fetch(url);
+        } else {
+            const trackUrls = playlistUrlOrTrackUrls;
+            this._playlist = new LocalPlaylist(trackUrls);
+        }
+
         this._playlistPos = -1;
         this._history = new PlayHistory();
         this._random = random;
+
         return this.next();
     }
 
@@ -501,17 +548,17 @@ class Player {
         if (this._history.hasNext()) {
             return true;
         }
-        if (this._playlist === undefined || this._playlist.length < 1) {
+        if (this._playlist === undefined || this._playlist.length() < 1) {
             return false;
         }
-        return this._random || this._playlistPos < (this._playlist.length - 1);
+        return this._random || this._playlistPos < (this._playlist.length() - 1);
     }
 
     public hasPrevious(): boolean {
         if (this._history.hasPrevious()) {
             return true;
         }
-        if (this._random || this._playlist === undefined || this._playlist.length < 1) {
+        if (this._random || this._playlist === undefined || this._playlist.length() < 1) {
             return false;
         }
         return this._playlistPos > 0;
@@ -520,13 +567,13 @@ class Player {
     public async next(): Promise<boolean> {
         let item = this._history.next();
         if (item === undefined) {
-            if (this._playlist === undefined || this._playlist.length < 1) {
+            if (this._playlist === undefined || this._playlist.length() < 1) {
                 return false;
             }
 
             if (this._random) {
                 item = await this._playlist.random();
-            } else if (this._playlistPos < (this._playlist.length - 1)) {
+            } else if (this._playlistPos < (this._playlist.length() - 1)) {
                 item = await this._playlist.at(this._playlistPos + 1);
             }
 

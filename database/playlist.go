@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"net/http"
 	"sb/aurelius/util"
 	"strconv"
@@ -50,19 +49,20 @@ func (db *Database) handlePlaylistRequestImpl(
 }
 
 func (db *Database) handlePlaylistRequest(
+	matches []string,
 	w http.ResponseWriter,
 	req *http.Request,
-) (handled bool, _ error) {
-	groups := db.rePlaylistPath.FindStringSubmatch(req.URL.Path)
-	if groups == nil {
-		return false, nil
-	}
-
-	path := db.expandPath(groups[1])
+) {
+	path := db.expandPath(matches[1])
 	lines, err := db.playlistCache.Get(path)
 	if err != nil {
-		return false, fmt.Errorf("failed to load '%v': %v", path, err)
+		http.NotFound(w, req)
+		util.Debug.Printf("failed to load '%v': %v", path, err)
+		return
 	}
 
-	return true, db.handlePlaylistRequestImpl(lines, w, req)
+	if err := db.handlePlaylistRequestImpl(lines, w, req); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		util.Debug.Printf("playlist request failed: %v\n", err)
+	}
 }

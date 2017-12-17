@@ -1,26 +1,25 @@
 package database
 
 import (
-	"os"
-	"path/filepath"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sb/aurelius/util"
 )
 
 func (db *Database) handleDirRequest(
+	matches []string,
 	w http.ResponseWriter,
 	req *http.Request,
-) (handled bool, _ error) {
-	groups := db.reDirPath.FindStringSubmatch(req.URL.Path)
-	if groups == nil {
-		return false, nil
-	}
+) {
+	path := db.expandPath(matches[1])
 
-	path := db.expandPath(groups[1])
 	infos, err := ioutil.ReadDir(path)
 	if err != nil {
-		return false, err
+		w.WriteHeader(http.StatusInternalServerError)
+		util.Debug.Printf("ReadDir failed: %v\n", err)
+		return
 	}
 
 	type TemplateData struct {
@@ -57,7 +56,7 @@ func (db *Database) handleDirRequest(
 	}
 
 	if err := db.templateProxy.ExecuteTemplate(w, "db-dir.html", data); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		util.Debug.Printf("failed to execute template: %v\n", err)
 	}
-	return true, nil
 }

@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,34 +13,19 @@ import (
 const favoritesPath = "Favorites.m3u"
 
 func (db *Database) handleTrackRequest(
+	matches []string,
 	w http.ResponseWriter,
 	req *http.Request,
-) (handled bool, _ error) {
-	groups := db.reTrackPath.FindStringSubmatch(req.URL.Path)
-	if groups == nil {
-		return false, nil
-	}
-
-	urlPath := groups[1]
+) {
+	urlPath := matches[1]
 	filePath := db.expandPath(urlPath)
-	subRequest := groups[2]
-
-	{
-		info, err := os.Stat(filePath)
-		if err != nil {
-			return false, nil
-		}
-
-		mode := info.Mode()
-		if mode.IsDir() {
-			return false, nil
-		}
-		if !mode.IsRegular() {
-			return false, fmt.Errorf("not a symlink or regular file: %v", filePath)
-		}
+	if info, err := os.Stat(filePath); err != nil || !info.Mode().IsRegular() {
+		http.NotFound(w, req)
+		return
 	}
 
-	handled = true
+	subRequest := matches[2]
+	handled := true
 
 	switch req.Method {
 	case http.MethodGet:
@@ -76,10 +60,9 @@ func (db *Database) handleTrackRequest(
 		handled = false
 	}
 
-	if handled {
-		return true, nil
+	if !handled {
+		http.NotFound(w, req)
 	}
-	return false, fmt.Errorf("invalid DB request: %v %v", req.Method, subRequest)
 }
 
 func (db *Database) IsFavorite(path string) (bool, error) {
