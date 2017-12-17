@@ -236,21 +236,31 @@ class Track {
     public static async fetch(
         url: string,
         options: StreamOptions,
+        recycledTrack?: Track,
     ): Promise<Track> {
-        const [info, audio] = await Promise.all([
-            fetchJson<TrackInfo>(`${url}/info`),
-            new Promise<HTMLAudioElement>((resolve) => {
-                const audio = new Audio(`${url}/stream${Track.streamQuery(options)}`);
-                audio.oncanplay = () => {
-                    resolve(audio);
-                };
-            }),
-        ]);
+        const info = await fetchJson<TrackInfo>(`${url}/info`);
 
+        let audio: HTMLAudioElement;
+        if (recycledTrack !== undefined) {
+            recycledTrack.destroy();
+            audio = recycledTrack.audio;
+        } else {
+            audio = new Audio();
+        }
+        
         if (info.replayGainTrack < 1) {
             audio.volume = info.replayGainTrack;
         }
 
+        await new Promise((resolve, reject) => {
+            audio.src = `${url}/stream${Track.streamQuery(options)}`;
+            audio.oncanplay = () => {
+                resolve();
+            };
+            audio.onerror = (reason) => {
+                reject(reason);
+            };
+        });
         return new Track(url, info, audio);
     }
 
@@ -488,11 +498,7 @@ class Player {
     }
 
     private async _play(url: string): Promise<void> {
-        const track = await Track.fetch(url, this._streamOptions);
-
-        if (this._track !== undefined) {
-            this._track.destroy();
-        }
+        const track = await Track.fetch(url, this._streamOptions, this._track);
         this._track = track;
 
         track.addEventListener("progress", () => {
