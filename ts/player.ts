@@ -189,7 +189,7 @@ interface TrackInfo {
 }
 
 interface StreamOptions {
-    readonly codec?: "mp3" | "vorbis" | "flac";
+    readonly codec?: "mp3" | "vorbis" | "flac" | "wav";
     readonly quality?: number;
     readonly bitRate?: number;
     readonly sampleRate?: number;

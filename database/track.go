@@ -185,9 +185,9 @@ func (db *Database) handleStreamRequest(
 	options.SampleFormat = srcStreamInfo.SampleFormat()
 	options.SampleRate = srcStreamInfo.SampleRate
 
-	options.Codec = "flac"
-	formatName := "flac"
-	mimeType := "audio/flac"
+	options.Codec = "pcm_s16le"
+	formatName := "wav"
+	mimeType := "audio/wav"
 	replayGainStr := "track"
 	preventClipping := true
 
@@ -204,6 +204,10 @@ func (db *Database) handleStreamRequest(
 			formatName = "ogg"
 			mimeType = "audio/ogg"
 		case "flac":
+			options.Codec = "flac"
+			formatName = "flac"
+			mimeType = "audio/flac"
+		case "wav":
 			// already set up
 		default:
 			badRequest("unknown codec requested: %v\n", codec[0])
