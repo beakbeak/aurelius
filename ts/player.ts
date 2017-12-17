@@ -114,6 +114,14 @@ class PlayHistory {
         }
     }
 
+    public hasPrevious(): boolean {
+        return this._urls.length > 1 && this._index > 0;
+    }
+
+    public hasNext(): boolean {
+        return this._index < (this._urls.length - 1);
+    }
+
     public previous(): string | undefined {
         if (this._index === 0) {
             return undefined;
@@ -217,11 +225,17 @@ class Track {
     }
 
     public async favorite(): Promise<void> {
+        if (this.info.favorite) {
+            return;
+        }
         await postJson(`${this.url}/favorite`);
         this.info.favorite = true;
     }
 
     public async unfavorite(): Promise<void> {
+        if (!this.info.favorite) {
+            return;
+        }
         await postJson(`${this.url}/unfavorite`);
         this.info.favorite = false;
     }
@@ -232,6 +246,7 @@ class Player {
     private _pauseButton: HTMLElement;
     private _nextButton: HTMLElement;
     private _prevButton: HTMLElement;
+    private _progressBarEmpty: HTMLElement;
     private _progressBarFill: HTMLElement;
     private _seekSlider: HTMLElement;
     private _statusRight: HTMLElement;
@@ -265,6 +280,7 @@ class Player {
         this._pauseButton = this._getElement(container, "pause-button");
         this._nextButton = this._getElement(container, "next-button");
         this._prevButton = this._getElement(container, "prev-button");
+        this._progressBarEmpty = this._getElement(container, "progress-bar-empty");
         this._progressBarFill = this._getElement(container, "progress-bar-fill");
         this._seekSlider = this._getElement(container, "seek-slider");
         this._duration = this._getElement(container, "duration");
@@ -295,10 +311,16 @@ class Player {
         this._unfavoriteButton.onclick = () => {
             this.unfavorite();
         };
+
+        this._updateAll();
     }
 
     private _updateStatus(): void {
         if (this._track === undefined) {
+            this._statusRight.textContent = "";
+            this._favoriteButton.style.display = "";
+            this._unfavoriteButton.style.display = "none";
+            this._favoriteButton.classList.add("inactive");
             return;
         }
         const info = this._track.info;
@@ -325,9 +347,11 @@ class Player {
         if (info.favorite) {
             this._favoriteButton.style.display = "none";
             this._unfavoriteButton.style.display = "";
+            this._unfavoriteButton.classList.remove("inactive");
         } else {
             this._favoriteButton.style.display = "";
             this._unfavoriteButton.style.display = "none";
+            this._favoriteButton.classList.remove("inactive");
         }
     }
 
@@ -345,8 +369,12 @@ class Player {
         if (this._track === undefined) {
             this._duration.textContent = "";
             this._seekSlider.style.left = "0";
+            this._seekSlider.classList.add("inactive");
+            this._progressBarEmpty.classList.add("inactive");
             return;
         }
+        this._seekSlider.classList.remove("inactive");
+        this._progressBarEmpty.classList.remove("inactive");
 
         const currentTime = this._track.audio.currentTime;
         const duration = this._track.info.duration;
@@ -383,6 +411,40 @@ class Player {
         }
     }
 
+    private _updateButtons(): void {
+        if (this._track === undefined || this._track.audio.paused) {
+            this._playButton.style.display = "";
+            this._pauseButton.style.display = "none";
+            if (this._track === undefined) {
+                this._playButton.classList.add("inactive");
+            } else {
+                this._playButton.classList.remove("inactive");
+            }
+        } else {
+            this._playButton.style.display = "none";
+            this._pauseButton.style.display = "";
+        }
+
+        if (this.hasNext()) {
+            this._nextButton.classList.remove("inactive");
+        } else {
+            this._nextButton.classList.add("inactive");
+        }
+
+        if (this.hasPrevious()) {
+            this._prevButton.classList.remove("inactive");
+        } else {
+            this._prevButton.classList.add("inactive");
+        }
+    }
+
+    private _updateAll(): void {
+        this._updateTime();
+        this._updateBuffer();
+        this._updateStatus();
+        this._updateButtons();
+    }
+
     private async _play(url: string): Promise<void> {
         const track = await Track.fetch(url, { codec: "vorbis", quality: 8 });
 
@@ -404,20 +466,12 @@ class Player {
                 if (this._track !== undefined) {
                     this._track.audio.currentTime = 0;
                 }
-                this._updateBuffer();
-                this._updateTime();
-                this._updateStatus();
+                this._updateAll();
             }
         });
 
         track.audio.play();
-
-        this._progressBarFill.style.left = "0";
-        this._progressBarFill.style.width = "0";
-        this._playButton.style.display = "none";
-        this._pauseButton.style.display = "";
-
-        this._updateStatus();
+        this._updateAll();
     }
 
     public playTrack(url: string): Promise<void> {
@@ -433,6 +487,13 @@ class Player {
         this._playlist = await Playlist.fetch(url);
         this._history = new PlayHistory();
         return this.next();
+    }
+
+    public hasNext(): boolean {
+        if (this._history.hasNext()) {
+            return true;
+        }
+        return this._playlist !== undefined && this._playlist.length > 0;
     }
 
     public async next(): Promise<boolean> {
@@ -453,6 +514,10 @@ class Player {
         return true;
     }
 
+    public hasPrevious(): boolean {
+        return this._history.hasPrevious();
+    }
+
     public async previous(): Promise<boolean> {
         let url = this._history.previous();
         if (url === undefined) {
@@ -463,21 +528,19 @@ class Player {
     }
 
     public pause(): void {
-        if (this._track === undefined) {
+        if (this._track === undefined || this._track.audio.paused) {
             return;
         }
         this._track.audio.pause();
-        this._pauseButton.style.display = "none";
-        this._playButton.style.display = "";
+        this._updateAll();
     }
 
     public unpause(): void {
-        if (this._track === undefined) {
+        if (this._track === undefined || !this._track.audio.paused) {
             return;
         }
         this._track.audio.play();
-        this._playButton.style.display = "none";
-        this._pauseButton.style.display = "";
+        this._updateAll();
     }
 
     public async favorite(): Promise<void> {

@@ -28,10 +28,13 @@ body .material-icons {
 }
 
 #header .material-icons { color: rgba(0, 0, 0, 0.54); }
-#header .material-icons.inactive { color: rgba(0, 0, 0, 0.26); }
+#header .inactive .material-icons { color: rgba(0, 0, 0, 0.26); }
 
 .clickable {
 	cursor: pointer;
+}
+.clickable.inactive {
+	cursor: default;
 }
 
 #header {
@@ -84,6 +87,9 @@ body .material-icons {
 	border: 1px solid;
 	margin: 0 .5rem;
 }
+#progress-bar-empty.inactive {
+	color: hsl(39, 16%, 69%);
+}
 #progress-bar-fill {
 	position: absolute;
 	top: 0;
@@ -104,6 +110,9 @@ body .material-icons {
 	height: 200%;
 	top: -50%;
 	background-color: hsl(39, 8%, 43%);
+}
+#seek-slider.inactive {
+	background-color: hsl(39, 16%, 69%);
 }
 
 #duration {
