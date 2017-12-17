@@ -16,11 +16,22 @@
 
 			const playlists = document.getElementById("playlists");
 			if (playlists !== null) {
-				for (const file of playlists.getElementsByTagName("a")) {
+				const files = Array.prototype.slice.apply(playlists.getElementsByTagName("a"));
+				for (const file of files) {
 					file.onclick = () => {
 						player.playList(file.href);
 						return false;
 					};
+
+					const randomLink = document.createElement("a");
+					randomLink.textContent = "random";
+					randomLink.href = file.href;
+					randomLink.classList.add("aux-link");
+					randomLink.onclick = () => {
+						player.playList(randomLink.href, true);
+						return false;
+					};
+					file.parentElement.appendChild(randomLink);
 				}
 			}
 

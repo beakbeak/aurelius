@@ -102,40 +102,40 @@ class Playlist {
 class PlayHistory {
     private static readonly _maxLength = 1024;
 
-    private _urls: string[] = [];
+    private _items: PlaylistItem[] = [];
     private _index = 0;
 
-    public push(url: string): void {
-        this._urls.splice(this._index + 1, this._urls.length - (this._index + 1), url);
-        if (this._urls.length > PlayHistory._maxLength) {
-            this._urls.shift();
-        } else if (this._urls.length > 1) {
+    public push(item: PlaylistItem): void {
+        this._items.splice(this._index + 1, this._items.length - (this._index + 1), item);
+        if (this._items.length > PlayHistory._maxLength) {
+            this._items.shift();
+        } else if (this._items.length > 1) {
             ++this._index;
         }
     }
 
     public hasPrevious(): boolean {
-        return this._urls.length > 1 && this._index > 0;
+        return this._items.length > 1 && this._index > 0;
     }
 
     public hasNext(): boolean {
-        return this._index < (this._urls.length - 1);
+        return this._index < (this._items.length - 1);
     }
 
-    public previous(): string | undefined {
+    public previous(): PlaylistItem | undefined {
         if (this._index === 0) {
             return undefined;
         }
         --this._index;
-        return this._urls[this._index];
+        return this._items[this._index];
     }
 
-    public next(): string | undefined {
-        if (this._index >= (this._urls.length - 1)) {
+    public next(): PlaylistItem | undefined {
+        if (this._index >= (this._items.length - 1)) {
             return undefined;
         }
         ++this._index;
-        return this._urls[this._index];
+        return this._items[this._index];
     }
 }
 
@@ -256,7 +256,9 @@ class Player {
 
     private _track?: Track;
     private _playlist?: Playlist;
-    private _history = new PlayHistory(); 
+    private _history = new PlayHistory();
+    private _playlistPos = -1;
+    private _random = false;
 
     private _getElement(
         container: HTMLElement,
@@ -477,15 +479,21 @@ class Player {
     public playTrack(url: string): Promise<void> {
         if (this._playlist !== undefined) {
             this._playlist = undefined;
+            this._playlistPos = -1;
             this._history = new PlayHistory();
         }
-        this._history.push(url);
+        this._history.push({ path: url, pos: 0 });
         return this._play(url);
     }
 
-    public async playList(url: string): Promise<boolean> {
+    public async playList(
+        url: string,
+        random = false,
+    ): Promise<boolean> {
         this._playlist = await Playlist.fetch(url);
+        this._playlistPos = -1;
         this._history = new PlayHistory();
+        this._random = random;
         return this.next();
     }
 
@@ -493,37 +501,52 @@ class Player {
         if (this._history.hasNext()) {
             return true;
         }
-        return this._playlist !== undefined && this._playlist.length > 0;
-    }
-
-    public async next(): Promise<boolean> {
-        let url = this._history.next();
-        if (url === undefined) {
-            if (this._playlist !== undefined) {
-                const item = await this._playlist.random();
-                if (item !== undefined) {
-                    url = item.path;
-                }
-            }
-            if (url === undefined) {
-                return false;
-            }
-            this._history.push(url);
+        if (this._playlist === undefined || this._playlist.length < 1) {
+            return false;
         }
-        await this._play(url);
-        return true;
+        return this._random || this._playlistPos < (this._playlist.length - 1);
     }
 
     public hasPrevious(): boolean {
-        return this._history.hasPrevious();
+        if (this._history.hasPrevious()) {
+            return true;
+        }
+        if (this._random || this._playlist === undefined || this._playlist.length < 1) {
+            return false;
+        }
+        return this._playlistPos > 0;
+    }
+
+    public async next(): Promise<boolean> {
+        let item = this._history.next();
+        if (item === undefined) {
+            if (this._playlist === undefined || this._playlist.length < 1) {
+                return false;
+            }
+
+            if (this._random) {
+                item = await this._playlist.random();
+            } else if (this._playlistPos < (this._playlist.length - 1)) {
+                item = await this._playlist.at(this._playlistPos + 1);
+            }
+
+            if (item === undefined) {
+                return false;
+            }
+            this._history.push(item);
+        }
+        this._playlistPos = item.pos;
+        await this._play(item.path);
+        return true;
     }
 
     public async previous(): Promise<boolean> {
-        let url = this._history.previous();
-        if (url === undefined) {
+        let item = this._history.previous();
+        if (item === undefined) {
             return false;
         }
-        await this._play(url);
+        this._playlistPos = item.pos;
+        await this._play(item.path);
         return true;
     }
 

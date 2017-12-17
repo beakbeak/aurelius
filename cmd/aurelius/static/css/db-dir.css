@@ -140,6 +140,10 @@ body .material-icons {
 .listing i, .listing a {
 	vertical-align: middle;
 }
+.listing .aux-link {
+	margin-left: .5em;
+	font-style: italic;
+}
 
 #footer {
 	position: fixed;
