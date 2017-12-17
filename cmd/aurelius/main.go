@@ -73,6 +73,9 @@ func main() {
 	*/
 
 	router := mux.NewRouter()
+	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		http.Redirect(w, req, "/db/", http.StatusFound)
+	})
 	router.PathPrefix(db.Prefix() + "/").Handler(db)
 	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 	/*
