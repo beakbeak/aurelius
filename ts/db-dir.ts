@@ -18,11 +18,8 @@ window.onload = () => {
         player.setStreamOptions({ codec: "wav" });
     }
 
-    const playlists = document.getElementById("playlists")!;
-    {
-        const currentDirLink = document.getElementById("current-dir") as HTMLAnchorElement;
-        currentDirLink.href = window.location.pathname;
-
+    const playlists = document.getElementById("playlists");
+    if (playlists !== null) {
         const playlistLinks: HTMLAnchorElement[] =
             Array.prototype.slice.apply(playlists.getElementsByTagName("a"));
 
@@ -33,25 +30,14 @@ window.onload = () => {
             randomLink.classList.add("aux-link");
             playlistLink.parentElement!.appendChild(randomLink);
 
-            if (playlistLink === currentDirLink) {
-                playlistLink.onclick = () => {
-                    player.playList(getTrackUrls());
-                    return false;
-                };
-                randomLink.onclick = () => {
-                    player.playList(getTrackUrls(), true);
-                    return false;
-                };
-            } else {
-                playlistLink.onclick = () => {
-                    player.playList(playlistLink.href);
-                    return false;
-                };
-                randomLink.onclick = () => {
-                    player.playList(randomLink.href, true);
-                    return false;
-                };
-            }
+            playlistLink.onclick = () => {
+                player.playList(playlistLink.href);
+                return false;
+            };
+            randomLink.onclick = () => {
+                player.playList(randomLink.href, true);
+                return false;
+            };
         }
     }
 
