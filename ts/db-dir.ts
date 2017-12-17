@@ -59,7 +59,9 @@ window.onload = () => {
     if (tracks !== null) {
         for (const trackLink of tracks.getElementsByTagName("a")) {
             trackLink.onclick = () => {
-                player.playTrack(trackLink.href);
+                const trackUrls = getTrackUrls();
+                const startPos = trackUrls.indexOf(trackLink.href);
+                player.playList(trackUrls, false, startPos >= 0 ? startPos : 0)
                 return false;
             };
         }

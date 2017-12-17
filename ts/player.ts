@@ -547,6 +547,7 @@ class Player {
     public async playList(
         playlistUrlOrTrackUrls: string | string[],
         random = false,
+        startPos = 0,
     ): Promise<boolean> {
         if (typeof playlistUrlOrTrackUrls === "string") {
             const url = playlistUrlOrTrackUrls;
@@ -556,7 +557,7 @@ class Player {
             this._playlist = new LocalPlaylist(trackUrls);
         }
 
-        this._playlistPos = -1;
+        this._playlistPos = startPos - 1;
         this._history = new PlayHistory();
         this._random = random;
 
@@ -612,8 +613,8 @@ class Player {
             if (this._playlist === undefined || this._playlist.length() < 1
                 || this._playlistPos <= 0)
             {
-            return false;
-        }
+                return false;
+            }
 
             item = await this._playlist.at(this._playlistPos - 1);
             if (item === undefined) {
