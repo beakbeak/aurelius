@@ -454,9 +454,9 @@ class Player {
             const start = ranges.start(0);
             const end = ranges.end(ranges.length - 1);
             this._progressBarFill.style.left =
-                `${(start / this._track.info.duration) * 100}%`;
+                `${Math.max(0, Math.min(100, (start / this._track.info.duration) * 100))}%`;
             this._progressBarFill.style.width =
-                `${((end - start) / this._track.info.duration) * 100}%`;
+                `${Math.max(0, Math.min(100, ((end - start) / this._track.info.duration) * 100))}%`;
         } else {
             this._progressBarFill.style.left = "0";
             this._progressBarFill.style.width = "0";
