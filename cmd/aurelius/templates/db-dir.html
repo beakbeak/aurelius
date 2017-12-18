@@ -65,7 +65,6 @@
 
 		{{- if .Playlists}}
 			<ul id="playlists" class="listing">
-				<li><i class="material-icons">playlist_play</i><a id="current-dir">Current directory</a></li>
 				{{- range $file := .Playlists}}
 					<li><i class="material-icons">playlist_play</i><a href="{{$file}}">{{$file}}</a></li>
 				{{- end}}
