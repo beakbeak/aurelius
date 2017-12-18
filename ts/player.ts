@@ -372,6 +372,35 @@ class Player {
         };
 
         this._updateAll();
+
+        window.addEventListener("resize", () => {
+            this._updateStatus(); // update marquee distance
+        });
+    }
+
+    private _setStatusText(text: string): void {
+        const element = this._statusRight;
+
+        element.textContent = text;
+        if (element.clientWidth >= element.scrollWidth) {
+            element.style.animation = "";
+            return;
+        }
+
+        const scrollLength = element.scrollWidth - element.clientWidth;
+        const scrollTime = scrollLength / 50 /* px/second */;
+        const waitTime = 2 /* seconds */;
+        const totalTime = 2 * (scrollTime + waitTime);
+        const scrollPercent = 100 * (scrollTime / totalTime);
+        const waitPercent = 100 * (waitTime / totalTime);
+
+        const style = document.createElement("style");
+        style.innerText =
+            `@keyframes marquee { ${scrollPercent}% { transform: translateX(-${scrollLength}px); }`
+            + ` ${scrollPercent + waitPercent}% {transform: translateX(-${scrollLength}px); }`
+            + ` ${2 * scrollPercent + waitPercent}% {transform: translateX(0px);} }`;
+        element.appendChild(style);
+        element.style.animation = `marquee ${totalTime}s infinite linear`;
     }
 
     private _updateStatus(): void {
@@ -406,7 +435,7 @@ class Player {
             text = `${text} [${info.tags["album"]}${track}]`;
         }
 
-        this._statusRight.textContent = text;
+        this._setStatusText(text);
 
         if (info.favorite) {
             this._favoriteButton.style.display = "none";
