@@ -51,14 +51,14 @@ func New(
 	if db.reDirPath, err = regexp.Compile(`^` + prefix + `/(:?(.*?)/)?$`); err != nil {
 		return nil, err
 	}
-	if db.rePlaylistPath, err = regexp.Compile(`^` + prefix + `/(.+?\.[mM]3[uU])`); err != nil {
+	if db.rePlaylistPath, err = regexp.Compile(`^` + prefix + `/(.+?\.[mM]3[uU])$`); err != nil {
 		return nil, err
 	}
 	if db.reTrackPath, err = regexp.Compile(`^` + prefix + `/(.+?)/([^/]+)$`); err != nil {
 		return nil, err
 	}
 	if db.reIgnore, err = regexp.Compile(
-		`\.(:?[jJ][pP][eE]?[gG]|[pP][nN][gG]|[tT][xX][tT]|[lL][oO][gG]|[cC][uU][eE]|[gG][iI][fF]|[pP][dD][fF])$`,
+		`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo)$`,
 	); err != nil {
 		return nil, err
 	}
