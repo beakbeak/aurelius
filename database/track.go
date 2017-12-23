@@ -120,7 +120,7 @@ func (db *Database) handleInfoRequest(
 }
 
 func (db *Database) Favorite(path string) error {
-	return db.playlistCache.Modify(
+	return db.playlistCache.CreateOrModify(
 		db.expandPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
 			for _, line := range favorites {
@@ -134,7 +134,7 @@ func (db *Database) Favorite(path string) error {
 }
 
 func (db *Database) Unfavorite(path string) error {
-	return db.playlistCache.Modify(
+	return db.playlistCache.CreateOrModify(
 		db.expandPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
 			for index, line := range favorites {

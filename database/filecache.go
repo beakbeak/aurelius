@@ -22,12 +22,10 @@ func NewFileCache() *FileCache {
 	return &FileCache{files: make(map[string]*cachedFile)}
 }
 
-func (c *FileCache) unsafeGet(path string) ([]string, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, fmt.Errorf("stat failed: %v", err)
-	}
-
+func (c *FileCache) unsafeGetWithInfo(
+	path string,
+	info os.FileInfo,
+) ([]string, error) {
 	if cached, ok := c.files[path]; ok {
 		if cached.ModTime.Equal(info.ModTime()) || cached.ModTime.After(info.ModTime()) {
 			return cached.Lines, nil
@@ -54,6 +52,15 @@ func (c *FileCache) unsafeGet(path string) ([]string, error) {
 
 	c.files[path] = &cached
 	return cached.Lines, nil
+}
+
+func (c *FileCache) unsafeGet(path string) ([]string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("stat failed: %v", err)
+	}
+
+	return c.unsafeGetWithInfo(path, info)
 }
 
 func (c *FileCache) Get(path string) ([]string, error) {
@@ -108,6 +115,22 @@ func (c *FileCache) Write(
 	return c.unsafeWrite(path, lines)
 }
 
+func (c *FileCache) modifyImpl(
+	path string,
+	modifier func(lines []string) ([]string, error),
+	lines []string,
+) error {
+	lines, err := modifier(lines)
+	if err != nil {
+		return err
+	}
+	if lines == nil {
+		return nil
+	}
+
+	return c.unsafeWrite(path, lines)
+}
+
 // returning nil from modifier will result in no change
 func (c *FileCache) Modify(
 	path string,
@@ -121,13 +144,28 @@ func (c *FileCache) Modify(
 		return err
 	}
 
-	lines, err = modifier(lines)
-	if err != nil {
-		return err
-	}
-	if lines == nil {
-		return nil
+	return c.modifyImpl(path, modifier, lines)
+}
+
+// returning nil from modifier will result in no change
+func (c *FileCache) CreateOrModify(
+	path string,
+	modifier func(lines []string) ([]string, error),
+) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	var lines []string
+
+	info, err := os.Stat(path)
+	if err == nil {
+		if lines, err = c.unsafeGetWithInfo(path, info); err != nil {
+			return err
+		}
+	} else {
+		// XXX some error types should cause a `return err` here
+		lines = make([]string, 0)
 	}
 
-	return c.unsafeWrite(path, lines)
+	return c.modifyImpl(path, modifier, lines)
 }
