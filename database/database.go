@@ -58,11 +58,11 @@ func New(
 		return nil, err
 	}
 	if db.reIgnore, err = regexp.Compile(
-		`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo)$`,
+		`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`,
 	); err != nil {
 		return nil, err
 	}
-	if db.rePlaylist, err = regexp.Compile(`\.[mM]3[uU]`); err != nil {
+	if db.rePlaylist, err = regexp.Compile(`\.[mM]3[uU]$`); err != nil {
 		return nil, err
 	}
 
