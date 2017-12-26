@@ -63,6 +63,7 @@ type Source interface {
 	Tags() map[string]string
 	StreamInfo() StreamInfo
 	Duration() time.Duration
+	SeekTo(offset time.Duration) error
 
 	// Decode transfers an encoded packet from the input to the decoder.
 	// It must be followed by one or more calls to ReceiveFrame.
@@ -326,9 +327,13 @@ func (src *sourceBase) Duration() time.Duration {
 	if src.formatCtx.duration <= 0 {
 		return 0
 	}
+	return durationFromTimeBase(src.formatCtx.duration, C.av_make_q(1, C.AV_TIME_BASE))
+}
 
-	if C.AV_TIME_BASE > time.Second || (time.Second%C.AV_TIME_BASE) != 0 {
-		panic("time base conversion is incorrect")
+func (src *sourceBase) SeekTo(offset time.Duration) error {
+	streamOffset := durationToTimeBase(offset, src.stream.time_base)
+	if err := C.av_seek_frame(src.formatCtx, src.stream.index, streamOffset, C.int(0)); err < 0 {
+		return fmt.Errorf("unknown error")
 	}
-	return time.Duration(src.formatCtx.duration) * (time.Second / time.Duration(C.AV_TIME_BASE))
+	return nil
 }

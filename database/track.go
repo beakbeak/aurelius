@@ -219,7 +219,7 @@ func (db *Database) handleStreamRequest(
 		if quality, err := strconv.ParseFloat(qualityArgs[0], 32); err == nil {
 			options.Quality = float32(quality)
 		} else {
-			badRequest("invalid quality requested: %v\n", qualityArgs[0])
+			badRequest("invalid quality requested: %v (%v)\n", qualityArgs[0], err)
 			return
 		}
 	}
@@ -228,7 +228,7 @@ func (db *Database) handleStreamRequest(
 		if bitRate, err := strconv.ParseUint(bitRateArgs[0], 0, 0); err == nil {
 			options.BitRate = uint(bitRate) * 1000
 		} else {
-			badRequest("invalid bit rate requested: %v\n", bitRateArgs[0])
+			badRequest("invalid bit rate requested: %v (%v)\n", bitRateArgs[0], err)
 			return
 		}
 	}
@@ -237,7 +237,7 @@ func (db *Database) handleStreamRequest(
 		if sampleRate, err := strconv.ParseUint(sampleRateArgs[0], 0, 0); err == nil {
 			options.SampleRate = uint(sampleRate)
 		} else {
-			badRequest("invalid sample rate requested: %v\n", sampleRateArgs[0])
+			badRequest("invalid sample rate requested: %v (%v)\n", sampleRateArgs[0], err)
 			return
 		}
 	}
@@ -254,7 +254,7 @@ func (db *Database) handleStreamRequest(
 
 	if preventClippingArgs, ok := query["preventClipping"]; ok {
 		if preventClipping, err = strconv.ParseBool(preventClippingArgs[0]); err != nil {
-			badRequest("invalid value for preventClipping: %v\n", preventClippingArgs[0])
+			badRequest("invalid value for preventClipping: %v (%v)\n", preventClippingArgs[0], err)
 			return
 		}
 	}
@@ -276,6 +276,21 @@ func (db *Database) handleStreamRequest(
 	// volume > 1 is applied on the server side due to limitations in the HTML5 media API
 	if volume < 1 {
 		volume = 1.
+	}
+
+	if startTimeArgs, ok := query["startTime"]; ok {
+		startTime, err := time.ParseDuration(startTimeArgs[0])
+		if err != nil {
+			badRequest("invalid start time: %v (%v)\n", startTimeArgs[0], err)
+			return
+		} else if startTime < 0 {
+			badRequest("invalid start time: %v\n", startTimeArgs[0])
+			return
+		} else if startTime > 0 {
+			if err := src.SeekTo(startTime); err != nil {
+				util.Debug.Printf("seek failed: %v\n", err)
+			}
+		}
 	}
 
 	sink, err := aurelib.NewBufferSink(formatName, options)

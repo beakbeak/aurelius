@@ -13,6 +13,7 @@ static uint64_t avChLayoutStereo() {
 import "C"
 import (
 	"fmt"
+	"time"
 	"unsafe"
 )
 
@@ -113,5 +114,9 @@ func (s *SilenceSource) CopyFrame(
 	) < silenceBufferSize {
 		return fmt.Errorf("failed to write data to FIFO")
 	}
+	return nil
+}
+
+func (s *SilenceSource) SeekTo(offset time.Duration) error {
 	return nil
 }

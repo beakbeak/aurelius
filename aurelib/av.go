@@ -8,6 +8,7 @@ package aurelib
 */
 import "C"
 import "fmt"
+import "time"
 
 func init() {
 	C.av_register_all()
@@ -133,4 +134,20 @@ func (frame Frame) Destroy() {
 
 func (frame Frame) IsEmpty() bool {
 	return frame.frame == nil || frame.Size == 0
+}
+
+func durationToTimeBase(
+	duration time.Duration,
+	timeBase C.AVRational,
+) C.int64_t {
+	// (duration / time.Second) / timeBase
+	return C.int64_t(float64(duration) / (float64(time.Second) * float64(C.av_q2d(timeBase))))
+}
+
+func durationFromTimeBase(
+	duration C.int64_t,
+	timeBase C.AVRational,
+) time.Duration {
+	// (duration * timeBase) * time.Second
+	return time.Duration(float64(duration) * (float64(time.Second) * float64(C.av_q2d(timeBase))))
 }
