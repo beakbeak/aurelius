@@ -55,6 +55,10 @@ function randomInt(
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+function copyJson(obj: any) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
 //
 // Player //////////////////////////////////////////////////////////////////////
 //
@@ -196,19 +200,21 @@ interface TrackInfo {
 }
 
 interface StreamOptions {
-    readonly codec?: "mp3" | "vorbis" | "flac" | "wav";
-    readonly quality?: number;
-    readonly bitRate?: number;
-    readonly sampleRate?: number;
-    readonly sampleFormat?: string;
-    readonly channelLayout?: string;
-//    readonly replayGain?: "track" | "album" | "off";
-//    readonly preventClipping?: boolean;
+    codec?: "mp3" | "vorbis" | "flac" | "wav";
+    quality?: number;
+    bitRate?: number;
+    sampleRate?: number;
+    sampleFormat?: string;
+    channelLayout?: string;
+//    replayGain?: "track" | "album" | "off";
+//    preventClipping?: boolean;
 }
 
 class Track {
     public readonly url: string;
     public readonly info: TrackInfo;
+    public readonly options: StreamOptions;
+    public readonly startTime: number;
     public readonly audio: HTMLAudioElement;
 
     private _listeners: { name: string; func: any; }[] = [];
@@ -216,10 +222,14 @@ class Track {
     private constructor(
         url: string,
         info: TrackInfo,
+        options: StreamOptions,
+        startTime: number,
         audio: HTMLAudioElement,
     ) {
         this.url = url;
         this.info = info;
+        this.options = options;
+        this.startTime = startTime;
         this.audio = audio;
     }
 
@@ -231,11 +241,18 @@ class Track {
         this.audio.src = "";
     }
 
-    private static streamQuery(options: StreamOptions): string {
+    private static streamQuery(
+        options: StreamOptions,
+        startTime = 0,
+    ): string {
         const keys = Object.keys(options) as (keyof StreamOptions)[];
         let query = "";
-        for (let i = 0; i < keys.length; ++i) {
+        let i = 0;
+        for (; i < keys.length; ++i) {
             query += `${i === 0 ? "?" : "&"}${keys[i]}=${options[keys[i]]}`;
+        }
+        if (startTime > 0) {
+            query += `${i === 0 ? "?" : "&"}startTime=${startTime}s`;
         }
         return query;
     }
@@ -243,8 +260,11 @@ class Track {
     public static async fetch(
         url: string,
         options: StreamOptions,
+        startTime = 0,
         recycledTrack?: Track,
     ): Promise<Track> {
+        options = copyJson(options);
+
         const info = await fetchJson<TrackInfo>(`${url}/info`);
 
         let audio: HTMLAudioElement;
@@ -258,7 +278,7 @@ class Track {
         audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
         await new Promise((resolve, reject) => {
-            audio.src = `${url}/stream${Track.streamQuery(options)}`;
+            audio.src = `${url}/stream${Track.streamQuery(options, startTime)}`;
             audio.oncanplay = () => {
                 resolve();
             };
@@ -266,7 +286,7 @@ class Track {
                 reject(reason);
             };
         });
-        return new Track(url, info, audio);
+        return new Track(url, info, options, startTime, audio);
     }
 
     public addEventListener<K extends keyof HTMLMediaElementEventMap>(
@@ -292,6 +312,10 @@ class Track {
         }
         await postJson(`${this.url}/unfavorite`);
         this.info.favorite = false;
+    }
+
+    public currentTime(): number {
+        return this.startTime + this.audio.currentTime;
     }
 }
 
@@ -367,6 +391,13 @@ class Player {
         this._unfavoriteButton.style.display = "none";
         this._unfavoriteButton.onclick = () => {
             this.unfavorite();
+        };
+
+        this._progressBarEmpty.ondblclick = (event: MouseEvent) => {
+            if (this._track !== undefined) {
+                const rect = this._progressBarEmpty.getBoundingClientRect();
+                this.seekTo(((event.clientX - rect.left) / rect.width) * this._track.info.duration);
+            }
         };
 
         this._updateAll();
@@ -467,7 +498,7 @@ class Player {
         this._seekSlider.classList.remove("inactive");
         this._progressBarEmpty.classList.remove("inactive");
 
-        const currentTime = this._track.audio.currentTime;
+        const currentTime = this._track.currentTime();
         const duration = this._track.info.duration;
         const currentTimeStr = this._secondsToString(currentTime);
         const durationStr = this._secondsToString(duration);
@@ -490,8 +521,8 @@ class Player {
 
         const ranges = this._track.audio.buffered;
         if (ranges.length > 0 && this._track.info.duration > 0) {
-            const start = ranges.start(0);
-            const end = ranges.end(ranges.length - 1);
+            const start = this._track.startTime + ranges.start(0);
+            const end = this._track.startTime + ranges.end(ranges.length - 1);
             this._progressBarFill.style.left =
                 `${Math.max(0, Math.min(100, (start / this._track.info.duration) * 100))}%`;
             this._progressBarFill.style.width =
@@ -536,8 +567,11 @@ class Player {
         this._updateButtons();
     }
 
-    private async _play(url: string): Promise<void> {
-        const track = await Track.fetch(url, this._streamOptions, this._track);
+    private async _play(
+        url: string,
+        startTime?: number,
+    ): Promise<void> {
+        const track = await Track.fetch(url, this._streamOptions, startTime, this._track);
         this._track = track;
 
         track.addEventListener("progress", () => {
@@ -559,6 +593,13 @@ class Player {
 
         track.audio.play();
         this._updateAll();
+    }
+
+    public seekTo(seconds: number): Promise<void> {
+        if (this._track === undefined) {
+            return Promise.resolve();
+        }
+        return this._play(this._track.url, seconds);
     }
 
     public playTrack(url: string): Promise<void> {
