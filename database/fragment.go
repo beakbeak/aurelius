@@ -56,14 +56,20 @@ func newFragment(path string) (*Fragment, error) {
 	}()
 
 	duration := src.Duration()
-	if f.startTime > duration {
+	if f.startTime < 0 {
+		f.startTime = 0
+	} else if f.startTime > duration {
 		f.startTime = duration
 	}
-	if f.endTime > duration {
+
+	if f.endTime < 0 {
+		f.endTime = duration
+	} else if f.endTime > duration {
 		f.endTime = duration
 	}
+
 	if f.startTime >= f.endTime {
-		return &f, fmt.Errorf("clamped start >= clamped end (%v >= %v)", f.startTime, f.endTime)
+		return &f, fmt.Errorf("start >= end (%v >= %v)", f.startTime, f.endTime)
 	}
 
 	if f.startTime > 0 {
@@ -128,10 +134,6 @@ StatementLoop:
 		case "end":
 			f.endTime = offset
 		}
-	}
-
-	if f.startTime >= f.endTime {
-		return fmt.Errorf("start >= end (%v >= %v)", f.startTime, f.endTime)
 	}
 	return nil
 }
