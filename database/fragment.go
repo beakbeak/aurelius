@@ -141,7 +141,7 @@ func (f *Fragment) Duration() time.Duration {
 }
 
 func (f *Fragment) SeekTo(offset time.Duration) error {
-	offset -= f.startTime
+	offset += f.startTime
 	if offset > f.endTime {
 		offset = f.endTime
 	}
