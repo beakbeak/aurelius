@@ -101,6 +101,10 @@ func (s *SilenceSource) FrameSize() uint {
 	return silenceBufferSize
 }
 
+func (s *SilenceSource) FrameStartTime() uint {
+	return 0
+}
+
 func (s *SilenceSource) CopyFrame(
 	fifo *Fifo,
 	rs *Resampler,

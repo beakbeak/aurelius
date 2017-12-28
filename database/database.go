@@ -15,17 +15,30 @@ const (
 	playAhead = 10000 * time.Millisecond // TODO: make configurable
 )
 
+var (
+	reDirPath      *regexp.Regexp
+	rePlaylistPath *regexp.Regexp
+	reTrackPath    *regexp.Regexp
+)
+
+func init() {
+	var err error
+	if reDirPath, err = regexp.Compile(`^` + prefix + `/(:?(.*?)/)?$`); err != nil {
+		panic(err)
+	}
+	if rePlaylistPath, err = regexp.Compile(`^` + prefix + `/(.+?\.[mM]3[uU])$`); err != nil {
+		panic(err)
+	}
+	if reTrackPath, err = regexp.Compile(`^` + prefix + `/(.+?)/([^/]+)$`); err != nil {
+		panic(err)
+	}
+}
+
 type Database struct {
 	prefix        string
 	root          string
 	templateProxy util.TemplateProxy
 	playlistCache *FileCache
-
-	reDirPath      *regexp.Regexp
-	rePlaylistPath *regexp.Regexp
-	reTrackPath    *regexp.Regexp
-	reIgnore       *regexp.Regexp
-	rePlaylist     *regexp.Regexp
 }
 
 func New(
@@ -46,26 +59,6 @@ func New(
 		templateProxy: templateProxy,
 		playlistCache: NewFileCache(),
 	}
-
-	var err error
-	if db.reDirPath, err = regexp.Compile(`^` + prefix + `/(:?(.*?)/)?$`); err != nil {
-		return nil, err
-	}
-	if db.rePlaylistPath, err = regexp.Compile(`^` + prefix + `/(.+?\.[mM]3[uU])$`); err != nil {
-		return nil, err
-	}
-	if db.reTrackPath, err = regexp.Compile(`^` + prefix + `/(.+?)/([^/]+)$`); err != nil {
-		return nil, err
-	}
-	if db.reIgnore, err = regexp.Compile(
-		`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`,
-	); err != nil {
-		return nil, err
-	}
-	if db.rePlaylist, err = regexp.Compile(`\.[mM]3[uU]$`); err != nil {
-		return nil, err
-	}
-
 	return &db, nil
 }
 
@@ -88,19 +81,19 @@ func (db *Database) ServeHTTP(
 
 	util.Debug.Printf("DB request: %v\n", req.URL.Path)
 
-	if matches := db.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
+	if matches := reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		util.Debug.Println("dir request")
 		db.handleDirRequest(matches, w, req)
 		return
 	}
 
-	if matches := db.rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
+	if matches := rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		util.Debug.Println("playlist request")
 		db.handlePlaylistRequest(matches, w, req)
 		return
 	}
 
-	if matches := db.reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
+	if matches := reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		util.Debug.Println("track request")
 		db.handleTrackRequest(matches, w, req)
 		return

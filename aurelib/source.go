@@ -63,6 +63,7 @@ type Source interface {
 	Tags() map[string]string
 	StreamInfo() StreamInfo
 	Duration() time.Duration
+
 	SeekTo(offset time.Duration) error
 
 	// Decode transfers an encoded packet from the input to the decoder.
@@ -82,6 +83,10 @@ type Source interface {
 	// FrameSize returns the number of samples in the last frame received by a
 	// call to ReceiveFrame.
 	FrameSize() uint
+
+	// FrameStartTime returns the stream time offset of the start of the last
+	// frame received by a call to ReceiveFrame.
+	FrameStartTime() time.Duration
 
 	// CopyFrame copies the data received by ReceiveFrame to the supplied FIFO,
 	// resampling it with the supplied Resampler if it is not nil.
@@ -295,6 +300,13 @@ func (src *sourceBase) ReceiveFrame() (ReceiveFrameStatus, error) {
 func (src *sourceBase) FrameSize() uint {
 	if src.frame != nil {
 		return uint(src.frame.nb_samples)
+	}
+	return 0
+}
+
+func (src *sourceBase) FrameStartTime() time.Duration {
+	if src.frame != nil {
+		return durationFromTimeBase(src.frame.pts, src.stream.time_base)
 	}
 	return 0
 }

@@ -5,8 +5,32 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sb/aurelius/util"
 )
+
+var (
+	reDirIgnore   *regexp.Regexp
+	reDirUnignore *regexp.Regexp
+
+	rePlaylist *regexp.Regexp
+)
+
+func init() {
+	var err error
+	if reDirIgnore, err = regexp.Compile(
+		`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`,
+	); err != nil {
+		panic(err)
+	}
+	if reDirUnignore, err = regexp.Compile(`\.[aA][uU][rR]\.[tT][xX][tT]$`); err != nil {
+		panic(err)
+	}
+
+	if rePlaylist, err = regexp.Compile(`\.[mM]3[uU]$`); err != nil {
+		panic(err)
+	}
+}
 
 func (db *Database) handleDirRequest(
 	matches []string,
@@ -44,10 +68,10 @@ func (db *Database) handleDirRequest(
 		if mode.IsDir() {
 			data.Dirs = append(data.Dirs, info.Name())
 		} else if mode.IsRegular() {
-			if db.reIgnore.FindStringIndex(info.Name()) != nil {
+			if reDirIgnore.MatchString(info.Name()) && !reDirUnignore.MatchString(info.Name()) {
 				continue
 			}
-			if db.rePlaylist.FindStringIndex(info.Name()) != nil {
+			if rePlaylist.MatchString(info.Name()) {
 				data.Playlists = append(data.Playlists, info.Name())
 			} else {
 				data.Tracks = append(data.Tracks, info.Name())

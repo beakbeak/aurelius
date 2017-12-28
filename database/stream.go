@@ -28,7 +28,7 @@ func (db *Database) handleStreamRequest(
 	}
 
 	// set up source
-	src, err := aurelib.NewFileSource(path)
+	src, err := newAudioSource(path)
 	if err != nil {
 		notFound("failed to open '%v': %v\n", path, err)
 		return
@@ -36,9 +36,11 @@ func (db *Database) handleStreamRequest(
 	defer src.Destroy()
 
 	srcStreamInfo := src.StreamInfo()
-	if util.DebugEnabled {
-		src.DumpFormat()
-	}
+	/*
+		if util.DebugEnabled {
+			src.DumpFormat()
+		}
+	*/
 
 	// set up sink
 	options := aurelib.NewSinkOptions()

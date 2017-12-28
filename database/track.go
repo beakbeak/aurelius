@@ -78,15 +78,22 @@ func (db *Database) IsFavorite(path string) (bool, error) {
 	return false, nil
 }
 
+func newAudioSource(path string) (aurelib.Source, error) {
+	if isFragment(path) {
+		return newFragment(path)
+	}
+	return aurelib.NewFileSource(path)
+}
+
 func (db *Database) handleInfoRequest(
 	urlPath string,
 	filePath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	src, err := aurelib.NewFileSource(filePath)
+	src, err := newAudioSource(filePath)
 	if err != nil {
-		util.Debug.Printf("failed to open source: %v\n", filePath)
+		util.Debug.Printf("failed to open source '%v': %v\n", filePath, err)
 		http.NotFound(w, req)
 		return
 	}
