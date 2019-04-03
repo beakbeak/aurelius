@@ -16,7 +16,7 @@ function sendJsonRequest<Response>(
             if (req.status === 200) {
                 resolve(JSON.parse(req.responseText));
             } else {
-                reject(new Error("request failed"));
+                reject(new Error(`request failed (${req.status}): ${url}`));
             }
         }
 
