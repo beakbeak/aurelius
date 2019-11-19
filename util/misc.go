@@ -28,12 +28,12 @@ func LowerCaseKeys(data map[string]string) map[string]string {
 func WriteJson(
 	w http.ResponseWriter,
 	data interface{},
-) error {
+) {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
 		Debug.Printf("failed to marshal JSON: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		return err
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -41,7 +41,5 @@ func WriteJson(
 
 	if _, err := w.Write(dataJson); err != nil {
 		Debug.Printf("failed to write response: %v\n", err)
-		return err
 	}
-	return nil
 }

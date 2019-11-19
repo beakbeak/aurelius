@@ -15,10 +15,7 @@ var (
 )
 
 func init() {
-	var err error
-	if reFragment, err = regexp.Compile(`^(.+?)\.([0-9]+)\.[aA][uU][rR]\.[tT][xX][tT]$`); err != nil {
-		panic(err)
-	}
+	reFragment = regexp.MustCompile(`^(.+?)\.([0-9]+)\.[aA][uU][rR]\.[tT][xX][tT]$`)
 }
 
 type Fragment struct {

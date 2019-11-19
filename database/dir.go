@@ -17,25 +17,15 @@ var (
 )
 
 func init() {
-	var err error
-	if reDirIgnore, err = regexp.Compile(
-		`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`,
-	); err != nil {
-		panic(err)
-	}
-	if reDirUnignore, err = regexp.Compile(`\.[aA][uU][rR]\.[tT][xX][tT]$`); err != nil {
-		panic(err)
-	}
-
-	if rePlaylist, err = regexp.Compile(`\.[mM]3[uU]$`); err != nil {
-		panic(err)
-	}
+	reDirIgnore = regexp.MustCompile(`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`)
+	reDirUnignore = regexp.MustCompile(`\.[aA][uU][rR]\.[tT][xX][tT]$`)
+	rePlaylist = regexp.MustCompile(`\.[mM]3[uU]$`)
 }
 
 func (db *Database) handleDirRequest(
 	matches []string,
 	w http.ResponseWriter,
-	req *http.Request,
+	_ *http.Request,
 ) {
 	path := db.expandPath(matches[1])
 

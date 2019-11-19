@@ -55,7 +55,7 @@ func (fifo *Fifo) write(
 
 // returned Frame must be Frame.Destroy()ed or Sink.Encode()ed
 func (fifo *Fifo) ReadFrame(frameSize uint) (Frame, error) {
-	if fifo.Size() <= 0 {
+	if fifo.Size() == 0 {
 		return Frame{}, nil
 	}
 
@@ -90,6 +90,6 @@ func (fifo *Fifo) ReadFrame(frameSize uint) (Frame, error) {
 	}
 
 	success = true
-	frame.Size = uint(frameSize)
+	frame.Size = frameSize
 	return frame, nil
 }

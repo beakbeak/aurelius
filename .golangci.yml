@@ -1,0 +1,21 @@
+linters:
+  presets:
+    - bugs
+    - performance
+    - style
+    - unused
+  disable:
+    - wsl
+    - gochecknoglobals
+    - gochecknoinits
+    - funlen
+    - goconst
+    - golint
+    - stylecheck
+    - unconvert
+
+linters-settings:
+  gocritic:
+    disabled-checks:
+      - dupSubExpr
+      - ifElseChain

@@ -12,7 +12,7 @@ import (
 
 const (
 	prefix    = "/db"
-	playAhead = 10000 * time.Millisecond // TODO: make configurable
+	playAhead = 10000 * time.Millisecond
 )
 
 var (

@@ -53,9 +53,10 @@ func main() {
 
 	var templateProxy util.TemplateProxy
 	if *reload {
-		templateProxy = util.DynamicTemplateProxy{templateGlob}
+		templateProxy = util.DynamicTemplateProxy{Glob: templateGlob}
 	} else {
-		templateProxy = util.StaticTemplateProxy{template.Must(template.ParseGlob(templateGlob))}
+		templateProxy =
+			util.StaticTemplateProxy{Template: template.Must(template.ParseGlob(templateGlob))}
 	}
 
 	db, err := database.New("/db", *dbPath, templateProxy)
