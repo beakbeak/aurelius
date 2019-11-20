@@ -315,12 +315,7 @@ class Player {
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
-    private _streamOptions: StreamOptions = {
-        codec: "vorbis",
-        bitRate: 256,
-        sampleRate: 44100,
-        channelLayout: "stereo"
-    };
+    private _streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
 
     private _getElement(
         container: HTMLElement,
