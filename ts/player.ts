@@ -255,9 +255,7 @@ class Track {
             audio = new Audio();
         }
         
-        if (info.replayGainTrack < 1) {
-            audio.volume = info.replayGainTrack;
-        }
+        audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
         await new Promise((resolve, reject) => {
             audio.src = `${url}/stream${Track.streamQuery(options)}`;
