@@ -3,6 +3,7 @@ package database
 import (
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -36,10 +37,22 @@ func (db *Database) handleDirRequest(
 		return
 	}
 
+	type PathUrl struct {
+		Name string
+		Url  string
+	}
+
+	makePathUrl := func(path string) PathUrl {
+		return PathUrl{
+			Name: path,
+			Url:  (&url.URL{Path: path}).String(),
+		}
+	}
+
 	type TemplateData struct {
-		Dirs      []string
-		Playlists []string
-		Tracks    []string
+		Dirs      []PathUrl
+		Playlists []PathUrl
+		Tracks    []PathUrl
 	}
 	data := TemplateData{}
 
@@ -56,15 +69,15 @@ func (db *Database) handleDirRequest(
 		}
 
 		if mode.IsDir() {
-			data.Dirs = append(data.Dirs, info.Name())
+			data.Dirs = append(data.Dirs, makePathUrl(info.Name()))
 		} else if mode.IsRegular() {
 			if reDirIgnore.MatchString(info.Name()) && !reDirUnignore.MatchString(info.Name()) {
 				continue
 			}
 			if rePlaylist.MatchString(info.Name()) {
-				data.Playlists = append(data.Playlists, info.Name())
+				data.Playlists = append(data.Playlists, makePathUrl(info.Name()))
 			} else {
-				data.Tracks = append(data.Tracks, info.Name())
+				data.Tracks = append(data.Tracks, makePathUrl(info.Name()))
 			}
 		}
 	}
