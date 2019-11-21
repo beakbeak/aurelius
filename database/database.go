@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sb/aurelius/util"
+	"strings"
 	"time"
 )
 
@@ -54,8 +55,26 @@ func (db *Database) Prefix() string {
 	return db.prefix
 }
 
-func (db *Database) expandPath(path string) string {
-	return filepath.Join(db.root, path)
+func (db *Database) toFileSystemPath(dbPath string) string {
+	return filepath.Join(db.root, dbPath)
+}
+
+func (db *Database) toDatabasePath(fsPath string) (string, error) {
+	dbPath, err := filepath.Rel(db.root, fsPath)
+	if err != nil {
+		return "", err
+	}
+
+	dbPath = filepath.ToSlash(dbPath)
+
+	if strings.HasPrefix(dbPath, "..") || strings.HasPrefix(dbPath, "/") {
+		return "", fmt.Errorf("path is not under database root")
+	}
+	return dbPath, nil
+}
+
+func (db *Database) toUrlPath(dbPath string) string {
+	return db.prefix + "/" + dbPath
 }
 
 func (db *Database) ServeHTTP(

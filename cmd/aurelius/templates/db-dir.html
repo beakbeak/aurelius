@@ -60,7 +60,7 @@
 			<li><i class="material-icons">arrow_back</i><a href="..">Parent directory</a></li>
 			{{- if .Dirs}}
 				{{- range $dir := .Dirs}}
-					<li><i class="material-icons">folder_open</i><a href="./{{$dir.Url}}/">{{$dir.Name}}/</a></li>
+					<li><i class="material-icons">folder_open</i><a href="{{$dir.Url}}/">{{$dir.Name}}/</a></li>
 				{{- end}}
 			{{- end}}
 		</ul>
@@ -68,7 +68,7 @@
 		{{- if .Playlists}}
 			<ul id="playlists" class="listing">
 				{{- range $file := .Playlists}}
-					<li><i class="material-icons">playlist_play</i><a href="./{{$file.Url}}">{{$file.Name}}</a></li>
+					<li><i class="material-icons">playlist_play</i><a href="{{$file.Url}}">{{$file.Name}}</a></li>
 				{{- end}}
 			</ul>
 		{{- end}}
@@ -76,7 +76,7 @@
 		{{- if .Tracks}}
 			<ul id="tracks" class="listing">
 				{{- range $file := .Tracks}}
-					<li><i class="material-icons">music_note</i><a href="./{{$file.Url}}">{{$file.Name}}</a></li>
+					<li><i class="material-icons">music_note</i><a href="{{$file.Url}}">{{$file.Name}}</a></li>
 				{{- end}}
 			</ul>
 		{{- end}}

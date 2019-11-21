@@ -11,7 +11,7 @@ func (db *Database) handlePlaylistRequest(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	path := db.expandPath(matches[1])
+	path := db.toFileSystemPath(matches[1])
 	lines, err := db.playlistCache.Get(path)
 	if err != nil {
 		http.NotFound(w, req)

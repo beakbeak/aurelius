@@ -28,9 +28,10 @@ func (db *Database) handleDirRequest(
 	w http.ResponseWriter,
 	_ *http.Request,
 ) {
-	path := db.expandPath(matches[1])
+	dbDirPath := matches[1]
+	fsDirPath := db.toFileSystemPath(dbDirPath)
 
-	infos, err := ioutil.ReadDir(path)
+	infos, err := ioutil.ReadDir(fsDirPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		util.Debug.Printf("ReadDir failed: %v\n", err)
@@ -42,11 +43,23 @@ func (db *Database) handleDirRequest(
 		Url  string
 	}
 
-	makePathUrl := func(path string) PathUrl {
+	makePathUrl := func(name, urlPath string) PathUrl {
 		return PathUrl{
-			Name: path,
-			Url:  (&url.URL{Path: path}).String(),
+			Name: name,
+			Url:  (&url.URL{Path: urlPath}).String(),
 		}
+	}
+
+	makeRelativePathUrl := func(name string) PathUrl {
+		return makePathUrl(name, "./"+name)
+	}
+
+	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
+		dbPath, err := db.toDatabasePath(fsPath)
+		if err != nil {
+			return PathUrl{}, err
+		}
+		return makePathUrl(name, db.toUrlPath(dbPath)), nil
 	}
 
 	type TemplateData struct {
@@ -58,26 +71,40 @@ func (db *Database) handleDirRequest(
 
 	for _, info := range infos {
 		mode := info.Mode()
+		url := makeRelativePathUrl(info.Name())
+
 		if (mode & os.ModeSymlink) != 0 {
-			linkName := filepath.Join(path, info.Name())
-			info, err = os.Stat(linkName)
+			linkPath := filepath.Join(fsDirPath, info.Name())
+			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
-				util.Debug.Printf("stat '%v' failed: %v\n", linkName, err)
+				util.Debug.Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
 				continue
 			}
-			mode = info.Mode()
+
+			linkedInfo, err := os.Stat(linkedPath)
+			if err != nil {
+				util.Debug.Printf("stat '%v' failed: %v\n", linkedPath, err)
+				continue
+			}
+			mode = linkedInfo.Mode()
+
+			if absUrl, err := makeAbsolutePathUrl(info.Name(), linkedPath); err == nil {
+				url = absUrl
+			}
 		}
 
-		if mode.IsDir() {
-			data.Dirs = append(data.Dirs, makePathUrl(info.Name()))
-		} else if mode.IsRegular() {
+		switch {
+		case mode.IsDir():
+			data.Dirs = append(data.Dirs, url)
+
+		case mode.IsRegular():
 			if reDirIgnore.MatchString(info.Name()) && !reDirUnignore.MatchString(info.Name()) {
 				continue
 			}
 			if rePlaylist.MatchString(info.Name()) {
-				data.Playlists = append(data.Playlists, makePathUrl(info.Name()))
+				data.Playlists = append(data.Playlists, url)
 			} else {
-				data.Tracks = append(data.Tracks, makePathUrl(info.Name()))
+				data.Tracks = append(data.Tracks, url)
 			}
 		}
 	}

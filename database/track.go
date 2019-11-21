@@ -17,7 +17,7 @@ func (db *Database) handleTrackRequest(
 	req *http.Request,
 ) {
 	urlPath := matches[1]
-	filePath := db.expandPath(urlPath)
+	filePath := db.toFileSystemPath(urlPath)
 	if info, err := os.Stat(filePath); err != nil || !info.Mode().IsRegular() {
 		http.NotFound(w, req)
 		return
@@ -65,7 +65,7 @@ func (db *Database) handleTrackRequest(
 }
 
 func (db *Database) IsFavorite(path string) (bool, error) {
-	favorites, err := db.playlistCache.Get(db.expandPath(favoritesPath))
+	favorites, err := db.playlistCache.Get(db.toFileSystemPath(favoritesPath))
 	if err != nil {
 		return false, err
 	}
@@ -127,7 +127,7 @@ func (db *Database) handleInfoRequest(
 
 func (db *Database) Favorite(path string) error {
 	return db.playlistCache.CreateOrModify(
-		db.expandPath(favoritesPath),
+		db.toFileSystemPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
 			for _, line := range favorites {
 				if line == path {
@@ -141,7 +141,7 @@ func (db *Database) Favorite(path string) error {
 
 func (db *Database) Unfavorite(path string) error {
 	return db.playlistCache.CreateOrModify(
-		db.expandPath(favoritesPath),
+		db.toFileSystemPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
 			for index, line := range favorites {
 				if line == path {
