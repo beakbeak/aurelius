@@ -41,6 +41,8 @@ func New(
 		return nil, fmt.Errorf("not a directory: %v", rootPath)
 	}
 
+	util.Debug.Printf("database opened: prefix='%v' root='%v'", prefix, rootPath)
+
 	db := Database{
 		prefix:        prefix,
 		root:          rootPath,
