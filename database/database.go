@@ -82,11 +82,20 @@ func (db *Database) toDatabasePathWithContext(fsPath, context string) (string, e
 		return "", err
 	}
 
-	if fsPath, err = filepath.Rel(realContext, fsPath); err != nil {
+	fsPathInContext, err := filepath.Rel(realContext, fsPath)
+	if err != nil {
 		return "", err
 	}
-	fsPath = filepath.Join(context, fsPath)
+	fsPathInContext = filepath.Join(context, fsPathInContext)
 
+	dbPathInContext, err := db.toDatabasePath(fsPathInContext)
+	if err == nil {
+		// contextualized path may be invalid if resolved path is at a
+		// different level of indirection than context
+		if _, err := os.Stat(db.toFileSystemPath(dbPathInContext)); err == nil {
+			return dbPathInContext, nil
+		}
+	}
 	return db.toDatabasePath(fsPath)
 }
 
