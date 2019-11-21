@@ -31,7 +31,10 @@ func New(
 	rootPath string,
 	templateProxy util.TemplateProxy,
 ) (*Database, error) {
-	rootPath = filepath.Clean(rootPath)
+	var err error
+	if rootPath, err = filepath.EvalSymlinks(rootPath); err != nil {
+		return nil, err
+	}
 	if info, err := os.Stat(rootPath); err != nil {
 		return nil, err
 	} else if !info.Mode().IsDir() {
