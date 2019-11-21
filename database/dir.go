@@ -55,7 +55,7 @@ func (db *Database) handleDirRequest(
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
-		dbPath, err := db.toDatabasePath(fsPath)
+		dbPath, err := db.toDatabasePathWithContext(fsPath, fsDirPath)
 		if err != nil {
 			return PathUrl{}, err
 		}

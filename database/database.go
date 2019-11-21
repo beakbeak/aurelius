@@ -76,6 +76,20 @@ func (db *Database) toDatabasePath(fsPath string) (string, error) {
 	return dbPath, nil
 }
 
+func (db *Database) toDatabasePathWithContext(fsPath, context string) (string, error) {
+	realContext, err := filepath.EvalSymlinks(context)
+	if err != nil {
+		return "", err
+	}
+
+	if fsPath, err = filepath.Rel(realContext, fsPath); err != nil {
+		return "", err
+	}
+	fsPath = filepath.Join(context, fsPath)
+
+	return db.toDatabasePath(fsPath)
+}
+
 func (db *Database) toUrlPath(dbPath string) string {
 	return db.prefix + "/" + dbPath
 }
