@@ -1,11 +1,11 @@
 import * as util from "./util.js";
 
-interface PlaylistItem {
+export interface PlaylistItem {
     readonly path: string;
     readonly pos: number;
 }
 
-interface Playlist {
+export interface Playlist {
     length(): number;
     at(pos: number): Promise<PlaylistItem | undefined>;
     random(): Promise<PlaylistItem | undefined>;
@@ -80,7 +80,7 @@ class RemotePlaylist implements Playlist {
     }
 }
 
-class PlayHistory {
+export class PlayHistory {
     private static readonly _maxLength = 1024;
 
     private _items: PlaylistItem[] = [];
@@ -127,7 +127,7 @@ class PlayHistory {
     }
 }
 
-interface TrackInfo {
+export interface TrackInfo {
     readonly name: string;
     readonly duration: number;
     readonly replayGainTrack: number;
@@ -137,7 +137,7 @@ interface TrackInfo {
     favorite: boolean;
 }
 
-interface StreamOptions {
+export interface StreamOptions {
     codec?: "mp3" | "vorbis" | "flac" | "wav";
     quality?: number;
     bitRate?: number;
@@ -148,7 +148,7 @@ interface StreamOptions {
 //    preventClipping?: boolean;
 }
 
-class Track {
+export class Track {
     public readonly url: string;
     public readonly info: TrackInfo;
     public readonly options: StreamOptions;
@@ -257,296 +257,67 @@ class Track {
     }
 }
 
-export default class Player {
-    private _playButton: HTMLElement;
-    private _pauseButton: HTMLElement;
-    private _nextButton: HTMLElement;
-    private _prevButton: HTMLElement;
-    private _progressBarEmpty: HTMLElement;
-    private _progressBarFill: HTMLElement;
-    private _seekSlider: HTMLElement;
-    private _statusRight: HTMLElement;
-    private _duration: HTMLElement;
-    private _favoriteButton: HTMLElement;
-    private _unfavoriteButton: HTMLElement;
+export interface PlayerEventMap {
+    play: () => void;
+    progress: () => void;
+    timeupdate: () => void;
+    ended: () => void;
+    pause: () => void;
+    unpause: () => void;
+    favorite: () => void;
+    unfavorite: () => void;
+}
+export type PlayerEvent = keyof PlayerEventMap;
 
-    private _track?: Track;
-    private _playlist?: Playlist;
-    private _history = new PlayHistory();
-    private _playlistPos = -1;
-    private _random = false;
-    private _streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
-
-    private _getElement(
-        container: HTMLElement,
-        id: string,
-    ): HTMLElement {
-        const element = container.querySelector(`#${id}`);
-        if (element === null) {
-            throw new Error(`missing ${id}`);
-        }
-        return element as HTMLElement;
-    }
-
-    constructor(containerId: string) {
-        const container = document.getElementById(containerId);
-        if (container === null) {
-            throw new Error("invalid container");
-        }
-
-        this._statusRight = this._getElement(container, "status-right");
-        this._playButton = this._getElement(container, "play-button");
-        this._pauseButton = this._getElement(container, "pause-button");
-        this._nextButton = this._getElement(container, "next-button");
-        this._prevButton = this._getElement(container, "prev-button");
-        this._progressBarEmpty = this._getElement(container, "progress-bar-empty");
-        this._progressBarFill = this._getElement(container, "progress-bar-fill");
-        this._seekSlider = this._getElement(container, "seek-slider");
-        this._duration = this._getElement(container, "duration");
-        this._favoriteButton = this._getElement(container, "favorite-button");
-        this._unfavoriteButton = this._getElement(container, "unfavorite-button");
-
-        this._playButton.onclick = () => {
-            this.unpause();
-        };
-
-        this._pauseButton.style.display = "none";
-        this._pauseButton.onclick = () => {
-            this.pause();
-        };
-
-        this._nextButton.onclick = () => {
-            this.next();
-        };
-        this._prevButton.onclick = () => {
-            this.previous();
-        };
-
-        this._favoriteButton.onclick = () => {
-            this.favorite();
-        };
-
-        this._unfavoriteButton.style.display = "none";
-        this._unfavoriteButton.onclick = () => {
-            this.unfavorite();
-        };
-
-        this._progressBarEmpty.ondblclick = (event: MouseEvent) => {
-            if (this._track !== undefined) {
-                const rect = this._progressBarEmpty.getBoundingClientRect();
-                this.seekTo(((event.clientX - rect.left) / rect.width) * this._track.info.duration);
-            }
-        };
-
-        this._updateAll();
-
-        window.addEventListener("resize", () => {
-            this._updateStatus(); // update marquee distance
-        });
-    }
-
-    private _setStatusText(text: string): void {
-        const element = this._statusRight;
-
-        element.textContent = text;
-        if (element.clientWidth >= element.scrollWidth) {
-            element.style.animation = "";
-            return;
-        }
-
-        const scrollLength = element.scrollWidth - element.clientWidth;
-        const scrollTime = scrollLength / 50 /* px/second */;
-        const waitTime = 2 /* seconds */;
-        const totalTime = 2 * (scrollTime + waitTime);
-        const scrollPercent = 100 * (scrollTime / totalTime);
-        const waitPercent = 100 * (waitTime / totalTime);
-
-        const style = document.createElement("style");
-        style.innerText =
-            `@keyframes marquee { ${scrollPercent}% { transform: translateX(-${scrollLength}px); }`
-            + ` ${scrollPercent + waitPercent}% {transform: translateX(-${scrollLength}px); }`
-            + ` ${2 * scrollPercent + waitPercent}% {transform: translateX(0px);} }`;
-        element.appendChild(style);
-        element.style.animation = `marquee ${totalTime}s infinite linear`;
-    }
-
-    private _updateStatus(): void {
-        if (this._track === undefined) {
-            this._statusRight.textContent = "";
-            this._favoriteButton.style.display = "";
-            this._unfavoriteButton.style.display = "none";
-            this._favoriteButton.classList.add("inactive");
-            return;
-        }
-
-        const info = this._track.info;
-        let text = "";
-
-        if (info.tags["composer"] !== undefined) {
-            text = `${text}${info.tags["composer"]} - `;
-        } else if (info.tags["artist"] !== undefined) {
-            text = `${text}${info.tags["artist"]} - `;
-        }
-
-        if (info.tags["title"] !== undefined) {
-            text = `${text}${info.tags["title"]}`;
-        } else {
-            text = `${text}${info.name}`
-        }
-
-        if (info.tags["album"] !== undefined) {
-            let track = "";
-            if (info.tags["track"] !== undefined) {
-                track = ` #${info.tags["track"]}`;
-            }
-            text = `${text} [${info.tags["album"]}${track}]`;
-        }
-
-        this._setStatusText(text);
-
-        if (info.favorite) {
-            this._favoriteButton.style.display = "none";
-            this._unfavoriteButton.style.display = "";
-            this._unfavoriteButton.classList.remove("inactive");
-        } else {
-            this._favoriteButton.style.display = "";
-            this._unfavoriteButton.style.display = "none";
-            this._favoriteButton.classList.remove("inactive");
-        }
-    }
-
-    private _secondsToString(totalSeconds: number): string {
-        const minutes = (totalSeconds / 60) | 0;
-        const seconds = (totalSeconds - minutes * 60) | 0;
-        if (seconds < 10) {
-            return `${minutes}:0${seconds}`;
-        } else {
-            return `${minutes}:${seconds}`;
-        }
-    }
-
-    private _updateTime(): void {
-        if (this._track === undefined) {
-            this._duration.textContent = "";
-            this._seekSlider.style.left = "0";
-            this._seekSlider.classList.add("inactive");
-            this._progressBarEmpty.classList.add("inactive");
-            return;
-        }
-        this._seekSlider.classList.remove("inactive");
-        this._progressBarEmpty.classList.remove("inactive");
-
-        const currentTime = this._track.currentTime();
-        const duration = this._track.info.duration;
-        const currentTimeStr = this._secondsToString(currentTime);
-        const durationStr = this._secondsToString(duration);
-
-        this._duration.textContent = `${currentTimeStr} / ${durationStr}`;
-
-        if (duration > 0) {
-            this._seekSlider.style.left = `${(currentTime / duration) * 100}%`;
-        } else {
-            this._seekSlider.style.left = "0";
-        }
-    }
-
-    private _updateBuffer(): void {
-        if (this._track === undefined) {
-            this._progressBarFill.style.left = "0";
-            this._progressBarFill.style.width = "0";
-            return;
-        }
-
-        const ranges = this._track.audio.buffered;
-        if (ranges.length > 0 && this._track.info.duration > 0) {
-            const start = this._track.startTime + ranges.start(0);
-            const end = this._track.startTime + ranges.end(ranges.length - 1);
-            this._progressBarFill.style.left =
-                `${Math.max(0, Math.min(100, (start / this._track.info.duration) * 100))}%`;
-            this._progressBarFill.style.width =
-                `${Math.max(0, Math.min(100, ((end - start) / this._track.info.duration) * 100))}%`;
-        } else {
-            this._progressBarFill.style.left = "0";
-            this._progressBarFill.style.width = "0";
-        }
-    }
-
-    private _updateButtons(): void {
-        if (this._track === undefined || this._track.audio.paused) {
-            this._playButton.style.display = "";
-            this._pauseButton.style.display = "none";
-            if (this._track === undefined) {
-                this._playButton.classList.add("inactive");
-            } else {
-                this._playButton.classList.remove("inactive");
-            }
-        } else {
-            this._playButton.style.display = "none";
-            this._pauseButton.style.display = "";
-        }
-
-        if (this.hasNext()) {
-            this._nextButton.classList.remove("inactive");
-        } else {
-            this._nextButton.classList.add("inactive");
-        }
-
-        if (this.hasPrevious()) {
-            this._prevButton.classList.remove("inactive");
-        } else {
-            this._prevButton.classList.add("inactive");
-        }
-    }
-
-    private _updateAll(): void {
-        this._updateTime();
-        this._updateBuffer();
-        this._updateStatus();
-        this._updateButtons();
-    }
+export class Player extends util.EventDispatcher<PlayerEventMap> {
+    public track?: Track;
+    public playlist?: Playlist;
+    public history = new PlayHistory();
+    public playlistPos = -1;
+    public random = false;
+    public streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
 
     private async _play(
         url: string,
         startTime?: number,
     ): Promise<void> {
-        const track = await Track.fetch(url, this._streamOptions, startTime, this._track);
-        this._track = track;
+        const track = await Track.fetch(url, this.streamOptions, startTime, this.track);
+        this.track = track;
 
         track.addEventListener("progress", () => {
-            this._updateBuffer();
+            this._dispatchEvent("progress");
         });
         track.addEventListener("timeupdate", () => {
-            this._updateTime();
-            this._updateBuffer();
+            this._dispatchEvent("timeupdate");
         });
         track.addEventListener("ended", async () => {
             if (!await this.next()) {
                 this.pause();
-                if (this._track !== undefined) {
-                    this._track.audio.currentTime = 0;
+                if (this.track !== undefined) {
+                    this.track.audio.currentTime = 0;
                 }
-                this._updateAll();
+                this._dispatchEvent("ended");
             }
         });
 
         track.audio.play();
-        this._updateAll();
+        this._dispatchEvent("play");
     }
 
     public seekTo(seconds: number): Promise<void> {
-        if (this._track === undefined) {
+        if (this.track === undefined) {
             return Promise.resolve();
         }
-        return this._play(this._track.url, seconds);
+        return this._play(this.track.url, seconds);
     }
 
     public playTrack(url: string): Promise<void> {
-        if (this._playlist !== undefined) {
-            this._playlist = undefined;
-            this._playlistPos = -1;
-            this._history = new PlayHistory();
+        if (this.playlist !== undefined) {
+            this.playlist = undefined;
+            this.playlistPos = -1;
+            this.history = new PlayHistory();
         }
-        this._history.push({ path: url, pos: 0 });
+        this.history.push({ path: url, pos: 0 });
         return this._play(url);
     }
 
@@ -557,115 +328,115 @@ export default class Player {
     ): Promise<boolean> {
         if (typeof playlistUrlOrTrackUrls === "string") {
             const url = playlistUrlOrTrackUrls;
-            this._playlist = await RemotePlaylist.fetch(url);
+            this.playlist = await RemotePlaylist.fetch(url);
         } else {
             const trackUrls = playlistUrlOrTrackUrls;
-            this._playlist = new LocalPlaylist(trackUrls);
+            this.playlist = new LocalPlaylist(trackUrls);
         }
 
-        this._playlistPos = startPos - 1;
-        this._history = new PlayHistory();
-        this._random = random;
+        this.playlistPos = startPos - 1;
+        this.history = new PlayHistory();
+        this.random = random;
 
         return this.next();
     }
 
     public hasNext(): boolean {
-        if (this._history.hasNext()) {
+        if (this.history.hasNext()) {
             return true;
         }
-        if (this._playlist === undefined || this._playlist.length() < 1) {
+        if (this.playlist === undefined || this.playlist.length() < 1) {
             return false;
         }
-        return this._random || this._playlistPos < (this._playlist.length() - 1);
+        return this.random || this.playlistPos < (this.playlist.length() - 1);
     }
 
     public hasPrevious(): boolean {
-        if (this._history.hasPrevious()) {
+        if (this.history.hasPrevious()) {
             return true;
         }
-        if (this._random || this._playlist === undefined || this._playlist.length() < 1) {
+        if (this.random || this.playlist === undefined || this.playlist.length() < 1) {
             return false;
         }
-        return this._playlistPos > 0;
+        return this.playlistPos > 0;
     }
 
     public async next(): Promise<boolean> {
-        let item = this._history.next();
+        let item = this.history.next();
         if (item === undefined) {
-            if (this._playlist === undefined || this._playlist.length() < 1) {
+            if (this.playlist === undefined || this.playlist.length() < 1) {
                 return false;
             }
 
-            if (this._random) {
-                item = await this._playlist.random();
-            } else if (this._playlistPos < (this._playlist.length() - 1)) {
-                item = await this._playlist.at(this._playlistPos + 1);
+            if (this.random) {
+                item = await this.playlist.random();
+            } else if (this.playlistPos < (this.playlist.length() - 1)) {
+                item = await this.playlist.at(this.playlistPos + 1);
             }
 
             if (item === undefined) {
                 return false;
             }
-            this._history.push(item);
+            this.history.push(item);
         }
-        this._playlistPos = item.pos;
+        this.playlistPos = item.pos;
         await this._play(item.path);
         return true;
     }
 
     public async previous(): Promise<boolean> {
-        let item = this._history.previous();
+        let item = this.history.previous();
         if (item === undefined) {
-            if (this._playlist === undefined || this._playlist.length() < 1
-                || this._playlistPos <= 0)
+            if (this.playlist === undefined || this.playlist.length() < 1
+                || this.playlistPos <= 0)
             {
                 return false;
             }
 
-            item = await this._playlist.at(this._playlistPos - 1);
+            item = await this.playlist.at(this.playlistPos - 1);
             if (item === undefined) {
                 return false;
             }
-            this._history.pushFront(item);
+            this.history.pushFront(item);
         }
-        this._playlistPos = item.pos;
+        this.playlistPos = item.pos;
         await this._play(item.path);
         return true;
     }
 
     public pause(): void {
-        if (this._track === undefined || this._track.audio.paused) {
+        if (this.track === undefined || this.track.audio.paused) {
             return;
         }
-        this._track.audio.pause();
-        this._updateAll();
+        this.track.audio.pause();
+        this._dispatchEvent("pause");
     }
 
     public unpause(): void {
-        if (this._track === undefined || !this._track.audio.paused) {
+        if (this.track === undefined || !this.track.audio.paused) {
             return;
         }
-        this._track.audio.play();
-        this._updateAll();
+        this.track.audio.play();
+        this._dispatchEvent("unpause");
     }
 
     public async favorite(): Promise<void> {
-        if (this._track === undefined) {
+        if (this.track === undefined) {
             return;
         }
-        await this._track.favorite();
-        this._updateStatus();
+        await this.track.favorite();
+        this._dispatchEvent("favorite");
     }
 
     public async unfavorite(): Promise<void> {
-        if (this._track === undefined) {
+        if (this.track === undefined) {
             return;
         }
-        await this._track.unfavorite();
-        this._updateStatus();
+        await this.track.unfavorite();
+        this._dispatchEvent("unfavorite");
     }
 
     public setStreamOptions(options: StreamOptions): void {
-        this._streamOptions = options;
+        this.streamOptions = options;
     }
 }

@@ -1,4 +1,5 @@
-import Player from "./player.js";
+import { Player } from "./player.js";
+import PlayerUi from "./player-ui.js";
 
 function getTrackUrls(): string[] {
     const tracks = document.getElementById("tracks");
@@ -13,7 +14,8 @@ function getTrackUrls(): string[] {
 }
 
 window.onload = () => {
-    const player = new Player("header");
+    const player = new Player();
+    /* const playerUi = */ new PlayerUi(player, "header");
 
     // XXX hack alert
     if (/([0-9]+\.){3}[0-9]+/.test(window.location.hostname)) {
