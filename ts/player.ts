@@ -1,67 +1,5 @@
-//
-// Utilities ///////////////////////////////////////////////////////////////////
-//
-function sendJsonRequest<Response>(
-    method: string,
-    url: string,
-    data?: any,
-): Promise<Response> {
-    const req = new XMLHttpRequest();
-    req.open(method, url);
-    return new Promise((resolve, reject) => {
-        req.onreadystatechange = () => {
-            if (req.readyState !== XMLHttpRequest.DONE) {
-                return;
-            }
-            if (req.status === 200) {
-                resolve(JSON.parse(req.responseText));
-            } else {
-                reject(new Error(`request failed (${req.status}): ${url}`));
-            }
-        }
+import * as util from "./util.js";
 
-        if (data !== undefined) {
-            req.setRequestHeader("Content-Type", "application/json");
-            req.send(JSON.stringify(data));
-        } else {
-            req.send();
-        }
-    });
-}
-
-function fetchJson<Response>(url: string): Promise<Response> {
-    return sendJsonRequest<Response>("GET", url);
-}
-
-function nullToUndefined<T>(value: T | null): T | undefined {
-    return value !== null ? value : undefined;
-}
-
-function postJson<Response>(
-    url: string,
-    data?: any,
-): Promise<Response> {
-    return sendJsonRequest<Response>("POST", url, data);
-}
-
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
-// The maximum is exclusive and the minimum is inclusive
-function randomInt(
-    min: number,
-    max: number,
-): number {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min)) + min;
-}
-
-function copyJson(obj: any) {
-    return JSON.parse(JSON.stringify(obj));
-}
-
-//
-// Player //////////////////////////////////////////////////////////////////////
-//
 interface PlaylistItem {
     readonly path: string;
     readonly pos: number;
@@ -96,7 +34,7 @@ class LocalPlaylist implements Playlist {
         if (this._urls.length < 1) {
             return Promise.resolve(undefined);
         }
-        const pos = randomInt(0, this._urls.length);
+        const pos = util.randomInt(0, this._urls.length);
         return Promise.resolve({ path: this._urls[pos], pos: pos });
     }
 }
@@ -118,7 +56,7 @@ class RemotePlaylist implements Playlist {
         interface Info {
             length: number;
         }
-        const info = await fetchJson<Info>(url);
+        const info = await util.fetchJson<Info>(url);
         return new RemotePlaylist(url, info.length);
     }
 
@@ -127,7 +65,7 @@ class RemotePlaylist implements Playlist {
     }
 
     public async at(pos: number): Promise<PlaylistItem | undefined> {
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(
+        return util.nullToUndefined(await util.fetchJson<PlaylistItem | null>(
             `${this.url}?pos=${pos}`
         ));
     }
@@ -136,8 +74,8 @@ class RemotePlaylist implements Playlist {
         if (this._length < 1) {
             return Promise.resolve(undefined);
         }
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(
-            `${this.url}?pos=${randomInt(0, this._length)}`
+        return util.nullToUndefined(await util.fetchJson<PlaylistItem | null>(
+            `${this.url}?pos=${util.randomInt(0, this._length)}`
         ));
     }
 }
@@ -263,9 +201,9 @@ class Track {
         startTime = 0,
         recycledTrack?: Track,
     ): Promise<Track> {
-        options = copyJson(options);
+        options = util.copyJson(options);
 
-        const info = await fetchJson<TrackInfo>(`${url}/info`);
+        const info = await util.fetchJson<TrackInfo>(`${url}/info`);
 
         let audio: HTMLAudioElement;
         if (recycledTrack !== undefined) {
@@ -302,7 +240,7 @@ class Track {
         if (this.info.favorite) {
             return;
         }
-        await postJson(`${this.url}/favorite`);
+        await util.postJson(`${this.url}/favorite`);
         this.info.favorite = true;
     }
 
@@ -310,7 +248,7 @@ class Track {
         if (!this.info.favorite) {
             return;
         }
-        await postJson(`${this.url}/unfavorite`);
+        await util.postJson(`${this.url}/unfavorite`);
         this.info.favorite = false;
     }
 
@@ -319,7 +257,7 @@ class Track {
     }
 }
 
-class Player {
+export default class Player {
     private _playButton: HTMLElement;
     private _pauseButton: HTMLElement;
     private _nextButton: HTMLElement;

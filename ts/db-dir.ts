@@ -1,3 +1,5 @@
+import Player from "./player.js";
+
 function getTrackUrls(): string[] {
     const tracks = document.getElementById("tracks");
     if (tracks === null) {
