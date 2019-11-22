@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	reFragment = regexp.MustCompile(`^(.+?)\.([0-9]+)\.[aA][uU][rR]\.[tT][xX][tT]$`)
+	reFragment = regexp.MustCompile(`(?i)^(.+?)\.([0-9]+)\.txt$`)
 }
 
 type Fragment struct {

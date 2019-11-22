@@ -19,8 +19,8 @@ var (
 
 func init() {
 	reDirIgnore = regexp.MustCompile(`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`)
-	reDirUnignore = regexp.MustCompile(`\.[aA][uU][rR]\.[tT][xX][tT]$`)
-	rePlaylist = regexp.MustCompile(`\.[mM]3[uU]$`)
+	reDirUnignore = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
+	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
 }
 
 func (db *Database) handleDirRequest(

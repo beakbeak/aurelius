@@ -43,15 +43,17 @@ func New(
 
 	util.Debug.Printf("database opened: prefix='%v' root='%v'", prefix, rootPath)
 
+	quotedPrefix := regexp.QuoteMeta(prefix)
+
 	db := Database{
 		prefix:        prefix,
 		root:          rootPath,
 		templateProxy: templateProxy,
 		playlistCache: NewFileCache(),
 
-		reDirPath:      regexp.MustCompile(`^` + prefix + `/(:?(.*?)/)?$`),
-		rePlaylistPath: regexp.MustCompile(`^` + prefix + `/(.+?\.[mM]3[uU])$`),
-		reTrackPath:    regexp.MustCompile(`^` + prefix + `/(.+?)/([^/]+)$`),
+		reDirPath:      regexp.MustCompile(`^` + quotedPrefix + `/(:?(.*?)/)?$`),
+		rePlaylistPath: regexp.MustCompile(`^` + quotedPrefix + `/((?i).+?\.m3u)$`),
+		reTrackPath:    regexp.MustCompile(`^` + quotedPrefix + `/(.+?)/([^/]+)$`),
 	}
 	return &db, nil
 }
