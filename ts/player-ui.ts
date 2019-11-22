@@ -1,6 +1,6 @@
 import { Player } from "./player.js";
 
-export default class PlayerUi {
+export class PlayerUi {
     private readonly _playButton: HTMLElement;
     private readonly _pauseButton: HTMLElement;
     private readonly _nextButton: HTMLElement;
