@@ -10,6 +10,6 @@
         "outDir": "cmd/aurelius/static/js"
     },
     "include": [
-        "ts/*.ts"
+        "ts/**/*.ts"
     ]
 }

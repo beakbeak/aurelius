@@ -1,4 +1,4 @@
-import { Player } from "./player.js";
+import { Player } from "../core/player.js";
 
 export class PlayerUi {
     private readonly _playButton: HTMLElement;
@@ -16,17 +16,6 @@ export class PlayerUi {
     // [0..1]
     private _seekSliderPosition: number | undefined;
 
-    private _getElement(
-        container: HTMLElement,
-        id: string,
-    ): HTMLElement {
-        const element = container.querySelector(`#${id}`);
-        if (element === null) {
-            throw new Error(`missing ${id}`);
-        }
-        return element as HTMLElement;
-    }
-
     constructor(
         public player: Player,
         containerId: string,
@@ -36,17 +25,17 @@ export class PlayerUi {
             throw new Error("invalid container");
         }
 
-        this._statusRight = this._getElement(container, "status-right");
-        this._playButton = this._getElement(container, "play-button");
-        this._pauseButton = this._getElement(container, "pause-button");
-        this._nextButton = this._getElement(container, "next-button");
-        this._prevButton = this._getElement(container, "prev-button");
-        this._progressBarEmpty = this._getElement(container, "progress-bar-empty");
-        this._progressBarFill = this._getElement(container, "progress-bar-fill");
-        this._seekSlider = this._getElement(container, "seek-slider");
-        this._duration = this._getElement(container, "duration");
-        this._favoriteButton = this._getElement(container, "favorite-button");
-        this._unfavoriteButton = this._getElement(container, "unfavorite-button");
+        this._statusRight = getElement(container, "status-right");
+        this._playButton = getElement(container, "play-button");
+        this._pauseButton = getElement(container, "pause-button");
+        this._nextButton = getElement(container, "next-button");
+        this._prevButton = getElement(container, "prev-button");
+        this._progressBarEmpty = getElement(container, "progress-bar-empty");
+        this._progressBarFill = getElement(container, "progress-bar-fill");
+        this._seekSlider = getElement(container, "seek-slider");
+        this._duration = getElement(container, "duration");
+        this._favoriteButton = getElement(container, "favorite-button");
+        this._unfavoriteButton = getElement(container, "unfavorite-button");
 
         this._playButton.onclick = () => {
             this.player.unpause();
@@ -303,6 +292,17 @@ export class PlayerUi {
         this._updateStatus();
         this._updateButtons();
     }
+}
+
+function getElement(
+    container: HTMLElement,
+    id: string,
+): HTMLElement {
+    const element = container.querySelector(`#${id}`);
+    if (element === null) {
+        throw new Error(`missing ${id}`);
+    }
+    return element as HTMLElement;
 }
 
 function onDrag(

@@ -1,5 +1,5 @@
-import { Player } from "./player.js";
-import { PlayerUi } from "./player-ui.js";
+import { Player } from "./core/player.js";
+import { PlayerUi } from "./ui/player.js";
 
 function getTrackUrls(): string[] {
     const tracks = document.getElementById("tracks");
