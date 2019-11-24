@@ -50,11 +50,54 @@ export class Player extends util.EventDispatcher<PlayerEventMap> {
         this._dispatchEvent("play");
     }
 
-    public seekTo(seconds: number): Promise<void> {
-        if (this.track === undefined) {
-            return Promise.resolve();
+    private async _playOr(
+        url: string,
+        startTime: number | undefined,
+        canProceed: () => boolean,
+        proceed: () => Promise<boolean>,
+    ): Promise<boolean> {
+        try {
+            await this._play(url, startTime);
+            return true;
+        } catch(e) {
+            console.log("playback failed:", url, startTime, e);
         }
-        return this._play(this.track.url, seconds);
+
+        while (canProceed()) {
+            try {
+                return await proceed();
+            } catch(e) {
+                console.log("playback failed:", e);
+            }
+        }
+        return false;
+    }
+
+    private _playOrNext(
+        url: string,
+        startTime?: number,
+    ): Promise<boolean> {
+        return this._playOr(
+            url, startTime,
+            () => { return this.hasNext(); },
+            () => { return this.next(); });
+    }
+
+    private _playOrPrevious(
+        url: string,
+        startTime?: number,
+    ): Promise<boolean> {
+        return this._playOr(
+            url, startTime,
+            () => { return this.hasPrevious(); },
+            () => { return this.previous(); });
+    }
+
+    public async seekTo(seconds: number): Promise<void> {
+        if (this.track === undefined) {
+            return;
+        }
+        await this._playOrNext(this.track.url, seconds);
     }
 
     public playTrack(url: string): Promise<void> {
@@ -126,8 +169,7 @@ export class Player extends util.EventDispatcher<PlayerEventMap> {
             this.history.push(item);
         }
         this.playlistPos = item.pos;
-        await this._play(item.path);
-        return true;
+        return this._playOrNext(item.path);
     }
 
     public async previous(): Promise<boolean> {
@@ -146,8 +188,7 @@ export class Player extends util.EventDispatcher<PlayerEventMap> {
             this.history.pushFront(item);
         }
         this.playlistPos = item.pos;
-        await this._play(item.path);
-        return true;
+        return this._playOrPrevious(item.path);
     }
 
     public pause(): void {

@@ -48,6 +48,8 @@ export class Track {
         for (const listener of this._listeners) {
             this.audio.removeEventListener(listener.name, listener.func);
         }
+        this._listeners.length = 0;
+
         this.audio.pause();
         this.audio.src = "";
     }
