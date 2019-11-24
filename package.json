@@ -4,6 +4,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "build-debug": "tsc --target ES2017"
   }
 }
