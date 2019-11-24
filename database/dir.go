@@ -88,8 +88,10 @@ func (db *Database) handleDirRequest(
 			}
 			mode = linkedInfo.Mode()
 
-			if absUrl, err := makeAbsolutePathUrl(info.Name(), linkedPath); err == nil {
-				url = absUrl
+			if mode.IsDir() {
+				if absUrl, err := makeAbsolutePathUrl(info.Name(), linkedPath); err == nil {
+					url = absUrl
+				}
 			}
 		}
 
