@@ -13,6 +13,9 @@ export class PlayerUi {
     private readonly _favoriteButton: HTMLElement;
     private readonly _unfavoriteButton: HTMLElement;
 
+    // [0..1]
+    private _seekSliderPosition: number | undefined;
+
     private _getElement(
         container: HTMLElement,
         id: string,
@@ -70,12 +73,40 @@ export class PlayerUi {
             this.player.unfavorite();
         };
 
-        this._progressBarEmpty.ondblclick = (event: MouseEvent) => {
-            if (this.player.track !== undefined) {
-                const rect = this._progressBarEmpty.getBoundingClientRect();
-                this.player.seekTo(
-                    ((event.clientX - rect.left) / rect.width) * this.player.track.info.duration);
+        this._progressBarEmpty.onmousedown = (event: MouseEvent) => {
+            if (this.player.track === undefined) {
+                return;
             }
+
+            const rect = this._progressBarEmpty.getBoundingClientRect();
+            const anchorScreenX = event.screenX;
+            const anchorClientXOffset = event.clientX - rect.left;
+
+            const getSeekSliderPosition = (screenX: number): number => {
+                let clientXOffset = anchorClientXOffset + (screenX - anchorScreenX);
+                if (clientXOffset < 0) {
+                    clientXOffset = 0;
+                } else if (clientXOffset > rect.width) {
+                    clientXOffset = rect.width;
+                }
+                return clientXOffset / rect.width;
+            };
+
+            this._seekSliderPosition = getSeekSliderPosition(event.screenX);
+            this._updateTime();
+
+            onDrag((screenX) => {
+                this._seekSliderPosition = getSeekSliderPosition(screenX);
+                this._updateTime();
+            },
+            (screenX) => {
+                this._seekSliderPosition = undefined;
+
+                if (this.player.track !== undefined) {
+                    this.player.seekTo(
+                        getSeekSliderPosition(screenX) * this.player.track.info.duration);
+                }
+            });
         };
 
         this._updateAll();
@@ -98,7 +129,7 @@ export class PlayerUi {
             this._updateStatus();
         });
 
-        const updateAll = () => { this._updateAll(); }
+        const updateAll = () => { this._updateAll(); };
 
         this.player.addEventListener("play", updateAll);
         this.player.addEventListener("ended", updateAll);
@@ -199,8 +230,9 @@ export class PlayerUi {
         this._seekSlider.classList.remove("inactive");
         this._progressBarEmpty.classList.remove("inactive");
 
-        const currentTime = track.currentTime();
         const duration = track.info.duration;
+        const currentTime = this._seekSliderPosition !== undefined
+            ? this._seekSliderPosition * duration : track.currentTime();
         const currentTimeStr = this._secondsToString(currentTime);
         const durationStr = this._secondsToString(duration);
 
@@ -271,4 +303,22 @@ export class PlayerUi {
         this._updateStatus();
         this._updateButtons();
     }
+}
+
+function onDrag(
+    onMove: (x: number, y: number) => void,
+    onStop: (x: number, y: number) => void,
+): void {
+    const onMouseMove = (e: MouseEvent): void => {
+        onMove(e.screenX, e.screenY);
+    };
+    const onMouseUp = (e: MouseEvent): void => {
+        onStop(e.screenX, e.screenY);
+
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
 }
