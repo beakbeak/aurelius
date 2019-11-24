@@ -62,42 +62,17 @@ export class PlayerUi {
             this.player.unfavorite();
         };
 
-        this._progressBarEmpty.onmousedown = (event: MouseEvent) => {
-            if (this.player.track === undefined) {
-                return;
-            }
-
-            const rect = this._progressBarEmpty.getBoundingClientRect();
-            const anchorScreenX = event.screenX;
-            const anchorClientXOffset = event.clientX - rect.left;
-
-            const getSeekSliderPosition = (screenX: number): number => {
-                let clientXOffset = anchorClientXOffset + (screenX - anchorScreenX);
-                if (clientXOffset < 0) {
-                    clientXOffset = 0;
-                } else if (clientXOffset > rect.width) {
-                    clientXOffset = rect.width;
-                }
-                return clientXOffset / rect.width;
-            };
-
-            this._seekSliderPosition = getSeekSliderPosition(event.screenX);
-            this._updateTime();
-
-            onDrag((screenX) => {
-                this._seekSliderPosition = getSeekSliderPosition(screenX);
-                this._updateTime();
-            },
-            (screenX) => {
-                this._seekSliderPosition = undefined;
-
-                if (this.player.track !== undefined) {
-                    this.player.seekTo(
-                        getSeekSliderPosition(screenX) * this.player.track.info.duration);
-                }
-            });
+        this._progressBarEmpty.onmousedown = (event) => {
+            event.preventDefault();
+            this._startSeekSliderDrag(event.clientX, event.screenX);
         };
-
+        this._progressBarEmpty.ontouchstart = (event) => {
+            event.preventDefault();
+            if (event.changedTouches.length > 0) {
+                const touch = event.changedTouches[0];
+                this._startSeekSliderDrag(touch.clientX, touch.screenX, touch.identifier);
+            }
+        }
         this._updateAll();
 
         window.addEventListener("resize", () => {
@@ -149,6 +124,45 @@ export class PlayerUi {
             + ` ${2 * scrollPercent + waitPercent}% {transform: translateX(0px);} }`;
         element.appendChild(style);
         element.style.animation = `marquee ${totalTime}s infinite linear`;
+    }
+
+    private _startSeekSliderDrag(
+        anchorClientX: number,
+        anchorScreenX: number,
+        touchId?: number,
+    ): void {
+        if (this.player.track === undefined) {
+            return;
+        }
+
+        const rect = this._progressBarEmpty.getBoundingClientRect();
+        const anchorClientXOffset = anchorClientX - rect.left;
+
+        const getSeekSliderPosition = (screenX: number): number => {
+            let clientXOffset = anchorClientXOffset + (screenX - anchorScreenX);
+            if (clientXOffset < 0) {
+                clientXOffset = 0;
+            } else if (clientXOffset > rect.width) {
+                clientXOffset = rect.width;
+            }
+            return clientXOffset / rect.width;
+        };
+
+        this._seekSliderPosition = getSeekSliderPosition(anchorScreenX);
+        this._updateTime();
+
+        onDrag((screenX) => {
+            this._seekSliderPosition = getSeekSliderPosition(screenX);
+            this._updateTime();
+        },
+        (screenX) => {
+            this._seekSliderPosition = undefined;
+
+            if (this.player.track !== undefined) {
+                this.player.seekTo(
+                    getSeekSliderPosition(screenX) * this.player.track.info.duration);
+            }
+        }, touchId);
     }
 
     private _updateStatus(): void {
@@ -308,17 +322,45 @@ function getElement(
 function onDrag(
     onMove: (x: number, y: number) => void,
     onStop: (x: number, y: number) => void,
+    touchId?: number,
 ): void {
-    const onMouseMove = (e: MouseEvent): void => {
-        onMove(e.screenX, e.screenY);
-    };
-    const onMouseUp = (e: MouseEvent): void => {
-        onStop(e.screenX, e.screenY);
+    if (touchId !== undefined) {
+        const onTouchMove = (e: TouchEvent): void => {
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === touchId) {
+                    onMove(touch.screenX, touch.screenY);
+                    break;
+                }
+            }
+        };
+        const onTouchEnd = (e: TouchEvent): void => {
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === touchId) {
+                    onStop(touch.screenX, touch.screenY);
 
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-    };
+                    document.removeEventListener("touchmove", onTouchMove);
+                    document.removeEventListener("touchend", onTouchEnd);
+                    document.removeEventListener("touchcancel", onTouchEnd);
+                    break;
+                }
+            }
+        };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+        document.addEventListener("touchmove", onTouchMove);
+        document.addEventListener("touchend", onTouchEnd);
+        document.addEventListener("touchcancel", onTouchEnd);
+    } else {
+        const onMouseMove = (e: MouseEvent): void => {
+            onMove(e.screenX, e.screenY);
+        };
+        const onMouseUp = (e: MouseEvent): void => {
+            onStop(e.screenX, e.screenY);
+
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    }
 }
