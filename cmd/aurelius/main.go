@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -24,7 +23,6 @@ func main() {
 		key      = flag.String("key", "", "TLS key file")
 		logLevel = flag.Int("log", 2, "log verbosity (1-3)")
 		dbPath   = flag.String("db", ".", "path to database root")
-		reload   = flag.Bool("reload", false, "reload templates on every use")
 	)
 	flag.Parse()
 
@@ -49,29 +47,10 @@ func main() {
 		assetsDir = filepath.Dir(executable)
 	}
 
-	templateGlob := filepath.Join(assetsDir, "templates", "*")
-
-	var templateProxy util.TemplateProxy
-	if *reload {
-		templateProxy = util.DynamicTemplateProxy{Glob: templateGlob}
-	} else {
-		templateProxy =
-			util.StaticTemplateProxy{Template: template.Must(template.ParseGlob(templateGlob))}
-	}
-
-	db, err := database.New("/db", *dbPath, templateProxy)
+	db, err := database.New("/db", *dbPath, "html")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
-
-	/*
-		player := player.New()
-		defer player.Destroy()
-
-		playerHandleRpc := func(w http.ResponseWriter, req *http.Request) {
-			player.HandleRpc(w, req)
-		}
-	*/
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -79,15 +58,8 @@ func main() {
 	})
 	router.PathPrefix(db.Prefix() + "/").Handler(db)
 	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
-	/*
-		router.HandleFunc("/rpc", playerHandleRpc).
-			Methods("POST").
-			Headers("Content-Type", "application/json")
-	*/
 
 	http.Handle("/", router)
-
-	//player.Play(playerPkg.NewFilePlaylist(flag.Args()))
 
 	log.Printf("listening on %s\n", *address)
 	if len(*cert) > 0 || len(*key) > 0 {

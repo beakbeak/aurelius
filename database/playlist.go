@@ -7,15 +7,15 @@ import (
 )
 
 func (db *Database) handlePlaylistRequest(
-	matches []string,
+	dbPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	path := db.toFileSystemPath(matches[1])
-	lines, err := db.playlistCache.Get(path)
+	fsPath := db.toFileSystemPath(dbPath)
+	lines, err := db.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
-		util.Debug.Printf("failed to load '%v': %v", path, err)
+		util.Debug.Printf("failed to load '%v': %v", fsPath, err)
 	}
 
 	query := req.URL.Query()

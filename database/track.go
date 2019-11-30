@@ -12,18 +12,17 @@ import (
 const favoritesPath = "Favorites.m3u"
 
 func (db *Database) handleTrackRequest(
-	matches []string,
+	urlPath string,
+	subRequest string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	urlPath := matches[1]
 	filePath := db.toFileSystemPath(urlPath)
 	if info, err := os.Stat(filePath); err != nil || !info.Mode().IsRegular() {
 		http.NotFound(w, req)
 		return
 	}
 
-	subRequest := matches[2]
 	handled := true
 
 	switch req.Method {

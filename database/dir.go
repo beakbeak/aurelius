@@ -24,11 +24,24 @@ func init() {
 }
 
 func (db *Database) handleDirRequest(
-	matches []string,
+	dbDirPath string,
 	w http.ResponseWriter,
-	_ *http.Request,
+	req *http.Request,
 ) {
-	dbDirPath := matches[1]
+	query := req.URL.Query()
+
+	if _, ok := query["info"]; ok {
+		db.handleDirInfoRequest(dbDirPath, w)
+		return
+	}
+
+	http.ServeFile(w, req, db.toHtmlPath("main.html"))
+}
+
+func (db *Database) handleDirInfoRequest(
+	dbDirPath string,
+	w http.ResponseWriter,
+) {
 	fsDirPath := db.toFileSystemPath(dbDirPath)
 
 	infos, err := ioutil.ReadDir(fsDirPath)
@@ -39,8 +52,8 @@ func (db *Database) handleDirRequest(
 	}
 
 	type PathUrl struct {
-		Name string
-		Url  string
+		Name string `json:"name"`
+		Url  string `json:"url"`
 	}
 
 	makePathUrl := func(name, urlPath string) PathUrl {
@@ -51,7 +64,7 @@ func (db *Database) handleDirRequest(
 	}
 
 	makeRelativePathUrl := func(name string) PathUrl {
-		return makePathUrl(name, "./"+name)
+		return makePathUrl(name, db.toUrlPath(dbDirPath+"/"+name))
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
@@ -62,12 +75,12 @@ func (db *Database) handleDirRequest(
 		return makePathUrl(name, db.toUrlPath(dbPath)), nil
 	}
 
-	type TemplateData struct {
-		Dirs      []PathUrl
-		Playlists []PathUrl
-		Tracks    []PathUrl
+	type Result struct {
+		Dirs      []PathUrl `json:"dirs"`
+		Playlists []PathUrl `json:"playlists"`
+		Tracks    []PathUrl `json:"tracks"`
 	}
-	data := TemplateData{}
+	result := Result{}
 
 	for _, info := range infos {
 		mode := info.Mode()
@@ -97,22 +110,19 @@ func (db *Database) handleDirRequest(
 
 		switch {
 		case mode.IsDir():
-			data.Dirs = append(data.Dirs, url)
+			result.Dirs = append(result.Dirs, url)
 
 		case mode.IsRegular():
 			if reDirIgnore.MatchString(info.Name()) && !reDirUnignore.MatchString(info.Name()) {
 				continue
 			}
 			if rePlaylist.MatchString(info.Name()) {
-				data.Playlists = append(data.Playlists, url)
+				result.Playlists = append(result.Playlists, url)
 			} else {
-				data.Tracks = append(data.Tracks, url)
+				result.Tracks = append(result.Tracks, url)
 			}
 		}
 	}
 
-	if err := db.templateProxy.ExecuteTemplate(w, "db-dir.html", data); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		util.Debug.Printf("failed to execute template: %v\n", err)
-	}
+	util.WriteJson(w, result)
 }

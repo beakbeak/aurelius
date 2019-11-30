@@ -7,9 +7,9 @@
 	<link rel="icon" type="image/png" href="/static/icon.png">
 
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	<link href="/static/css/db-dir.css" rel="stylesheet">
+	<link href="/static/css/main.css" rel="stylesheet">
 
-	<script src="/static/js/db-dir.js" type="module"></script>
+	<script src="/static/js/main.js" type="module"></script>
 </head>
 <body>
 	<div id="header">
@@ -54,32 +54,7 @@
 		</div>
 	</div>
 
-	<div id="content">
-		<ul id="dirs" class="listing">
-			<li><i class="material-icons">arrow_back</i><a href="..">Parent directory</a></li>
-			{{- if .Dirs}}
-				{{- range $dir := .Dirs}}
-					<li><i class="material-icons">folder_open</i><a href="{{$dir.Url}}/">{{$dir.Name}}/</a></li>
-				{{- end}}
-			{{- end}}
-		</ul>
-
-		{{- if .Playlists}}
-			<ul id="playlists" class="listing">
-				{{- range $file := .Playlists}}
-					<li><i class="material-icons">playlist_play</i><a href="{{$file.Url}}">{{$file.Name}}</a></li>
-				{{- end}}
-			</ul>
-		{{- end}}
-
-		{{- if .Tracks}}
-			<ul id="tracks" class="listing">
-				{{- range $file := .Tracks}}
-					<li><i class="material-icons">music_note</i><a href="{{$file.Url}}">{{$file.Name}}</a></li>
-				{{- end}}
-			</ul>
-		{{- end}}
-	</div>
+	<div id="content"></div>
 
 	<div id="footer">
 		<img src="/static/aurelius.png">

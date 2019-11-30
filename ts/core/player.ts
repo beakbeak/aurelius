@@ -1,7 +1,7 @@
-import * as util from "./util.js";
 import { Track, StreamOptions } from "./track.js";
 import { Playlist, LocalPlaylist, RemotePlaylist }  from "./playlist.js";
 import { PlayHistory } from "./history.js";
+import EventDispatcher from "./eventdispatcher.js";
 
 export interface PlayerEventMap {
     play: () => void;
@@ -15,7 +15,7 @@ export interface PlayerEventMap {
 }
 export type PlayerEvent = keyof PlayerEventMap;
 
-export class Player extends util.EventDispatcher<PlayerEventMap> {
+export class Player extends EventDispatcher<PlayerEventMap> {
     public track?: Track;
     public playlist?: Playlist;
     public history = new PlayHistory();
