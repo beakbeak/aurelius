@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sb/aurelius/util"
@@ -64,7 +65,7 @@ func (db *Database) handleDirInfoRequest(
 	}
 
 	makeRelativePathUrl := func(name string) PathUrl {
-		return makePathUrl(name, db.toUrlPath(dbDirPath+"/"+name))
+		return makePathUrl(name, db.toUrlPath(path.Join(dbDirPath, name)))
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {

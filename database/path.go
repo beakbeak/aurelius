@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -49,7 +50,7 @@ func (db *Database) toDatabasePathWithContext(fsPath, context string) (string, e
 }
 
 func (db *Database) toUrlPath(dbPath string) string {
-	return db.prefix + "/" + dbPath
+	return path.Join(db.prefix, dbPath)
 }
 
 func (db *Database) toHtmlPath(path string) string {

@@ -2,6 +2,7 @@ package database
 
 import (
 	"net/http"
+	"path"
 	"sb/aurelius/util"
 	"strconv"
 )
@@ -45,7 +46,7 @@ func (db *Database) handlePlaylistRequest(
 
 		util.WriteJson(w, Result{
 			Pos:  pos,
-			Path: lines[pos],
+			Path: db.toUrlPath(path.Join(path.Dir(dbPath), lines[pos])),
 		})
 	} else {
 		type Result struct {
