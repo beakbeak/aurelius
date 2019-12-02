@@ -5,8 +5,8 @@ import setupDirUi from "./ui/dir.js";
 window.onload = () => {
     const player = new Player();
 
-    setupPlayerUi(player, "header");
     setupDirUi(player, "content");
+    setupPlayerUi(player, "header");
 
     // XXX hack alert
     if (/([0-9]+\.){3}[0-9]+/.test(window.location.hostname)) {

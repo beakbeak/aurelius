@@ -36,13 +36,13 @@ export default async function setupDirUi(
     container.appendChild(trackList);
 
     window.onpopstate = () => {
-        loadUrl();
+        loadDir();
     };
 
-    await loadUrl();
+    await loadDir();
 }
 
-async function loadUrl(url?: string): Promise<void> {
+export async function loadDir(url?: string): Promise<void> {
     if (url === undefined) { // first call
         window.history.replaceState({}, "");
     } else {
@@ -79,7 +79,7 @@ function populateDirs(info: DirInfo): void {
 
         link.onclick = (e) => {
             e.preventDefault();
-            loadUrl(link.href); // ignore Promise
+            loadDir(link.href); // ignore Promise
         };
     }
 

@@ -1,5 +1,7 @@
 import { Player } from "../core/player.js";
+import { loadDir } from "./dir.js";
 import * as util from "./util.js";
+import * as coreUtil from "../core/util.js";
 
 let player: Player;
 
@@ -65,6 +67,12 @@ export default function setupPlayerUi(
     unfavoriteButton.onclick = () => {
         player.unfavorite();
     };
+
+    statusRight.onclick = () => {
+        if (player.track !== undefined) {
+            loadDir(`${coreUtil.stripLastPathElement(player.track.url)}/`);
+        }
+    }
 
     progressBarEmpty.onmousedown = (event) => {
         event.preventDefault();
