@@ -1,4 +1,5 @@
-FROM alpine as base
+ARG alpine=latest
+FROM alpine:$alpine as base
 
 RUN apk update && apk add --no-cache \
     ffmpeg-libs
