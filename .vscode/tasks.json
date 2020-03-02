@@ -4,13 +4,28 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Go build",
+            "type": "shell",
+            "command": "go build",
+            "group": "build",
+            "problemMatcher": [
+                "$go"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/cmd/aurelius"
+            }
+        },
+        {
+            "label": "TypeScript build (release)",
             "type": "npm",
             "script": "build",
             "problemMatcher": [
                 "$tsc"
-            ]
+            ],
+            "group": "build"
         },
         {
+            "label": "TypeScript build (debug)",
             "type": "npm",
             "script": "build-debug",
             "problemMatcher": [

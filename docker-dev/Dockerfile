@@ -1,0 +1,24 @@
+# This Dockerfile is for development purposes (via Visual Studio Code) only.
+# It is referenced by .devcontainer/devcontainer.json
+
+FROM archlinux
+
+RUN pacman -Sy && pacman -S --noconfirm \
+    ffmpeg \
+    gcc \
+    git \
+    go \
+    npm \
+    pkgconf \
+    sudo \
+    vim
+
+RUN groupadd -g 1000 code \
+    && useradd -g 1000 -u 1000 -m code
+
+# allow default user to run sudo without a password
+RUN mkdir -p /etc/sudoers.d && \
+    echo 'code ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/90-code-nopasswd
+
+USER code
+EXPOSE 9090
