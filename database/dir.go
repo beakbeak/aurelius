@@ -3,7 +3,6 @@ package database
 import (
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -57,15 +56,11 @@ func (db *Database) handleDirInfoRequest(
 		Url  string `json:"url"`
 	}
 
-	makePathUrl := func(name, urlPath string) PathUrl {
+	makeRelativePathUrl := func(name string) PathUrl {
 		return PathUrl{
 			Name: name,
-			Url:  (&url.URL{Path: urlPath}).String(),
+			Url:  db.toUrlPath(path.Join(dbDirPath, name)),
 		}
-	}
-
-	makeRelativePathUrl := func(name string) PathUrl {
-		return makePathUrl(name, db.toUrlPath(path.Join(dbDirPath, name)))
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
@@ -73,7 +68,10 @@ func (db *Database) handleDirInfoRequest(
 		if err != nil {
 			return PathUrl{}, err
 		}
-		return makePathUrl(name, db.toUrlPath(dbPath)), nil
+		return PathUrl{
+			Name: name,
+			Url:  db.toUrlPath(dbPath),
+		}, nil
 	}
 
 	type Result struct {

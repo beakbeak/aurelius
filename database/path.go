@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -50,7 +51,8 @@ func (db *Database) toDatabasePathWithContext(fsPath, context string) (string, e
 }
 
 func (db *Database) toUrlPath(dbPath string) string {
-	return path.Join(db.prefix, dbPath)
+	urlPath := path.Join(db.prefix, dbPath)
+	return (&url.URL{Path: urlPath}).String()
 }
 
 func (db *Database) toHtmlPath(path string) string {
