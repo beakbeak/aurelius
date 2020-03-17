@@ -187,10 +187,10 @@ function updateStatus(): void {
     const info = player.track.info;
     let text = "";
 
-    if (info.tags["composer"] !== undefined) {
-        text = `${text}${info.tags["composer"]} - `;
-    } else if (info.tags["artist"] !== undefined) {
+    if (info.tags["artist"] !== undefined) {
         text = `${text}${info.tags["artist"]} - `;
+    } else if (info.tags["composer"] !== undefined) {
+        text = `${text}${info.tags["composer"]} - `;
     }
 
     if (info.tags["title"] !== undefined) {
