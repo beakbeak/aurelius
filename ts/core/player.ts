@@ -133,7 +133,8 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     public async previous(): Promise<boolean> {
         let item = this.history.previous();
         if (item === undefined) {
-            if (this.playlist === undefined || this.playlist.length() < 1
+            if (this.random
+                || this.playlist === undefined || this.playlist.length() < 1
                 || this.playlistPos <= 0)
             {
                 return false;
