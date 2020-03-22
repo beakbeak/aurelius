@@ -6,15 +6,18 @@ package aurelib
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 
-static void avRegisterAll() {
+static void
+avRegisterAll() {
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 7, 100)
     av_register_all();
 #endif
 }
 */
 import "C"
-import "fmt"
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 func init() {
 	C.avRegisterAll()

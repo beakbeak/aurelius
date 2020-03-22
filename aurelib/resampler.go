@@ -7,7 +7,8 @@ package aurelib
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
 
-static char const* strRematrixVolume() {
+static char const*
+strRematrixVolume() {
 	return "rematrix_volume";
 }
 */

@@ -7,15 +7,18 @@ package aurelib
 #include <libavutil/replaygain.h>
 #include <stdlib.h>
 
-static int avErrorEOF() {
+static int
+avErrorEOF() {
 	return AVERROR_EOF;
 }
 
-static int avErrorEAGAIN() {
+static int
+avErrorEAGAIN() {
 	return AVERROR(EAGAIN);
 }
 
-static char const* strEmpty() {
+static char const*
+strEmpty() {
 	return "";
 }
 */

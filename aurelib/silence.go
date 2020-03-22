@@ -6,7 +6,8 @@ package aurelib
 #include <libavutil/samplefmt.h>
 #include <libavutil/channel_layout.h>
 
-static uint64_t avChLayoutStereo() {
+static uint64_t
+avChLayoutStereo() {
 	return AV_CH_LAYOUT_STEREO;
 }
 */
