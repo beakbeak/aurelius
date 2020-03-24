@@ -1,4 +1,4 @@
-package database
+package database_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sb/aurelius/database"
 	"strings"
 	"testing"
 )
@@ -96,8 +97,8 @@ var testFiles = []testFileInfo{
 	}`},
 }
 
-func createDefaultDatabase(t *testing.T) *Database {
-	db, err := New("/db", "../test-data", "../cmd/aurelius/html")
+func createDefaultDatabase(t *testing.T) *database.Database {
+	db, err := database.New("/db", "../test-data", "../cmd/aurelius/html")
 	if err != nil {
 		t.Fatalf("failed to create Database: %v", err)
 	}
@@ -139,7 +140,7 @@ func indentJson(
 
 func simpleRequest(
 	t *testing.T,
-	db *Database,
+	db *database.Database,
 	method string,
 	path string,
 	requestBody string,
@@ -180,7 +181,7 @@ func TestTrackInfo(t *testing.T) {
 
 func isFavorite(
 	t *testing.T,
-	db *Database,
+	db *database.Database,
 	path string,
 ) bool {
 	_, bodyBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
