@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -94,7 +96,7 @@ var testFiles = []testFileInfo{
 	}`},
 }
 
-func createDefaultDB(t *testing.T) *Database {
+func createDefaultDatabase(t *testing.T) *Database {
 	db, err := New("/db", "../test-data", "../cmd/aurelius/html")
 	if err != nil {
 		t.Fatalf("failed to create Database: %v", err)
@@ -135,23 +137,37 @@ func indentJson(
 	return string(buf.Bytes())
 }
 
+func simpleRequest(
+	t *testing.T,
+	db *Database,
+	method string,
+	path string,
+	requestBody string,
+) (*http.Response, []byte) {
+	w := httptest.NewRecorder()
+	db.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
+	response := w.Result()
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+	if response.StatusCode != 200 {
+		t.Fatalf("GET '%s' failed with code %v:\n%v", path, response.StatusCode, responseBody)
+	}
+	return response, responseBody
+}
+
 func TestTrackInfo(t *testing.T) {
-	db := createDefaultDB(t)
+	db := createDefaultDatabase(t)
 
 	for _, fileInfo := range testFiles {
 		t.Run(fileInfo.path, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			db.ServeHTTP(w, httptest.NewRequest("GET", "/db/"+fileInfo.path+"/info", nil))
-			response := w.Result()
+			response, body := simpleRequest(t, db, "GET", "/db/"+fileInfo.path+"/info", "")
 
 			contentType := response.Header["Content-Type"]
 			if len(contentType) != 1 || contentType[0] != "application/json" {
 				t.Fatalf("unexpected Content-Type: %v", contentType)
-			}
-
-			body, err := ioutil.ReadAll(response.Body)
-			if err != nil {
-				t.Fatalf("failed to read response body: %v", err)
 			}
 
 			expectedBody := []byte(fileInfo.json)
@@ -159,5 +175,52 @@ func TestTrackInfo(t *testing.T) {
 				t.Fatalf("unexpected JSON: %v", indentJson(t, body))
 			}
 		})
+	}
+}
+
+func isFavorite(
+	t *testing.T,
+	db *Database,
+	path string,
+) bool {
+	_, bodyBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
+
+	var bodyJson struct{ Favorite bool }
+	err := json.Unmarshal(bodyBytes, &bodyJson)
+	if err != nil {
+		t.Fatalf("json.Unmarshal() failed: %v\n%s", err, string(bodyBytes))
+	}
+
+	expectedValue, err := db.IsFavorite(path)
+	if err != nil {
+		t.Fatalf("db.IsFavorite(\"%s\") failed: %v", path, err)
+	}
+
+	if expectedValue != bodyJson.Favorite {
+		t.Fatalf("db.IsFavorite(\"%s\") doesn't match track info", path)
+	}
+	return bodyJson.Favorite
+}
+
+func TestFavorite(t *testing.T) {
+	db := createDefaultDatabase(t)
+	path := testFiles[0].path
+
+	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
+
+	if isFavorite(t, db, path) {
+		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
+	}
+
+	simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
+
+	if !isFavorite(t, db, path) {
+		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
+	}
+
+	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
+
+	if isFavorite(t, db, path) {
+		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
 }
