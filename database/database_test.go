@@ -12,13 +12,8 @@ import (
 	"testing"
 )
 
-type testFileInfo struct {
-	path string
-	json string
-}
-
-var testFiles = []testFileInfo{
-	{"test.flac", `{
+var testFiles = map[string]string{
+	"test.flac": `{
 		"name": "test.flac",
 		"duration": 12.59932,
 		"replayGainTrack": 0.7507580541199371,
@@ -39,8 +34,8 @@ var testFiles = []testFileInfo{
 			"title": "Aurelius Test Data",
 			"track": "1"
 		}
-	}`},
-	{"test.mp3", `{
+	}`,
+	"test.mp3": `{
 		"name": "test.mp3",
 		"duration": 12.669388,
 		"replayGainTrack": 0.716143410212902,
@@ -57,8 +52,8 @@ var testFiles = []testFileInfo{
 			"title": "Aurelius Test Data",
 			"track": "1"
 		}
-	}`},
-	{"test.ogg", `{
+	}`,
+	"test.ogg": `{
 		"name": "test.ogg",
 		"duration": 12.59932,
 		"replayGainTrack": 0.7612021390057184,
@@ -78,8 +73,8 @@ var testFiles = []testFileInfo{
 			"title": "Aurelius Test Data",
 			"track": "1"
 		}
-	}`},
-	{"test.wav", `{
+	}`,
+	"test.wav": `{
 		"name": "test.wav",
 		"duration": 12.59932,
 		"replayGainTrack": 1,
@@ -94,7 +89,7 @@ var testFiles = []testFileInfo{
 			"title": "Aurelius Test Data",
 			"track": "1"
 		}
-	}`},
+	}`,
 }
 
 func createDefaultDatabase(t *testing.T) *database.Database {
@@ -162,16 +157,16 @@ func simpleRequest(
 func TestTrackInfo(t *testing.T) {
 	db := createDefaultDatabase(t)
 
-	for _, fileInfo := range testFiles {
-		t.Run(fileInfo.path, func(t *testing.T) {
-			response, body := simpleRequest(t, db, "GET", "/db/"+fileInfo.path+"/info", "")
+	for path, expectedJsonString := range testFiles {
+		t.Run(path, func(t *testing.T) {
+			response, body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
 			contentType := response.Header["Content-Type"]
 			if len(contentType) != 1 || contentType[0] != "application/json" {
 				t.Fatalf("unexpected Content-Type: %v", contentType)
 			}
 
-			expectedBody := []byte(fileInfo.json)
+			expectedBody := []byte(expectedJsonString)
 			if !jsonEqual(t, body, expectedBody) {
 				t.Fatalf("unexpected JSON: %v", indentJson(t, body))
 			}
@@ -203,9 +198,16 @@ func isFavorite(
 	return bodyJson.Favorite
 }
 
+func pickFromStringMap(m map[string]string) (string, string) {
+	for key, value := range m {
+		return key, value
+	}
+	panic("map is empty")
+}
+
 func TestFavorite(t *testing.T) {
 	db := createDefaultDatabase(t)
-	path := testFiles[0].path
+	path, _ := pickFromStringMap(testFiles)
 
 	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
 
