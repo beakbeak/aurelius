@@ -103,11 +103,16 @@ var testFiles = map[string]string{
 }
 
 func clearFavorites(t *testing.T) {
-	file, err := os.Create(favoritesFilePath)
-	if err != nil {
-		t.Fatalf("os.Create(\"%s\") failed: %v", favoritesFilePath, err)
+	switch _, err := os.Stat(favoritesFilePath); {
+	case os.IsNotExist(err):
+		return
+	case err != nil:
+		t.Fatalf("\"%s\" exists but Stat() failed: %v", favoritesFilePath, err)
 	}
-	file.Close()
+
+	if err := os.Remove(favoritesFilePath); err != nil {
+		t.Fatalf("Remove(\"%s\") failed: %v", favoritesFilePath, err)
+	}
 }
 
 func createDefaultDatabase(t *testing.T) *database.Database {
@@ -180,16 +185,41 @@ func simpleRequest(
 		t.Fatalf("failed to read response body: %v", err)
 	}
 	if response.StatusCode != 200 {
-		t.Fatalf("GET '%s' failed with code %v:\n%v", path, response.StatusCode, responseBody)
+		t.Fatalf(
+			"%s '%s' failed with code %v:\n%v", method, path, response.StatusCode, responseBody)
 	}
 	return response, responseBody
+}
+
+func simpleRequestShouldFail(
+	t *testing.T,
+	db *database.Database,
+	method string,
+	path string,
+	requestBody string,
+) {
+	w := httptest.NewRecorder()
+	db.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
+	response := w.Result()
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+	if response.StatusCode == 200 {
+		t.Fatalf("%s '%s' succeeded but should have failed:\n%v", method, path, responseBody)
+	}
 }
 
 func TestTrackInfo(t *testing.T) {
 	db := createDefaultDatabase(t)
 
+	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
+
 	for path, expectedJsonString := range testFiles {
 		t.Run(path, func(t *testing.T) {
+			simpleRequestShouldFail(t, db, "GET", "/"+path+"/info", "")
+
 			response, body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
 			contentType := response.Header["Content-Type"]
@@ -235,6 +265,10 @@ func pickFromStringMap(m map[string]string) (string, string) {
 
 func TestFavorite(t *testing.T) {
 	db := createDefaultDatabase(t)
+
+	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/favorite", "")
+	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/unfavorite", "")
+
 	path, _ := pickFromStringMap(testFiles)
 
 	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
@@ -256,8 +290,23 @@ func TestFavorite(t *testing.T) {
 	}
 }
 
+func getPlaylistLength(
+	t *testing.T,
+	db *database.Database,
+	dbPath string,
+) int {
+	_, bodyBytes := simpleRequest(t, db, "GET", dbPath, "")
+
+	var bodyJson struct{ Length int }
+	unmarshalJson(t, bodyBytes, &bodyJson)
+
+	return bodyJson.Length
+}
+
 func TestFavoritesLength(t *testing.T) {
 	db := createDefaultDatabase(t)
+
+	simpleRequestShouldFail(t, db, "GET", favoritesDbPath, "")
 
 	for i := 0; i < 2; i++ {
 		for path, _ := range testFiles {
@@ -265,13 +314,9 @@ func TestFavoritesLength(t *testing.T) {
 		}
 	}
 
-	_, bodyBytes := simpleRequest(t, db, "GET", favoritesDbPath, "")
-
-	var bodyJson struct{ Length int }
-	unmarshalJson(t, bodyBytes, &bodyJson)
-
+	length := getPlaylistLength(t, db, favoritesDbPath)
 	expectedLength := len(testFiles)
-	if bodyJson.Length != expectedLength {
-		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, bodyJson.Length)
+	if length != expectedLength {
+		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
 	}
 }
