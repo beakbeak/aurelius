@@ -6,10 +6,20 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sb/aurelius/database"
 	"strings"
 	"testing"
+)
+
+var (
+	testDataPath = filepath.Join("..", "test-data")
+	htmlPath     = filepath.Join("..", "cmd", "aurelius")
+
+	favoritesDbPath   = "/db/Favorites.m3u"
+	favoritesFilePath = filepath.Join(testDataPath, "Favorites.m3u")
 )
 
 var testFiles = map[string]string{
@@ -92,8 +102,18 @@ var testFiles = map[string]string{
 	}`,
 }
 
+func clearFavorites(t *testing.T) {
+	file, err := os.Create(favoritesFilePath)
+	if err != nil {
+		t.Fatalf("os.Create(\"%s\") failed: %v", favoritesFilePath, err)
+	}
+	file.Close()
+}
+
 func createDefaultDatabase(t *testing.T) *database.Database {
-	db, err := database.New("/db", "../test-data", "../cmd/aurelius/html")
+	clearFavorites(t)
+
+	db, err := database.New("/db", testDataPath, htmlPath)
 	if err != nil {
 		t.Fatalf("failed to create Database: %v", err)
 	}
@@ -131,6 +151,17 @@ func indentJson(
 		t.Fatalf("json.Indent() failed: %v", err)
 	}
 	return string(buf.Bytes())
+}
+
+func unmarshalJson(
+	t *testing.T,
+	data []byte,
+	v interface{},
+) {
+	err := json.Unmarshal(data, v)
+	if err != nil {
+		t.Fatalf("json.Unmarshal() failed: %v\n%s", err, string(data))
+	}
 }
 
 func simpleRequest(
@@ -182,10 +213,7 @@ func isFavorite(
 	_, bodyBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
 	var bodyJson struct{ Favorite bool }
-	err := json.Unmarshal(bodyBytes, &bodyJson)
-	if err != nil {
-		t.Fatalf("json.Unmarshal() failed: %v\n%s", err, string(bodyBytes))
-	}
+	unmarshalJson(t, bodyBytes, &bodyJson)
 
 	expectedValue, err := db.IsFavorite(path)
 	if err != nil {
@@ -225,5 +253,25 @@ func TestFavorite(t *testing.T) {
 
 	if isFavorite(t, db, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
+	}
+}
+
+func TestFavoritesLength(t *testing.T) {
+	db := createDefaultDatabase(t)
+
+	for i := 0; i < 2; i++ {
+		for path, _ := range testFiles {
+			simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
+		}
+	}
+
+	_, bodyBytes := simpleRequest(t, db, "GET", favoritesDbPath, "")
+
+	var bodyJson struct{ Length int }
+	unmarshalJson(t, bodyBytes, &bodyJson)
+
+	expectedLength := len(testFiles)
+	if bodyJson.Length != expectedLength {
+		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, bodyJson.Length)
 	}
 }
