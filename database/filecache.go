@@ -57,7 +57,7 @@ func (c *FileCache) unsafeGetWithInfo(
 func (c *FileCache) unsafeGet(path string) ([]string, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return nil, fmt.Errorf("stat failed: %v", err)
+		return nil, err // not reformatting because caller may call os.IsNotExist(err)
 	}
 
 	return c.unsafeGetWithInfo(path, info)

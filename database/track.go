@@ -65,7 +65,10 @@ func (db *Database) handleTrackRequest(
 
 func (db *Database) IsFavorite(path string) (bool, error) {
 	favorites, err := db.playlistCache.Get(db.toFileSystemPath(favoritesPath))
-	if err != nil {
+	switch {
+	case os.IsNotExist(err):
+		return false, nil
+	case err != nil:
 		return false, err
 	}
 
