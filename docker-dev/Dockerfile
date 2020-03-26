@@ -21,4 +21,13 @@ RUN mkdir -p /etc/sudoers.d && \
     echo 'code ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/90-code-nopasswd
 
 USER code
+
+RUN echo "export PATH=${PATH}:~/go/bin" >> /home/code/.bashrc && \
+    GO111MODULE=on go get -v \
+    golang.org/x/tools/gopls@latest \
+    github.com/ramya-rao-a/go-outline
+
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+    | sh -s -- -b $(go env GOPATH)/bin v1.24.0
+
 EXPOSE 9090
