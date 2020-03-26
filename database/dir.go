@@ -11,17 +11,10 @@ import (
 )
 
 var (
-	reDirIgnore   *regexp.Regexp
-	reDirUnignore *regexp.Regexp
-
-	rePlaylist *regexp.Regexp
-)
-
-func init() {
-	reDirIgnore = regexp.MustCompile(`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`)
+	reDirIgnore   = regexp.MustCompile(`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`)
 	reDirUnignore = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
-	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
-}
+	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
+)
 
 func (db *Database) handleDirRequest(
 	dbDirPath string,

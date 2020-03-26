@@ -8,14 +8,9 @@ import (
 
 var (
 	DebugEnabled = true
-	Debug        *log.Logger
-	Noise        *log.Logger
+	Debug        = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
+	Noise        = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
 )
-
-func init() {
-	Debug = log.New(os.Stdout, "DEBUG: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
-	Noise = log.New(os.Stdout, "NOISE: ", log.Ltime|log.Lmicroseconds|log.Ldate|log.Lshortfile)
-}
 
 func SetLogLevel(level int) {
 	if level < 2 {

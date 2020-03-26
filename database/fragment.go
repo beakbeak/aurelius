@@ -11,12 +11,8 @@ import (
 )
 
 var (
-	reFragment *regexp.Regexp
-)
-
-func init() {
 	reFragment = regexp.MustCompile(`(?i)^(.+?)\.([0-9]+)\.txt$`)
-}
+)
 
 type Fragment struct {
 	*aurelib.FileSource
