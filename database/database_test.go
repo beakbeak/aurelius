@@ -11,13 +11,14 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sb/aurelius/database"
 	"strings"
 	"testing"
 )
 
 var (
-	testDataPath = filepath.Join("..", "test-data")
+	testDataPath = filepath.Join("..", "test-data", "db")
 	htmlPath     = filepath.Join("..", "cmd", "aurelius")
 
 	favoritesDbPath   = "/db/Favorites.m3u"
@@ -188,7 +189,8 @@ func simpleRequest(
 	}
 	if response.StatusCode != 200 {
 		t.Fatalf(
-			"%s '%s' failed with code %v:\n%v", method, path, response.StatusCode, responseBody)
+			"%s '%s' failed with code %v:\n%v",
+			method, path, response.StatusCode, string(responseBody))
 	}
 	return response, responseBody
 }
@@ -342,7 +344,7 @@ func writeStringToFile(
 	}
 }
 
-type playlistEntry struct {
+type PlaylistEntry struct {
 	Path string
 	Pos  int
 }
@@ -352,11 +354,11 @@ func getPlaylistEntry(
 	db *database.Database,
 	path string,
 	pos int,
-) playlistEntry {
+) PlaylistEntry {
 	url := fmt.Sprintf("%s?pos=%v", path, pos)
 	_, jsonBytes := simpleRequest(t, db, "GET", url, "")
 
-	var entry playlistEntry
+	var entry PlaylistEntry
 	unmarshalJson(t, jsonBytes, &entry)
 	return entry
 }
@@ -375,7 +377,27 @@ func getPlaylistEntryShouldFail(
 	}
 }
 
-func TestPlaylist(t *testing.T) {
+type PathUrl struct {
+	Name, Url string
+}
+
+type DirInfo struct {
+	Dirs, Playlists, Tracks []PathUrl
+}
+
+func getDirInfo(
+	t *testing.T,
+	db *database.Database,
+	path string,
+) DirInfo {
+	_, jsonBytes := simpleRequest(t, db, "GET", path+"/?info", "")
+
+	var info DirInfo
+	unmarshalJson(t, jsonBytes, &info)
+	return info
+}
+
+func TestWithSymlinks(t *testing.T) {
 	for _, baseName := range []string{"dir1", "dir2"} {
 		dir := filepath.Join(testDataPath, baseName)
 		if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
@@ -397,9 +419,16 @@ func TestPlaylist(t *testing.T) {
 	{
 		linkTarget := filepath.Join("..", "dir1")
 		linkName := filepath.Join(testDataPath, "dir2", "dir1link")
-		if err := os.Symlink(linkTarget, filepath.Join(testDataPath, linkName)); err != nil {
-			t.Log("Symlink() failed; assuming symlinks aren't supported")
-			useSymlinks = false
+
+		if err := os.Symlink(linkTarget, linkName); err != nil {
+			t.Logf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
+
+			if runtime.GOOS == "windows" {
+				t.Log("assuming symlinks aren't supported")
+				useSymlinks = false
+			} else {
+				t.FailNow()
+			}
 		}
 	}
 
@@ -417,9 +446,9 @@ func TestPlaylist(t *testing.T) {
 
 	if useSymlinks {
 		baseNames := []string{
-			"test #1",
-			"test 2? yes!",
-			"test 3: $p€c¡&l character edition",
+			"test #1.flac",
+			"test 2? yes!.flac",
+			"test 3: $p€c¡&l character edition.flac",
 		}
 
 		linkTarget := filepath.Join("..", "test.flac")
@@ -448,25 +477,61 @@ func TestPlaylist(t *testing.T) {
 
 	db := createDefaultDatabase(t)
 
-	if length := getPlaylistLength(t, db, "/db/playlist.m3u"); length != len(playlist) {
-		t.Fatalf("expected playlist length to be %v, got %v", len(playlist), length)
-	}
-
-	getPlaylistEntryShouldFail(t, db, "/db/playlist.m3u", -1)
-	getPlaylistEntryShouldFail(t, db, "/db/playlist.m3u", len(playlist))
-
-	for i := 0; i < len(playlist); i++ {
-		entry := getPlaylistEntry(t, db, "/db/playlist.m3u", i)
-
-		var trackInfo struct {
-			Name string
+	t.Run("Playlist", func(t *testing.T) {
+		if length := getPlaylistLength(t, db, "/db/playlist.m3u"); length != len(playlist) {
+			t.Fatalf("expected playlist length to be %v, got %v", len(playlist), length)
 		}
-		_, jsonBytes := simpleRequest(t, db, "GET", entry.Path+"/info", "")
-		unmarshalJson(t, jsonBytes, &trackInfo)
 
-		expectedName := path.Base(playlist[i])
-		if trackInfo.Name != expectedName {
-			t.Fatalf("expected track name to be \"%s\", got \"%s\"", expectedName, trackInfo.Name)
+		getPlaylistEntryShouldFail(t, db, "/db/playlist.m3u", -1)
+		getPlaylistEntryShouldFail(t, db, "/db/playlist.m3u", len(playlist))
+
+		for i := 0; i < len(playlist); i++ {
+			entry := getPlaylistEntry(t, db, "/db/playlist.m3u", i)
+
+			var trackInfo struct {
+				Name string
+			}
+			_, jsonBytes := simpleRequest(t, db, "GET", entry.Path+"/info", "")
+			unmarshalJson(t, jsonBytes, &trackInfo)
+
+			expectedName := path.Base(playlist[i])
+			if trackInfo.Name != expectedName {
+				t.Fatalf(
+					"expected track name to be \"%s\", got \"%s\"", expectedName, trackInfo.Name)
+			}
 		}
-	}
+	})
+
+	t.Run("Directory listing", func(t *testing.T) {
+		var testDir func(string)
+
+		testDir = func(path string) {
+			info := getDirInfo(t, db, path)
+
+			for _, playlistUrl := range info.Playlists {
+				getPlaylistLength(t, db, playlistUrl.Url)
+			}
+
+			for _, trackUrl := range info.Tracks {
+				var trackInfo struct {
+					Name string
+				}
+				_, jsonBytes := simpleRequest(t, db, "GET", trackUrl.Url+"/info", "")
+				unmarshalJson(t, jsonBytes, &trackInfo)
+
+				expectedName := trackUrl.Name
+				if trackInfo.Name != expectedName {
+					t.Fatalf(
+						"expected track name to be \"%s\", got \"%s\"",
+						expectedName, trackInfo.Name)
+				}
+			}
+
+			for _, dirUrl := range info.Dirs {
+				testDir(dirUrl.Url)
+			}
+		}
+
+		testDir("/db")
+	})
 }
