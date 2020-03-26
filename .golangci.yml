@@ -13,6 +13,7 @@ linters:
     - golint
     - stylecheck
     - unconvert
+    - gomnd
 
 linters-settings:
   gocritic:

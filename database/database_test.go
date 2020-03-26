@@ -158,7 +158,7 @@ func indentJson(
 	if err != nil {
 		t.Fatalf("json.Indent() failed: %v", err)
 	}
-	return string(buf.Bytes())
+	return buf.String()
 }
 
 func unmarshalJson(
@@ -174,14 +174,15 @@ func unmarshalJson(
 
 func simpleRequest(
 	t *testing.T,
-	db *database.Database,
+	handler http.Handler,
 	method string,
 	path string,
 	requestBody string,
-) (*http.Response, []byte) {
+) []byte {
 	w := httptest.NewRecorder()
-	db.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
+	handler.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
 	response := w.Result()
+	defer response.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -192,19 +193,20 @@ func simpleRequest(
 			"%s '%s' failed with code %v:\n%v",
 			method, path, response.StatusCode, string(responseBody))
 	}
-	return response, responseBody
+	return responseBody
 }
 
 func simpleRequestShouldFail(
 	t *testing.T,
-	db *database.Database,
+	handler http.Handler,
 	method string,
 	path string,
 	requestBody string,
 ) {
 	w := httptest.NewRecorder()
-	db.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
+	handler.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
 	response := w.Result()
+	defer response.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -220,16 +222,12 @@ func TestTrackInfo(t *testing.T) {
 
 	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
 
-	for path, expectedJsonString := range testFileMap {
+	for rangePath, rangeExpectedJsonString := range testFileMap {
+		path := rangePath
+		expectedJsonString := rangeExpectedJsonString
+
 		t.Run(path, func(t *testing.T) {
-			simpleRequestShouldFail(t, db, "GET", "/"+path+"/info", "")
-
-			response, body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
-
-			contentType := response.Header["Content-Type"]
-			if len(contentType) != 1 || contentType[0] != "application/json" {
-				t.Fatalf("unexpected Content-Type: %v", contentType)
-			}
+			body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
 			expectedBody := []byte(expectedJsonString)
 			if !jsonEqual(t, body, expectedBody) {
@@ -244,20 +242,20 @@ func isFavorite(
 	db *database.Database,
 	path string,
 ) bool {
-	_, bodyBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
+	jsonBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
-	var bodyJson struct{ Favorite bool }
-	unmarshalJson(t, bodyBytes, &bodyJson)
+	var track struct{ Favorite bool }
+	unmarshalJson(t, jsonBytes, &track)
 
 	expectedValue, err := db.IsFavorite(path)
 	if err != nil {
 		t.Fatalf("db.IsFavorite(\"%s\") failed: %v", path, err)
 	}
 
-	if expectedValue != bodyJson.Favorite {
+	if expectedValue != track.Favorite {
 		t.Fatalf("db.IsFavorite(\"%s\") doesn't match track info", path)
 	}
-	return bodyJson.Favorite
+	return track.Favorite
 }
 
 func pickFromStringMap(m map[string]string) (string, string) {
@@ -296,15 +294,15 @@ func TestFavorite(t *testing.T) {
 
 func getPlaylistLength(
 	t *testing.T,
-	db *database.Database,
+	handler http.Handler,
 	dbPath string,
 ) int {
-	_, bodyBytes := simpleRequest(t, db, "GET", dbPath, "")
+	jsonBytes := simpleRequest(t, handler, "GET", dbPath, "")
 
-	var bodyJson struct{ Length int }
-	unmarshalJson(t, bodyBytes, &bodyJson)
+	var playlist struct{ Length int }
+	unmarshalJson(t, jsonBytes, &playlist)
 
-	return bodyJson.Length
+	return playlist.Length
 }
 
 func TestFavoritesLength(t *testing.T) {
@@ -351,12 +349,12 @@ type PlaylistEntry struct {
 
 func getPlaylistEntry(
 	t *testing.T,
-	db *database.Database,
+	handler http.Handler,
 	path string,
 	pos int,
 ) PlaylistEntry {
 	url := fmt.Sprintf("%s?pos=%v", path, pos)
-	_, jsonBytes := simpleRequest(t, db, "GET", url, "")
+	jsonBytes := simpleRequest(t, handler, "GET", url, "")
 
 	var entry PlaylistEntry
 	unmarshalJson(t, jsonBytes, &entry)
@@ -365,12 +363,12 @@ func getPlaylistEntry(
 
 func getPlaylistEntryShouldFail(
 	t *testing.T,
-	db *database.Database,
+	handler http.Handler,
 	path string,
 	pos int,
 ) {
 	url := fmt.Sprintf("%s?pos=%v", path, pos)
-	_, jsonBytes := simpleRequest(t, db, "GET", url, "")
+	jsonBytes := simpleRequest(t, handler, "GET", url, "")
 
 	if !jsonEqual(t, jsonBytes, []byte("null")) {
 		t.Fatalf("expected %s to be null, got %v", url, string(jsonBytes))
@@ -387,10 +385,10 @@ type DirInfo struct {
 
 func getDirInfo(
 	t *testing.T,
-	db *database.Database,
+	handler http.Handler,
 	path string,
 ) DirInfo {
-	_, jsonBytes := simpleRequest(t, db, "GET", path+"/?info", "")
+	jsonBytes := simpleRequest(t, handler, "GET", path+"/?info", "")
 
 	var info DirInfo
 	unmarshalJson(t, jsonBytes, &info)
@@ -491,7 +489,7 @@ func TestWithSymlinks(t *testing.T) {
 			var trackInfo struct {
 				Name string
 			}
-			_, jsonBytes := simpleRequest(t, db, "GET", entry.Path+"/info", "")
+			jsonBytes := simpleRequest(t, db, "GET", entry.Path+"/info", "")
 			unmarshalJson(t, jsonBytes, &trackInfo)
 
 			expectedName := path.Base(playlist[i])
@@ -516,7 +514,7 @@ func TestWithSymlinks(t *testing.T) {
 				var trackInfo struct {
 					Name string
 				}
-				_, jsonBytes := simpleRequest(t, db, "GET", trackUrl.Url+"/info", "")
+				jsonBytes := simpleRequest(t, db, "GET", trackUrl.Url+"/info", "")
 				unmarshalJson(t, jsonBytes, &trackInfo)
 
 				expectedName := trackUrl.Name
