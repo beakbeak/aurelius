@@ -1,0 +1,166 @@
+{
+  "test.flac": {
+    "TrackInfo": {
+      "duration": 12.59932,
+      "favorite": false,
+      "name": "test.flac",
+      "replayGainAlbum": 0.7507580541199371,
+      "replayGainTrack": 0.7507580541199371,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "composer": "J. S. Bach",
+        "date": "2020",
+        "genre": "Test Data",
+        "replaygain_album_gain": "-2.49 dB",
+        "replaygain_album_peak": "0.89123535",
+        "replaygain_reference_loudness": "89.0 dB",
+        "replaygain_track_gain": "-2.49 dB",
+        "replaygain_track_peak": "0.89123535",
+        "title": "Aurelius Test Data",
+        "track": "1"
+      }
+    },
+    "StreamHashes": null
+  },
+  "test.flac.1.txt": {
+    "TrackInfo": {
+      "duration": 3,
+      "favorite": false,
+      "name": "test.flac.1.txt",
+      "replayGainAlbum": 0.7507580541199371,
+      "replayGainTrack": 0.7507580541199371,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "composer": "J. S. Bach",
+        "date": "2020",
+        "genre": "Test Data",
+        "replaygain_album_gain": "-2.49 dB",
+        "replaygain_album_peak": "0.89123535",
+        "replaygain_reference_loudness": "89.0 dB",
+        "replaygain_track_gain": "-2.49 dB",
+        "replaygain_track_peak": "0.89123535",
+        "title": "Aurelius Test Data",
+        "track": "1.1"
+      }
+    },
+    "StreamHashes": null
+  },
+  "test.flac.2.txt": {
+    "TrackInfo": {
+      "duration": 10.59932,
+      "favorite": false,
+      "name": "test.flac.2.txt",
+      "replayGainAlbum": 0.7507580541199371,
+      "replayGainTrack": 0.7507580541199371,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "composer": "J. S. Bach",
+        "date": "2020",
+        "genre": "Test Data",
+        "replaygain_album_gain": "-2.49 dB",
+        "replaygain_album_peak": "0.89123535",
+        "replaygain_reference_loudness": "89.0 dB",
+        "replaygain_track_gain": "-2.49 dB",
+        "replaygain_track_peak": "0.89123535",
+        "title": "Aurelius Test Data",
+        "track": "1.2"
+      }
+    },
+    "StreamHashes": null
+  },
+  "test.flac.3.txt": {
+    "TrackInfo": {
+      "duration": 5,
+      "favorite": false,
+      "name": "test.flac.3.txt",
+      "replayGainAlbum": 0.7507580541199371,
+      "replayGainTrack": 0.7507580541199371,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "composer": "J. S. Bach",
+        "date": "2020",
+        "genre": "Test Data",
+        "replaygain_album_gain": "-2.49 dB",
+        "replaygain_album_peak": "0.89123535",
+        "replaygain_reference_loudness": "89.0 dB",
+        "replaygain_track_gain": "-2.49 dB",
+        "replaygain_track_peak": "0.89123535",
+        "title": "Aurelius Test Data",
+        "track": "1.3"
+      }
+    },
+    "StreamHashes": null
+  },
+  "test.mp3": {
+    "TrackInfo": {
+      "duration": 12.669388,
+      "favorite": false,
+      "name": "test.mp3",
+      "replayGainAlbum": 0.716143410212902,
+      "replayGainTrack": 0.716143410212902,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "composer": "J. S. Bach",
+        "date": "2020",
+        "encoder": "LAME3.100",
+        "genre": "Test Data",
+        "title": "Aurelius Test Data",
+        "track": "1"
+      }
+    },
+    "StreamHashes": null
+  },
+  "test.ogg": {
+    "TrackInfo": {
+      "duration": 12.59932,
+      "favorite": false,
+      "name": "test.ogg",
+      "replayGainAlbum": 0.7612021390057184,
+      "replayGainTrack": 0.7612021390057184,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "composer": "J. S. Bach",
+        "date": "2020",
+        "genre": "Test Data",
+        "replaygain_album_gain": "-2.37 dB",
+        "replaygain_album_peak": "0.85044265",
+        "replaygain_track_gain": "-2.37 dB",
+        "replaygain_track_peak": "0.85044265",
+        "title": "Aurelius Test Data",
+        "track": "1"
+      }
+    },
+    "StreamHashes": null
+  },
+  "test.wav": {
+    "TrackInfo": {
+      "duration": 12.59932,
+      "favorite": false,
+      "name": "test.wav",
+      "replayGainAlbum": 1,
+      "replayGainTrack": 1,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "date": "2020",
+        "genre": "Test Data",
+        "title": "Aurelius Test Data",
+        "track": "1"
+      }
+    },
+    "StreamHashes": null
+  }
+}

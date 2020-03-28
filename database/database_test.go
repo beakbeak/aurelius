@@ -1,6 +1,7 @@
 package database_test
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -17,158 +18,84 @@ import (
 	"testing"
 )
 
+// After confirming new test results are correct, set to true and re-run tests
+// to update baseline.json
+const updateBaselines = false
+
 var (
-	testDataPath = filepath.Join("..", "test-data", "db")
-	htmlPath     = filepath.Join("..", "cmd", "aurelius")
+	testDataPath     = filepath.Join("..", "test-data")
+	testDataDbPath   = filepath.Join(testDataPath, "db")
+	baselineJsonPath = filepath.Join(testDataPath, "baseline.json")
 
 	favoritesDbPath   = "/db/Favorites.m3u"
-	favoritesFilePath = filepath.Join(testDataPath, "Favorites.m3u")
+	favoritesFilePath = filepath.Join(testDataDbPath, "Favorites.m3u")
+
+	htmlPath = filepath.Join("..", "cmd", "aurelius")
+
+	testFiles = []string{
+		"test.flac",
+		"test.mp3",
+		"test.ogg",
+		"test.wav",
+		"test.flac.1.txt",
+		"test.flac.2.txt",
+		"test.flac.3.txt",
+	}
 )
 
-var testFileMap = map[string]string{
-	"test.flac": `{
-		"name": "test.flac",
-		"duration": 12.59932,
-		"replayGainTrack": 0.7507580541199371,
-		"replayGainAlbum": 0.7507580541199371,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"composer": "J. S. Bach",
-			"date": "2020",
-			"genre": "Test Data",
-			"replaygain_album_gain": "-2.49 dB",
-			"replaygain_album_peak": "0.89123535",
-			"replaygain_reference_loudness": "89.0 dB",
-			"replaygain_track_gain": "-2.49 dB",
-			"replaygain_track_peak": "0.89123535",
-			"title": "Aurelius Test Data",
-			"track": "1"
+type Baseline struct {
+	TrackInfo    map[string]interface{} // result of "/info" request
+	StreamHashes map[string]string      // query string -> stream checksum
+}
+
+type BaselineMap map[string]Baseline // file name -> baseline
+
+func readBaselines() BaselineMap {
+	file, err := os.Open(baselineJsonPath)
+
+	if err != nil && os.IsNotExist(err) {
+		out := make(BaselineMap)
+		for _, path := range testFiles {
+			out[path] = Baseline{}
 		}
-	}`,
-	"test.mp3": `{
-		"name": "test.mp3",
-		"duration": 12.669388,
-		"replayGainTrack": 0.716143410212902,
-		"replayGainAlbum": 0.716143410212902,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"composer": "J. S. Bach",
-			"date": "2020",
-			"encoder": "LAME3.100",
-			"genre": "Test Data",
-			"title": "Aurelius Test Data",
-			"track": "1"
+		return out
+	}
+	if err != nil {
+		panic(fmt.Sprintf("Open(\"%s\") failed: %v", baselineJsonPath, err))
+	}
+
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	decoder := json.NewDecoder(reader)
+
+	var out BaselineMap
+
+	for decoder.More() {
+		if err = decoder.Decode(&out); err != nil {
+			panic(fmt.Sprintf("decoding \"%s\" failed: %v", baselineJsonPath, err))
 		}
-	}`,
-	"test.ogg": `{
-		"name": "test.ogg",
-		"duration": 12.59932,
-		"replayGainTrack": 0.7612021390057184,
-		"replayGainAlbum": 0.7612021390057184,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"composer": "J. S. Bach",
-			"date": "2020",
-			"genre": "Test Data",
-			"replaygain_album_gain": "-2.37 dB",
-			"replaygain_album_peak": "0.85044265",
-			"replaygain_track_gain": "-2.37 dB",
-			"replaygain_track_peak": "0.85044265",
-			"title": "Aurelius Test Data",
-			"track": "1"
-		}
-	}`,
-	"test.wav": `{
-		"name": "test.wav",
-		"duration": 12.59932,
-		"replayGainTrack": 1,
-		"replayGainAlbum": 1,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"date": "2020",
-			"genre": "Test Data",
-			"title": "Aurelius Test Data",
-			"track": "1"
-		}
-	}`,
-	"test.flac.1.txt": `{
-		"name": "test.flac.1.txt",
-		"duration": 3,
-		"replayGainTrack": 0.7507580541199371,
-		"replayGainAlbum": 0.7507580541199371,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"composer": "J. S. Bach",
-			"date": "2020",
-			"genre": "Test Data",
-			"replaygain_album_gain": "-2.49 dB",
-			"replaygain_album_peak": "0.89123535",
-			"replaygain_reference_loudness": "89.0 dB",
-			"replaygain_track_gain": "-2.49 dB",
-			"replaygain_track_peak": "0.89123535",
-			"title": "Aurelius Test Data",
-			"track": "1.1"
-		}
-	}`,
-	"test.flac.2.txt": `{
-		"name": "test.flac.2.txt",
-		"duration": 10.59932,
-		"replayGainTrack": 0.7507580541199371,
-		"replayGainAlbum": 0.7507580541199371,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"composer": "J. S. Bach",
-			"date": "2020",
-			"genre": "Test Data",
-			"replaygain_album_gain": "-2.49 dB",
-			"replaygain_album_peak": "0.89123535",
-			"replaygain_reference_loudness": "89.0 dB",
-			"replaygain_track_gain": "-2.49 dB",
-			"replaygain_track_peak": "0.89123535",
-			"title": "Aurelius Test Data",
-			"track": "1.2"
-		}
-	}`,
-	"test.flac.3.txt": `{
-		"name": "test.flac.3.txt",
-		"duration": 5,
-		"replayGainTrack": 0.7507580541199371,
-		"replayGainAlbum": 0.7507580541199371,
-		"favorite": false,
-		"tags": {
-			"album": "Aurelius Test Data Greatest Hits",
-			"artist": "Aurelius",
-			"comment": "Testing",
-			"composer": "J. S. Bach",
-			"date": "2020",
-			"genre": "Test Data",
-			"replaygain_album_gain": "-2.49 dB",
-			"replaygain_album_peak": "0.89123535",
-			"replaygain_reference_loudness": "89.0 dB",
-			"replaygain_track_gain": "-2.49 dB",
-			"replaygain_track_peak": "0.89123535",
-			"title": "Aurelius Test Data",
-			"track": "1.3"
-		}
-	}`,
+	}
+
+	return out
+}
+
+func writeBaselines(b BaselineMap) {
+	file, err := os.Create(baselineJsonPath)
+	if err != nil {
+		panic(fmt.Sprintf("Create(\"%s\") failed: %v", baselineJsonPath, err))
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	encoder := json.NewEncoder(writer)
+	encoder.SetIndent("", "  ")
+
+	if err = encoder.Encode(b); err != nil {
+		panic(fmt.Sprintf("encoding \"%s\" failed: %v", baselineJsonPath, err))
+	}
 }
 
 func clearFavorites(t *testing.T) {
@@ -187,7 +114,7 @@ func clearFavorites(t *testing.T) {
 func createDefaultDatabase(t *testing.T) *database.Database {
 	clearFavorites(t)
 
-	db, err := database.New("/db", testDataPath, htmlPath)
+	db, err := database.New("/db", testDataDbPath, htmlPath)
 	if err != nil {
 		t.Fatalf("failed to create Database: %v", err)
 	}
@@ -288,18 +215,34 @@ func TestTrackInfo(t *testing.T) {
 
 	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
 
-	for rangePath, rangeExpectedJsonString := range testFileMap {
+	baselines := readBaselines()
+
+	for rangePath, rangeBaseline := range baselines {
 		path := rangePath
-		expectedJsonString := rangeExpectedJsonString
+		baseline := rangeBaseline
 
 		t.Run(path, func(t *testing.T) {
 			body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
-			expectedBody := []byte(expectedJsonString)
-			if !jsonEqual(t, body, expectedBody) {
+			var trackInfo map[string]interface{}
+			if err := json.Unmarshal(body, &trackInfo); err != nil {
+				t.Fatalf("failed to decode JSON: %v\n%s", err, indentJson(t, body))
+			}
+
+			if updateBaselines {
+				baseline.TrackInfo = trackInfo
+				baselines[path] = baseline
+				return
+			}
+
+			if !reflect.DeepEqual(trackInfo, baseline.TrackInfo) {
 				t.Fatalf("unexpected JSON: %v", indentJson(t, body))
 			}
 		})
+	}
+
+	if updateBaselines {
+		writeBaselines(baselines)
 	}
 }
 
@@ -324,7 +267,7 @@ func isFavorite(
 	return track.Favorite
 }
 
-func pickFromStringMap(m map[string]string) (string, string) {
+func pickBaseline(m BaselineMap) (string, Baseline) {
 	for key, value := range m {
 		return key, value
 	}
@@ -337,7 +280,8 @@ func TestFavorite(t *testing.T) {
 	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/favorite", "")
 	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/unfavorite", "")
 
-	path, _ := pickFromStringMap(testFileMap)
+	baselines := readBaselines()
+	path, _ := pickBaseline(baselines)
 
 	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
 
@@ -376,14 +320,16 @@ func TestFavoritesLength(t *testing.T) {
 
 	simpleRequestShouldFail(t, db, "GET", favoritesDbPath, "")
 
+	baselines := readBaselines()
+
 	for i := 0; i < 2; i++ {
-		for path := range testFileMap {
+		for path := range baselines {
 			simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
 		}
 	}
 
 	length := getPlaylistLength(t, db, favoritesDbPath)
-	expectedLength := len(testFileMap)
+	expectedLength := len(baselines)
 	if length != expectedLength {
 		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
 	}
@@ -463,7 +409,7 @@ func getDirInfo(
 
 func TestWithSymlinks(t *testing.T) {
 	for _, baseName := range []string{"dir1", "dir2"} {
-		dir := filepath.Join(testDataPath, baseName)
+		dir := filepath.Join(testDataDbPath, baseName)
 		if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
 			t.Fatalf("RemoveAll(\"%s\") failed: %v", dir, err)
 		}
@@ -482,7 +428,7 @@ func TestWithSymlinks(t *testing.T) {
 	useSymlinks := true
 	{
 		linkTarget := filepath.Join("..", "dir1")
-		linkName := filepath.Join(testDataPath, "dir2", "dir1link")
+		linkName := filepath.Join(testDataDbPath, "dir2", "dir1link")
 
 		if err := os.Symlink(linkTarget, linkName); err != nil {
 			t.Logf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
@@ -517,7 +463,7 @@ func TestWithSymlinks(t *testing.T) {
 
 		linkTarget := filepath.Join("..", "test.flac")
 		for _, baseName := range baseNames {
-			linkName := filepath.Join(testDataPath, "dir1", baseName)
+			linkName := filepath.Join(testDataDbPath, "dir1", baseName)
 			if err := os.Symlink(linkTarget, linkName); err != nil {
 				t.Fatalf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
 			}
@@ -530,7 +476,7 @@ func TestWithSymlinks(t *testing.T) {
 		}
 	}
 
-	playlistPath := filepath.Join(testDataPath, "playlist.m3u")
+	playlistPath := filepath.Join(testDataDbPath, "playlist.m3u")
 	writeStringToFile(t, playlistPath, strings.Join(playlist, "\n"))
 	defer (func() {
 		if err := os.Remove(playlistPath); err != nil {
