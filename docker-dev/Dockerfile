@@ -25,7 +25,8 @@ USER code
 RUN echo "export PATH=${PATH}:~/go/bin" >> /home/code/.bashrc && \
     GO111MODULE=on go get -v \
     golang.org/x/tools/gopls@latest \
-    github.com/ramya-rao-a/go-outline
+    github.com/ramya-rao-a/go-outline \
+    github.com/go-delve/delve/cmd/dlv
 
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
     | sh -s -- -b $(go env GOPATH)/bin v1.24.0
