@@ -11,7 +11,7 @@ ARG gid=82
 RUN addgroup -g $gid -S www-data \
     && adduser -u $uid -D -S -G www-data www-data
 
-###
+################################################################################
 
 FROM base as build
 
@@ -29,7 +29,7 @@ RUN go build \
     && npm install \
     && npm run build
 
-###
+################################################################################
 
 FROM base as prod
 

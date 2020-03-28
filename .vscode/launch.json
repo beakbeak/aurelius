@@ -7,7 +7,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/aurelius",
-            "args": ["-db", "db"],
+            "args": ["-db", "${workspaceFolder}/test-data/db"],
         }
     ]
 }
