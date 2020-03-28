@@ -103,6 +103,72 @@ var testFileMap = map[string]string{
 			"track": "1"
 		}
 	}`,
+	"test.flac.1.txt": `{
+		"name": "test.flac.1.txt",
+		"duration": 3,
+		"replayGainTrack": 0.7507580541199371,
+		"replayGainAlbum": 0.7507580541199371,
+		"favorite": false,
+		"tags": {
+			"album": "Aurelius Test Data Greatest Hits",
+			"artist": "Aurelius",
+			"comment": "Testing",
+			"composer": "J. S. Bach",
+			"date": "2020",
+			"genre": "Test Data",
+			"replaygain_album_gain": "-2.49 dB",
+			"replaygain_album_peak": "0.89123535",
+			"replaygain_reference_loudness": "89.0 dB",
+			"replaygain_track_gain": "-2.49 dB",
+			"replaygain_track_peak": "0.89123535",
+			"title": "Aurelius Test Data",
+			"track": "1.1"
+		}
+	}`,
+	"test.flac.2.txt": `{
+		"name": "test.flac.2.txt",
+		"duration": 10.59932,
+		"replayGainTrack": 0.7507580541199371,
+		"replayGainAlbum": 0.7507580541199371,
+		"favorite": false,
+		"tags": {
+			"album": "Aurelius Test Data Greatest Hits",
+			"artist": "Aurelius",
+			"comment": "Testing",
+			"composer": "J. S. Bach",
+			"date": "2020",
+			"genre": "Test Data",
+			"replaygain_album_gain": "-2.49 dB",
+			"replaygain_album_peak": "0.89123535",
+			"replaygain_reference_loudness": "89.0 dB",
+			"replaygain_track_gain": "-2.49 dB",
+			"replaygain_track_peak": "0.89123535",
+			"title": "Aurelius Test Data",
+			"track": "1.2"
+		}
+	}`,
+	"test.flac.3.txt": `{
+		"name": "test.flac.3.txt",
+		"duration": 5,
+		"replayGainTrack": 0.7507580541199371,
+		"replayGainAlbum": 0.7507580541199371,
+		"favorite": false,
+		"tags": {
+			"album": "Aurelius Test Data Greatest Hits",
+			"artist": "Aurelius",
+			"comment": "Testing",
+			"composer": "J. S. Bach",
+			"date": "2020",
+			"genre": "Test Data",
+			"replaygain_album_gain": "-2.49 dB",
+			"replaygain_album_peak": "0.89123535",
+			"replaygain_reference_loudness": "89.0 dB",
+			"replaygain_track_gain": "-2.49 dB",
+			"replaygain_track_peak": "0.89123535",
+			"title": "Aurelius Test Data",
+			"track": "1.3"
+		}
+	}`,
 }
 
 func clearFavorites(t *testing.T) {
