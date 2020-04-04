@@ -18,11 +18,11 @@ import (
 	"testing"
 )
 
-// After confirming new test results are correct, set to true and re-run tests
-// to update baseline.json
-const updateBaselines = false
-
 var (
+	// After confirming new test results are correct, set to true and re-run
+	// tests to update baseline.json
+	updateBaselines = os.Getenv("UPDATE_BASELINES") == "1"
+
 	testDataPath     = filepath.Join("..", "test-data")
 	testDataDbPath   = filepath.Join(testDataPath, "db")
 	baselineJsonPath = filepath.Join(testDataPath, "baseline.json")
@@ -43,6 +43,8 @@ var (
 	}
 )
 
+/* Baselines ******************************************************************/
+
 type Baseline struct {
 	TrackInfo    map[string]interface{} // result of "/info" request
 	StreamHashes map[string]string      // query string -> stream checksum
@@ -52,18 +54,12 @@ type BaselineMap map[string]Baseline // file name -> baseline
 
 func readBaselines() BaselineMap {
 	file, err := os.Open(baselineJsonPath)
-
-	if err != nil && os.IsNotExist(err) {
-		out := make(BaselineMap)
-		for _, path := range testFiles {
-			out[path] = Baseline{}
-		}
-		return out
-	}
 	if err != nil {
+		if os.IsNotExist(err) {
+			return make(BaselineMap)
+		}
 		panic(fmt.Sprintf("Open(\"%s\") failed: %v", baselineJsonPath, err))
 	}
-
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
@@ -98,72 +94,7 @@ func writeBaselines(b BaselineMap) {
 	}
 }
 
-func clearFavorites(t *testing.T) {
-	switch _, err := os.Stat(favoritesFilePath); {
-	case os.IsNotExist(err):
-		return
-	case err != nil:
-		t.Fatalf("\"%s\" exists but Stat() failed: %v", favoritesFilePath, err)
-	}
-
-	if err := os.Remove(favoritesFilePath); err != nil {
-		t.Fatalf("Remove(\"%s\") failed: %v", favoritesFilePath, err)
-	}
-}
-
-func createDefaultDatabase(t *testing.T) *database.Database {
-	clearFavorites(t)
-
-	db, err := database.New("/db", testDataDbPath, htmlPath)
-	if err != nil {
-		t.Fatalf("failed to create Database: %v", err)
-	}
-	return db
-}
-
-func jsonEqual(
-	t *testing.T,
-	s1 []byte,
-	s2 []byte,
-) bool {
-	var buf1, buf2 bytes.Buffer
-	var err error
-
-	err = json.Compact(&buf1, s1)
-	if err != nil {
-		t.Fatalf("json.Compact() failed: %v", err)
-	}
-
-	err = json.Compact(&buf2, s2)
-	if err != nil {
-		t.Fatalf("json.Compact() failed: %v", err)
-	}
-
-	return reflect.DeepEqual(buf1.Bytes(), buf2.Bytes())
-}
-
-func indentJson(
-	t *testing.T,
-	s []byte,
-) string {
-	var buf bytes.Buffer
-	err := json.Indent(&buf, s, "", "    ")
-	if err != nil {
-		t.Fatalf("json.Indent() failed: %v", err)
-	}
-	return buf.String()
-}
-
-func unmarshalJson(
-	t *testing.T,
-	data []byte,
-	v interface{},
-) {
-	err := json.Unmarshal(data, v)
-	if err != nil {
-		t.Fatalf("json.Unmarshal() failed: %v\n%s", err, string(data))
-	}
-}
+/* General utilities **********************************************************/
 
 func simpleRequest(
 	t *testing.T,
@@ -210,39 +141,93 @@ func simpleRequestShouldFail(
 	}
 }
 
-func TestTrackInfo(t *testing.T) {
-	db := createDefaultDatabase(t)
+func writeStringToFile(
+	t *testing.T,
+	path string,
+	contents string,
+) {
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("os.Create(\"%s\") failed: %v", path, err)
+	}
+	defer file.Close()
 
-	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
+	switch n, err := file.WriteString(contents); {
+	case n != len(contents):
+		t.Fatalf("expected WriteString() to return %v, got %v", len(contents), n)
+	case err != nil:
+		t.Fatalf("WriteString() failed: %v", err)
+	}
+}
 
-	baselines := readBaselines()
+/* JSON utilities *************************************************************/
 
-	for rangePath, rangeBaseline := range baselines {
-		path := rangePath
-		baseline := rangeBaseline
+func jsonEqual(
+	t *testing.T,
+	s1 []byte,
+	s2 []byte,
+) bool {
+	var buf1, buf2 bytes.Buffer
+	var err error
 
-		t.Run(path, func(t *testing.T) {
-			body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
-
-			var trackInfo map[string]interface{}
-			if err := json.Unmarshal(body, &trackInfo); err != nil {
-				t.Fatalf("failed to decode JSON: %v\n%s", err, indentJson(t, body))
-			}
-
-			if updateBaselines {
-				baseline.TrackInfo = trackInfo
-				baselines[path] = baseline
-				return
-			}
-
-			if !reflect.DeepEqual(trackInfo, baseline.TrackInfo) {
-				t.Fatalf("unexpected JSON: %v", indentJson(t, body))
-			}
-		})
+	err = json.Compact(&buf1, s1)
+	if err != nil {
+		t.Fatalf("json.Compact() failed: %v", err)
 	}
 
-	if updateBaselines {
-		writeBaselines(baselines)
+	err = json.Compact(&buf2, s2)
+	if err != nil {
+		t.Fatalf("json.Compact() failed: %v", err)
+	}
+
+	return reflect.DeepEqual(buf1.Bytes(), buf2.Bytes())
+}
+
+func indentJson(
+	t *testing.T,
+	s []byte,
+) string {
+	var buf bytes.Buffer
+	err := json.Indent(&buf, s, "", "    ")
+	if err != nil {
+		t.Fatalf("json.Indent() failed: %v", err)
+	}
+	return buf.String()
+}
+
+func unmarshalJson(
+	t *testing.T,
+	data []byte,
+	v interface{},
+) {
+	err := json.Unmarshal(data, v)
+	if err != nil {
+		t.Fatalf("json.Unmarshal() failed: %v\n%s", err, string(data))
+	}
+}
+
+/* Database utilities *********************************************************/
+
+func createDefaultDatabase(t *testing.T) *database.Database {
+	clearFavorites(t)
+
+	db, err := database.New("/db", testDataDbPath, htmlPath)
+	if err != nil {
+		t.Fatalf("failed to create Database: %v", err)
+	}
+	return db
+}
+
+func clearFavorites(t *testing.T) {
+	switch _, err := os.Stat(favoritesFilePath); {
+	case os.IsNotExist(err):
+		return
+	case err != nil:
+		t.Fatalf("\"%s\" exists but Stat() failed: %v", favoritesFilePath, err)
+	}
+
+	if err := os.Remove(favoritesFilePath); err != nil {
+		t.Fatalf("Remove(\"%s\") failed: %v", favoritesFilePath, err)
 	}
 }
 
@@ -265,93 +250,6 @@ func isFavorite(
 		t.Fatalf("db.IsFavorite(\"%s\") doesn't match track info", path)
 	}
 	return track.Favorite
-}
-
-func pickBaseline(m BaselineMap) (string, Baseline) {
-	for key, value := range m {
-		return key, value
-	}
-	panic("map is empty")
-}
-
-func TestFavorite(t *testing.T) {
-	db := createDefaultDatabase(t)
-
-	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/favorite", "")
-	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/unfavorite", "")
-
-	baselines := readBaselines()
-	path, _ := pickBaseline(baselines)
-
-	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
-
-	if isFavorite(t, db, path) {
-		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
-	}
-
-	simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
-
-	if !isFavorite(t, db, path) {
-		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
-	}
-
-	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
-
-	if isFavorite(t, db, path) {
-		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
-	}
-}
-
-func getPlaylistLength(
-	t *testing.T,
-	handler http.Handler,
-	dbPath string,
-) int {
-	jsonBytes := simpleRequest(t, handler, "GET", dbPath, "")
-
-	var playlist struct{ Length int }
-	unmarshalJson(t, jsonBytes, &playlist)
-
-	return playlist.Length
-}
-
-func TestFavoritesLength(t *testing.T) {
-	db := createDefaultDatabase(t)
-
-	simpleRequestShouldFail(t, db, "GET", favoritesDbPath, "")
-
-	baselines := readBaselines()
-
-	for i := 0; i < 2; i++ {
-		for path := range baselines {
-			simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
-		}
-	}
-
-	length := getPlaylistLength(t, db, favoritesDbPath)
-	expectedLength := len(baselines)
-	if length != expectedLength {
-		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
-	}
-}
-
-func writeStringToFile(
-	t *testing.T,
-	path string,
-	contents string,
-) {
-	file, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("os.Create(\"%s\") failed: %v", path, err)
-	}
-	defer file.Close()
-
-	switch n, err := file.WriteString(contents); {
-	case n != len(contents):
-		t.Fatalf("expected WriteString() to return %v, got %v", len(contents), n)
-	case err != nil:
-		t.Fatalf("WriteString() failed: %v", err)
-	}
 }
 
 type PlaylistEntry struct {
@@ -387,6 +285,19 @@ func getPlaylistEntryShouldFail(
 	}
 }
 
+func getPlaylistLength(
+	t *testing.T,
+	handler http.Handler,
+	dbPath string,
+) int {
+	jsonBytes := simpleRequest(t, handler, "GET", dbPath, "")
+
+	var playlist struct{ Length int }
+	unmarshalJson(t, jsonBytes, &playlist)
+
+	return playlist.Length
+}
+
 type PathUrl struct {
 	Name, Url string
 }
@@ -405,6 +316,90 @@ func getDirInfo(
 	var info DirInfo
 	unmarshalJson(t, jsonBytes, &info)
 	return info
+}
+
+/* Tests **********************************************************************/
+
+func TestTrackInfo(t *testing.T) {
+	db := createDefaultDatabase(t)
+
+	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
+
+	baselines := readBaselines()
+
+	for _, rangePath := range testFiles {
+		path := rangePath
+
+		t.Run(path, func(t *testing.T) {
+			body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
+
+			var trackInfo map[string]interface{}
+			if err := json.Unmarshal(body, &trackInfo); err != nil {
+				t.Fatalf("failed to decode JSON: %v\n%s", err, indentJson(t, body))
+			}
+
+			baseline := baselines[path]
+
+			if updateBaselines {
+				baseline.TrackInfo = trackInfo
+				baselines[path] = baseline
+				return
+			}
+
+			if !reflect.DeepEqual(trackInfo, baseline.TrackInfo) {
+				t.Fatalf("unexpected JSON: %v", indentJson(t, body))
+			}
+		})
+	}
+
+	if updateBaselines {
+		writeBaselines(baselines)
+	}
+}
+
+func TestFavorite(t *testing.T) {
+	db := createDefaultDatabase(t)
+
+	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/favorite", "")
+	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/unfavorite", "")
+
+	path := testFiles[0]
+
+	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
+
+	if isFavorite(t, db, path) {
+		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
+	}
+
+	simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
+
+	if !isFavorite(t, db, path) {
+		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
+	}
+
+	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
+
+	if isFavorite(t, db, path) {
+		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
+	}
+}
+
+func TestFavoritesLength(t *testing.T) {
+	db := createDefaultDatabase(t)
+
+	simpleRequestShouldFail(t, db, "GET", favoritesDbPath, "")
+
+	for i := 0; i < 2; i++ {
+		for _, path := range testFiles {
+			simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
+		}
+	}
+
+	length := getPlaylistLength(t, db, favoritesDbPath)
+	expectedLength := len(testFiles)
+	if length != expectedLength {
+		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
+	}
 }
 
 func TestWithSymlinks(t *testing.T) {
