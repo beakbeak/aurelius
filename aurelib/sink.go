@@ -105,6 +105,13 @@ type SinkOptions struct {
 	CompressionLevel int     // used for flac
 	Quality          float32 // used for libmp3lame, libvorbis
 	BitRate          uint
+
+	// BitExact controls whether to avoid randomness in encoding and muxing. It
+	// corresponds to ffmpeg's AVFMT_FLAG_BITEXACT and AV_CODEC_FLAG_BITEXACT.
+	//
+	// This should be enabled when deterministic output is needed, such as when
+	// performing automated testing.
+	BitExact bool
 }
 
 type Sink interface {
@@ -351,6 +358,10 @@ func (sink *sinkBase) init(
 	sink.formatCtx.oformat = format
 	sink.formatCtx.pb = ioCtx
 
+	if options.BitExact {
+		sink.formatCtx.flags |= C.AVFMT_FLAG_BITEXACT
+	}
+
 	stream := C.avformat_new_stream(sink.formatCtx, nil)
 	if stream == nil {
 		return fmt.Errorf("failed to create output stream")
@@ -387,6 +398,10 @@ func (sink *sinkBase) init(
 	// mark the encoder so that it behaves accordingly
 	if (sink.formatCtx.oformat.flags & C.AVFMT_GLOBALHEADER) != 0 {
 		sink.codecCtx.flags |= C.AV_CODEC_FLAG_GLOBAL_HEADER
+	}
+
+	if options.BitExact {
+		sink.codecCtx.flags |= C.AV_CODEC_FLAG_BITEXACT
 	}
 
 	if avErr := C.avcodec_open2(sink.codecCtx, codec, nil); avErr < 0 {
