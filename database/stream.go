@@ -8,6 +8,19 @@ import (
 	"time"
 )
 
+// SetThrottleStreaming controls whether streaming throughput is limited to
+// playback speed. If set to false, streaming throughput is not limited.
+// Default: true.
+func (db *Database) SetThrottleStreaming(value bool) {
+	db.throttleStreaming = value
+}
+
+// ThrottleStreaming returns whether streaming throughput is limited to playback
+// speed. If false, streaming throughput is not limited. Default: true.
+func (db *Database) ThrottleStreaming() bool {
+	return db.throttleStreaming
+}
+
 func (db *Database) handleStreamRequest(
 	path string,
 	w http.ResponseWriter,
@@ -270,13 +283,15 @@ PlayLoop:
 			break PlayLoop
 		}
 
-		// calculate playedTime with millisecond precision to prevent overflow
-		playedTime := time.Duration(((playedSamples * 1000) /
-			uint64(sinkStreamInfo.SampleRate)) * 1000000)
-		timeToSleep := playedTime - playAhead - time.Since(startTime)
-		if timeToSleep > time.Millisecond {
-			util.Noise.Printf("sleeping %v", timeToSleep)
-			time.Sleep(timeToSleep)
+		if db.throttleStreaming {
+			// calculate playedTime with millisecond precision to prevent overflow
+			playedTime := time.Duration(((playedSamples * 1000) /
+				uint64(sinkStreamInfo.SampleRate)) * 1000000)
+			timeToSleep := playedTime - playAhead - time.Since(startTime)
+			if timeToSleep > time.Millisecond {
+				util.Noise.Printf("sleeping %v", timeToSleep)
+				time.Sleep(timeToSleep)
+			}
 		}
 	}
 
