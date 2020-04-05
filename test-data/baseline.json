@@ -1,4 +1,15 @@
 {
+  "test-positive-gain.ogg": {
+    "TrackInfo": null,
+    "StreamHashes": {
+      "?replayGain=album\u0026preventClipping=false": "c14317f18066e9c2d8f4f992fbc06a413385370a88cd70dab0904da47118a9bd",
+      "?replayGain=album\u0026preventClipping=true": "eaeca36e1f7b7b071804e1bd2e4d7d0d6de2fdcf5163ea6203222c7d59db63f5",
+      "?replayGain=off\u0026preventClipping=false": "ac7fb3839e89e8ab181ff094d553d20c4cbdc6501de5ed676480467f970e9962",
+      "?replayGain=off\u0026preventClipping=true": "ac7fb3839e89e8ab181ff094d553d20c4cbdc6501de5ed676480467f970e9962",
+      "?replayGain=track\u0026preventClipping=false": "83e3087e2f87849fedce527e1bec4a460478b275e9bfd65830898f348807ff96",
+      "?replayGain=track\u0026preventClipping=true": "eaeca36e1f7b7b071804e1bd2e4d7d0d6de2fdcf5163ea6203222c7d59db63f5"
+    }
+  },
   "test.flac": {
     "TrackInfo": {
       "duration": 12.59932,
@@ -22,7 +33,113 @@
         "track": "1"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=flac": "3cfbf4d506efd742abc2ee5c8d71ba3a900674b8e0eeac13d366102eeecf4e89",
+      "?codec=flac\u0026channelLayout=5.1": "4cf3bebef34aa7df5e664fe3edc8c5ee6b0bb24818d1847422dc46edcc43d76e",
+      "?codec=flac\u0026channelLayout=mono": "9c9e895fb92b740cbde5430d44bd1fe11e91b29101f43e65151c587a67ff1eff",
+      "?codec=flac\u0026channelLayout=stereo": "3cfbf4d506efd742abc2ee5c8d71ba3a900674b8e0eeac13d366102eeecf4e89",
+      "?codec=flac\u0026sampleFormat=flt": "3cfbf4d506efd742abc2ee5c8d71ba3a900674b8e0eeac13d366102eeecf4e89",
+      "?codec=flac\u0026sampleFormat=flt\u0026channelLayout=5.1": "4cf3bebef34aa7df5e664fe3edc8c5ee6b0bb24818d1847422dc46edcc43d76e",
+      "?codec=flac\u0026sampleFormat=flt\u0026channelLayout=mono": "9c9e895fb92b740cbde5430d44bd1fe11e91b29101f43e65151c587a67ff1eff",
+      "?codec=flac\u0026sampleFormat=flt\u0026channelLayout=stereo": "3cfbf4d506efd742abc2ee5c8d71ba3a900674b8e0eeac13d366102eeecf4e89",
+      "?codec=flac\u0026sampleFormat=s16": "3cfbf4d506efd742abc2ee5c8d71ba3a900674b8e0eeac13d366102eeecf4e89",
+      "?codec=flac\u0026sampleFormat=s16\u0026channelLayout=5.1": "4cf3bebef34aa7df5e664fe3edc8c5ee6b0bb24818d1847422dc46edcc43d76e",
+      "?codec=flac\u0026sampleFormat=s16\u0026channelLayout=mono": "9c9e895fb92b740cbde5430d44bd1fe11e91b29101f43e65151c587a67ff1eff",
+      "?codec=flac\u0026sampleFormat=s16\u0026channelLayout=stereo": "3cfbf4d506efd742abc2ee5c8d71ba3a900674b8e0eeac13d366102eeecf4e89",
+      "?codec=flac\u0026sampleRate=22050": "a2da2d92a7e0e103776450e6b01a05b233a6f354954660352ab88afea9404873",
+      "?codec=flac\u0026sampleRate=22050\u0026channelLayout=5.1": "ae8271efe7ba49e51c2e0368e93d11386a465c8b3cf1441828ddae8ad01aa8c7",
+      "?codec=flac\u0026sampleRate=22050\u0026channelLayout=mono": "a9452e3715333b5bc19361f1fa68b3acd5f88cdb58ca9d6e7d9889c1aaaaba8d",
+      "?codec=flac\u0026sampleRate=22050\u0026channelLayout=stereo": "a2da2d92a7e0e103776450e6b01a05b233a6f354954660352ab88afea9404873",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=flt": "a2da2d92a7e0e103776450e6b01a05b233a6f354954660352ab88afea9404873",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=5.1": "ae8271efe7ba49e51c2e0368e93d11386a465c8b3cf1441828ddae8ad01aa8c7",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=mono": "a9452e3715333b5bc19361f1fa68b3acd5f88cdb58ca9d6e7d9889c1aaaaba8d",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=stereo": "a2da2d92a7e0e103776450e6b01a05b233a6f354954660352ab88afea9404873",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=s16": "a2da2d92a7e0e103776450e6b01a05b233a6f354954660352ab88afea9404873",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=5.1": "ae8271efe7ba49e51c2e0368e93d11386a465c8b3cf1441828ddae8ad01aa8c7",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=mono": "a9452e3715333b5bc19361f1fa68b3acd5f88cdb58ca9d6e7d9889c1aaaaba8d",
+      "?codec=flac\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=stereo": "a2da2d92a7e0e103776450e6b01a05b233a6f354954660352ab88afea9404873",
+      "?codec=foo": "fail",
+      "?codec=mp3": "fc92184926f8fbe49c710cbcd181c73a72800d7b679b8173d218b06c4346c24c",
+      "?codec=mp3\u0026bitRate=256": "2d38375db8f8a53557dea153aef47850352e4342555cda4b53e22f93639c376a",
+      "?codec=mp3\u0026channelLayout=5.1": "fail",
+      "?codec=mp3\u0026channelLayout=mono": "0d8ca25be773b5f4703cbc21f45aee7a2aa75b1ebf7b6666f7fc953bc86f1e96",
+      "?codec=mp3\u0026channelLayout=stereo": "fc92184926f8fbe49c710cbcd181c73a72800d7b679b8173d218b06c4346c24c",
+      "?codec=mp3\u0026quality=3.5": "ac2423a064c73f99a260e741759118d8bbe08faa99721b7f0ed3ccfc45e0e275",
+      "?codec=mp3\u0026sampleFormat=flt": "fc92184926f8fbe49c710cbcd181c73a72800d7b679b8173d218b06c4346c24c",
+      "?codec=mp3\u0026sampleFormat=flt\u0026channelLayout=5.1": "fail",
+      "?codec=mp3\u0026sampleFormat=flt\u0026channelLayout=mono": "eef8e23528e8106b6384be7894af285a15a0c1ddd95605150e0a3f7fc793288e",
+      "?codec=mp3\u0026sampleFormat=flt\u0026channelLayout=stereo": "fc92184926f8fbe49c710cbcd181c73a72800d7b679b8173d218b06c4346c24c",
+      "?codec=mp3\u0026sampleFormat=s16": "fc92184926f8fbe49c710cbcd181c73a72800d7b679b8173d218b06c4346c24c",
+      "?codec=mp3\u0026sampleFormat=s16\u0026channelLayout=5.1": "fail",
+      "?codec=mp3\u0026sampleFormat=s16\u0026channelLayout=mono": "0d8ca25be773b5f4703cbc21f45aee7a2aa75b1ebf7b6666f7fc953bc86f1e96",
+      "?codec=mp3\u0026sampleFormat=s16\u0026channelLayout=stereo": "fc92184926f8fbe49c710cbcd181c73a72800d7b679b8173d218b06c4346c24c",
+      "?codec=mp3\u0026sampleRate=22050": "54d5d2c95997fd925a790270205a617d89f59bc24dd412ec3801d81bc9cab57a",
+      "?codec=mp3\u0026sampleRate=22050\u0026channelLayout=5.1": "fail",
+      "?codec=mp3\u0026sampleRate=22050\u0026channelLayout=mono": "597c81a52b623844ebd35768cd988c717aed1ac6b349c716e3d834654822c559",
+      "?codec=mp3\u0026sampleRate=22050\u0026channelLayout=stereo": "54d5d2c95997fd925a790270205a617d89f59bc24dd412ec3801d81bc9cab57a",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=flt": "eeecdaf1ccb5784858f587a6985f49f29758dd181c460bed2608c6e276054d2c",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=5.1": "fail",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=mono": "073209319cdfc1de50049cf2e7cf8d9fcb1878aabe8cdb9113b4a6791e48b788",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=stereo": "eeecdaf1ccb5784858f587a6985f49f29758dd181c460bed2608c6e276054d2c",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=s16": "54d5d2c95997fd925a790270205a617d89f59bc24dd412ec3801d81bc9cab57a",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=5.1": "fail",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=mono": "597c81a52b623844ebd35768cd988c717aed1ac6b349c716e3d834654822c559",
+      "?codec=mp3\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=stereo": "54d5d2c95997fd925a790270205a617d89f59bc24dd412ec3801d81bc9cab57a",
+      "?codec=vorbis": "829f9735bdb50c3b74e16521a153ec3caf9e9591a60b8dc93571814f01806320",
+      "?codec=vorbis\u0026bitRate=256": "6e59010b01866935ca0f8ccf7f0c0ade13bd326da575dd323daf2ae415341793",
+      "?codec=vorbis\u0026channelLayout=5.1": "13d5e54a361055e018ea6d14335437ce7fec3a564c5e6a78b7b73ec65a401305",
+      "?codec=vorbis\u0026channelLayout=mono": "f5048f98de473d284820364492c1982ffc6820fac982755cbbfb1d4362afb6d1",
+      "?codec=vorbis\u0026channelLayout=stereo": "829f9735bdb50c3b74e16521a153ec3caf9e9591a60b8dc93571814f01806320",
+      "?codec=vorbis\u0026quality=3.5": "c5e6c903629e734243d4c97dbe9e1639de329db98c84c6242a26d202ac383def",
+      "?codec=vorbis\u0026sampleFormat=flt": "829f9735bdb50c3b74e16521a153ec3caf9e9591a60b8dc93571814f01806320",
+      "?codec=vorbis\u0026sampleFormat=flt\u0026channelLayout=5.1": "13d5e54a361055e018ea6d14335437ce7fec3a564c5e6a78b7b73ec65a401305",
+      "?codec=vorbis\u0026sampleFormat=flt\u0026channelLayout=mono": "f5048f98de473d284820364492c1982ffc6820fac982755cbbfb1d4362afb6d1",
+      "?codec=vorbis\u0026sampleFormat=flt\u0026channelLayout=stereo": "829f9735bdb50c3b74e16521a153ec3caf9e9591a60b8dc93571814f01806320",
+      "?codec=vorbis\u0026sampleFormat=s16": "829f9735bdb50c3b74e16521a153ec3caf9e9591a60b8dc93571814f01806320",
+      "?codec=vorbis\u0026sampleFormat=s16\u0026channelLayout=5.1": "13d5e54a361055e018ea6d14335437ce7fec3a564c5e6a78b7b73ec65a401305",
+      "?codec=vorbis\u0026sampleFormat=s16\u0026channelLayout=mono": "f5048f98de473d284820364492c1982ffc6820fac982755cbbfb1d4362afb6d1",
+      "?codec=vorbis\u0026sampleFormat=s16\u0026channelLayout=stereo": "829f9735bdb50c3b74e16521a153ec3caf9e9591a60b8dc93571814f01806320",
+      "?codec=vorbis\u0026sampleRate=22050": "22a66c6b3f3243b81772b0ea139c1ecbdc027c2f79c0b1fcbb2aea7f4d94cd27",
+      "?codec=vorbis\u0026sampleRate=22050\u0026channelLayout=5.1": "33bcc9c7701244e9f4f66db813d7acc7ed5c9405cf2b39d66443c329e77f1a0a",
+      "?codec=vorbis\u0026sampleRate=22050\u0026channelLayout=mono": "83350797c59f8c00928a98b5fabd139da4de8f624413fee2a89a6b685dba4d7a",
+      "?codec=vorbis\u0026sampleRate=22050\u0026channelLayout=stereo": "22a66c6b3f3243b81772b0ea139c1ecbdc027c2f79c0b1fcbb2aea7f4d94cd27",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=flt": "22a66c6b3f3243b81772b0ea139c1ecbdc027c2f79c0b1fcbb2aea7f4d94cd27",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=5.1": "33bcc9c7701244e9f4f66db813d7acc7ed5c9405cf2b39d66443c329e77f1a0a",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=mono": "83350797c59f8c00928a98b5fabd139da4de8f624413fee2a89a6b685dba4d7a",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=stereo": "22a66c6b3f3243b81772b0ea139c1ecbdc027c2f79c0b1fcbb2aea7f4d94cd27",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=s16": "22a66c6b3f3243b81772b0ea139c1ecbdc027c2f79c0b1fcbb2aea7f4d94cd27",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=5.1": "33bcc9c7701244e9f4f66db813d7acc7ed5c9405cf2b39d66443c329e77f1a0a",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=mono": "83350797c59f8c00928a98b5fabd139da4de8f624413fee2a89a6b685dba4d7a",
+      "?codec=vorbis\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=stereo": "22a66c6b3f3243b81772b0ea139c1ecbdc027c2f79c0b1fcbb2aea7f4d94cd27",
+      "?codec=wav": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=wav\u0026channelLayout=5.1": "eb4e81f1043b04ae83c98819a2033ec3f392ad5cca1b1f8099359b6c9c183536",
+      "?codec=wav\u0026channelLayout=mono": "101255616a221a5408870f62dc94ef64f25a0a1389caf607eadd53fe09f7a8ff",
+      "?codec=wav\u0026channelLayout=stereo": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=wav\u0026sampleFormat=flt": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=wav\u0026sampleFormat=flt\u0026channelLayout=5.1": "eb4e81f1043b04ae83c98819a2033ec3f392ad5cca1b1f8099359b6c9c183536",
+      "?codec=wav\u0026sampleFormat=flt\u0026channelLayout=mono": "101255616a221a5408870f62dc94ef64f25a0a1389caf607eadd53fe09f7a8ff",
+      "?codec=wav\u0026sampleFormat=flt\u0026channelLayout=stereo": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=wav\u0026sampleFormat=s16": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=wav\u0026sampleFormat=s16\u0026channelLayout=5.1": "eb4e81f1043b04ae83c98819a2033ec3f392ad5cca1b1f8099359b6c9c183536",
+      "?codec=wav\u0026sampleFormat=s16\u0026channelLayout=mono": "101255616a221a5408870f62dc94ef64f25a0a1389caf607eadd53fe09f7a8ff",
+      "?codec=wav\u0026sampleFormat=s16\u0026channelLayout=stereo": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
+      "?codec=wav\u0026sampleRate=22050": "02e2f27ddc2a3d71e0c44796f413214c6bdd99c015238a23742e0eb6f94ed829",
+      "?codec=wav\u0026sampleRate=22050\u0026channelLayout=5.1": "dd0b5dac80ce84962b69359569f4f65ca290be773924bc763a04b91f3a6f3974",
+      "?codec=wav\u0026sampleRate=22050\u0026channelLayout=mono": "7c4dc4a7e679a01fe1c0c843e917dc4a3e609bebac236ef09ce7ea63c1362eab",
+      "?codec=wav\u0026sampleRate=22050\u0026channelLayout=stereo": "02e2f27ddc2a3d71e0c44796f413214c6bdd99c015238a23742e0eb6f94ed829",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=flt": "02e2f27ddc2a3d71e0c44796f413214c6bdd99c015238a23742e0eb6f94ed829",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=5.1": "dd0b5dac80ce84962b69359569f4f65ca290be773924bc763a04b91f3a6f3974",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=mono": "7c4dc4a7e679a01fe1c0c843e917dc4a3e609bebac236ef09ce7ea63c1362eab",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=flt\u0026channelLayout=stereo": "02e2f27ddc2a3d71e0c44796f413214c6bdd99c015238a23742e0eb6f94ed829",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=s16": "02e2f27ddc2a3d71e0c44796f413214c6bdd99c015238a23742e0eb6f94ed829",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=5.1": "dd0b5dac80ce84962b69359569f4f65ca290be773924bc763a04b91f3a6f3974",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=mono": "7c4dc4a7e679a01fe1c0c843e917dc4a3e609bebac236ef09ce7ea63c1362eab",
+      "?codec=wav\u0026sampleRate=22050\u0026sampleFormat=s16\u0026channelLayout=stereo": "02e2f27ddc2a3d71e0c44796f413214c6bdd99c015238a23742e0eb6f94ed829",
+      "?startTime=-1s": "fail",
+      "?startTime=2m5s": "1bc14213597e6e0a6414d5762c9f7a842bbf102f1a6b6934ae2c54f09a1cc354",
+      "?startTime=2s": "6b026a0d95d8f35e0e0820aefa628c74d1e0759952a076bebdeaddb82ce7541e"
+    }
   },
   "test.flac.1.txt": {
     "TrackInfo": {
@@ -47,7 +164,9 @@
         "track": "1.1"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "688edcca6248f4209131364b674e91ea7f4e7ec60e1438921308547f3a762e32"
+    }
   },
   "test.flac.2.txt": {
     "TrackInfo": {
@@ -72,7 +191,9 @@
         "track": "1.2"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "6b026a0d95d8f35e0e0820aefa628c74d1e0759952a076bebdeaddb82ce7541e"
+    }
   },
   "test.flac.3.txt": {
     "TrackInfo": {
@@ -97,7 +218,9 @@
         "track": "1.3"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "aeb74e36f99f08e1ed193d0e737f5f1bb269618cc7e3bbd824f25d4405f59400"
+    }
   },
   "test.mp3": {
     "TrackInfo": {
@@ -118,7 +241,9 @@
         "track": "1"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "bc3170ca0343c656631ba161e88fe995578062901000a30863a1dcc2d8173e26"
+    }
   },
   "test.ogg": {
     "TrackInfo": {
@@ -142,7 +267,9 @@
         "track": "1"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "ac7fb3839e89e8ab181ff094d553d20c4cbdc6501de5ed676480467f970e9962"
+    }
   },
   "test.wav": {
     "TrackInfo": {
@@ -161,6 +288,8 @@
         "track": "1"
       }
     },
-    "StreamHashes": null
+    "StreamHashes": {
+      "": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7"
+    }
   }
 }

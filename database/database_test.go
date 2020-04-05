@@ -3,6 +3,8 @@ package database_test
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +16,7 @@ import (
 	"reflect"
 	"runtime"
 	"sb/aurelius/database"
+	"sb/aurelius/util"
 	"strings"
 	"testing"
 )
@@ -96,13 +99,13 @@ func writeBaselines(b BaselineMap) {
 
 /* General utilities **********************************************************/
 
-func simpleRequest(
+func simpleRequestWithStatus(
 	t *testing.T,
 	handler http.Handler,
 	method string,
 	path string,
 	requestBody string,
-) []byte {
+) ([]byte, int) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
 	response := w.Result()
@@ -112,10 +115,19 @@ func simpleRequest(
 	if err != nil {
 		t.Fatalf("failed to read response body: %v", err)
 	}
-	if response.StatusCode != 200 {
-		t.Fatalf(
-			"%s '%s' failed with code %v:\n%v",
-			method, path, response.StatusCode, string(responseBody))
+	return responseBody, response.StatusCode
+}
+
+func simpleRequest(
+	t *testing.T,
+	handler http.Handler,
+	method string,
+	path string,
+	requestBody string,
+) []byte {
+	responseBody, statusCode := simpleRequestWithStatus(t, handler, method, path, requestBody)
+	if statusCode != http.StatusOK {
+		t.Fatalf("%s '%s' failed with code %v:\n%v", method, path, statusCode, string(responseBody))
 	}
 	return responseBody
 }
@@ -127,16 +139,8 @@ func simpleRequestShouldFail(
 	path string,
 	requestBody string,
 ) {
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
-	response := w.Result()
-	defer response.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("failed to read response body: %v", err)
-	}
-	if response.StatusCode == 200 {
+	responseBody, statusCode := simpleRequestWithStatus(t, handler, method, path, requestBody)
+	if statusCode == http.StatusOK {
 		t.Fatalf("%s '%s' succeeded but should have failed:\n%v", method, path, responseBody)
 	}
 }
@@ -158,6 +162,55 @@ func writeStringToFile(
 	case err != nil:
 		t.Fatalf("WriteString() failed: %v", err)
 	}
+}
+
+type ArgTableEntry struct {
+	Key    string
+	Values []string
+}
+
+// combineQueryArgs generates all combinations of the key/value pairs contained
+// in each element of argTables and returns them in query string format.
+// Empty values are skipped.
+func combineQueryArgs(argTables [][]ArgTableEntry) []string {
+	var queryStrings []string
+
+	for _, argTable := range argTables {
+		tableIndices := make([]int, len(argTable))
+		for {
+			queryString := ""
+			for i := 0; i < len(tableIndices); i++ {
+				value := argTable[i].Values[tableIndices[i]]
+				if value == "" {
+					continue
+				}
+
+				if queryString == "" {
+					queryString = "?"
+				} else {
+					queryString += "&"
+				}
+
+				queryString += argTable[i].Key + "=" + value
+			}
+
+			queryStrings = append(queryStrings, queryString)
+
+			i := 0
+			for ; i < len(tableIndices); i++ {
+				tableIndices[i]++
+				if tableIndices[i] < len(argTable[i].Values) {
+					break
+				}
+				tableIndices[i] = 0
+			}
+			if i >= len(tableIndices) {
+				break
+			}
+		}
+	}
+
+	return queryStrings
 }
 
 /* JSON utilities *************************************************************/
@@ -331,6 +384,10 @@ func TestTrackInfo(t *testing.T) {
 		path := rangePath
 
 		t.Run(path, func(t *testing.T) {
+			if !updateBaselines {
+				t.Parallel()
+			}
+
 			body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
 
 			var trackInfo map[string]interface{}
@@ -539,4 +596,133 @@ func TestWithSymlinks(t *testing.T) {
 
 		testDir("/db")
 	})
+}
+
+func TestStream(t *testing.T) {
+	type TestInput struct {
+		Paths        []string
+		QueryStrings []string
+	}
+
+	inputArray := []TestInput{
+		// test defaults with all files
+		{
+			Paths:        testFiles,
+			QueryStrings: []string{""},
+		},
+
+		// test non-default settings with a single file
+		{
+			Paths: []string{"test.flac"},
+			QueryStrings: combineQueryArgs([][]ArgTableEntry{
+				{
+					{"codec", []string{"mp3", "vorbis", "flac", "wav"}},
+					{"sampleRate", []string{"", "22050"}},
+
+					// https://ffmpeg.org/doxygen/4.0/samplefmt_8c_source.html#l00034
+					{"sampleFormat", []string{"", "s16", "flt"}},
+
+					// https://ffmpeg.org/doxygen/4.0/channel__layout_8c_source.html#l00075
+					{"channelLayout", []string{"", "mono", "stereo", "5.1"}},
+				},
+				{
+					{"codec", []string{"mp3", "vorbis"}},
+					{"quality", []string{"3.5"}},
+				},
+				{
+					{"codec", []string{"mp3", "vorbis"}},
+					{"bitRate", []string{"256"}},
+				},
+				{
+					{"codec", []string{"foo"}},
+				},
+				{
+					{"startTime", []string{"-1s", "2s", "2m5s"}},
+				},
+			}),
+		},
+
+		// ReplayGain only modifies audio data when gain is positive. Otherwise,
+		// it is applied client-side.
+		// (Positive gain isn't applied client-side because
+		// HTMLAudioElement.volume can't be set greater than 1.0.)
+		{
+			Paths: []string{"test-positive-gain.ogg"},
+			QueryStrings: combineQueryArgs([][]ArgTableEntry{
+				{
+					{"replayGain", []string{"track", "album", "off"}},
+					{"preventClipping", []string{"true", "false"}},
+				},
+			}),
+		},
+	}
+
+	db := createDefaultDatabase(t)
+	db.SetThrottleStreaming(false)
+	db.SetDeterministicStreaming(true)
+
+	// disable some noisy logging
+	util.SetLogLevel(2)
+
+	baselines := readBaselines()
+
+	for _, input := range inputArray {
+		for _, rangePath := range input.Paths {
+			path := rangePath
+
+			baselineHashes := baselines[path].StreamHashes
+			if baselineHashes == nil {
+				baselineHashes = make(map[string]string)
+
+				baseline := baselines[path]
+				baseline.StreamHashes = baselineHashes
+				baselines[path] = baseline
+			}
+
+			for _, rangeQuery := range input.QueryStrings {
+				query := rangeQuery
+
+				t.Run(path+query, func(t *testing.T) {
+					if !updateBaselines {
+						t.Parallel()
+					}
+
+					uri := "/db/" + path + "/stream" + query
+					body, statusCode := simpleRequestWithStatus(t, db, "GET", uri, "")
+
+					baselineHash := baselineHashes[query]
+
+					if statusCode != http.StatusOK {
+						if updateBaselines {
+							baselineHashes[query] = "fail"
+							return
+						}
+
+						if baselineHash == "fail" {
+							return
+						}
+						t.Fatalf("expected %s, but request failed", baselineHash)
+					}
+
+					hash := sha256.New()
+					if _, err := hash.Write(body); err != nil {
+						t.Fatalf("hash.Write() failed: %v", err)
+					}
+
+					sum := hex.EncodeToString(hash.Sum(nil))
+
+					if updateBaselines {
+						baselineHashes[query] = sum
+						return
+					}
+
+					if sum != baselineHash {
+						t.Fatalf("expected %v, got %v", baselineHash, sum)
+					}
+				})
+			}
+		}
+	}
+
+	writeBaselines(baselines)
 }
