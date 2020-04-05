@@ -20,7 +20,8 @@ type Database struct {
 	htmlPath      string
 	playlistCache *FileCache
 
-	throttleStreaming bool
+	throttleStreaming      bool
+	deterministicStreaming bool
 
 	reDirPath      *regexp.Regexp
 	rePlaylistPath *regexp.Regexp
@@ -52,7 +53,8 @@ func New(
 		htmlPath:      htmlPath,
 		playlistCache: NewFileCache(),
 
-		throttleStreaming: true,
+		throttleStreaming:      true,
+		deterministicStreaming: false,
 
 		reDirPath:      regexp.MustCompile(`^` + quotedPrefix + `/((.*?)/)?$`),
 		rePlaylistPath: regexp.MustCompile(`^` + quotedPrefix + `/((?i).+?\.m3u)$`),

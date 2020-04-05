@@ -21,6 +21,20 @@ func (db *Database) ThrottleStreaming() bool {
 	return db.throttleStreaming
 }
 
+// SetDeterministicStreaming controls whether to avoid randomness in encoding
+// and muxing. It should be enabled when deterministic output is needed, such as
+// when performing automated testing. Default: false.
+func (db *Database) SetDeterministicStreaming(value bool) {
+	db.deterministicStreaming = value
+}
+
+// DeterministicStreaming returns whether to avoid randomness in encoding and
+// muxing. It should be enabled when deterministic output is needed, such as
+// when performing automated testing. Default: false.
+func (db *Database) DeterministicStreaming() bool {
+	return db.deterministicStreaming
+}
+
 func (db *Database) handleStreamRequest(
 	path string,
 	w http.ResponseWriter,
@@ -167,6 +181,10 @@ func (db *Database) handleStreamRequest(
 				util.Debug.Printf("seek failed: %v\n", err)
 			}
 		}
+	}
+
+	if db.deterministicStreaming {
+		options.BitExact = true
 	}
 
 	sink, err := aurelib.NewBufferSink(formatName, options)
