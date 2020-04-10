@@ -7,9 +7,14 @@
         "noImplicitReturns": true,
         "noImplicitThis": true,
         "noUnusedLocals": true,
+        "rootDir": "ts",
         "outDir": "cmd/aurelius/static/js"
     },
     "include": [
         "ts/**/*.ts"
+    ],
+    "exclude": [
+        "ts/**/*.spec.ts",
+        "ts/test-setup.ts"
     ]
 }

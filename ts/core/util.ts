@@ -7,7 +7,7 @@ export function sendJsonRequest<Response>(
     req.open(method, url);
     return new Promise((resolve, reject) => {
         req.onreadystatechange = () => {
-            if (req.readyState !== XMLHttpRequest.DONE) {
+            if (req.readyState !== req.DONE) {
                 return;
             }
             if (req.status === 200) {
@@ -57,9 +57,7 @@ export function copyJson(obj: any) {
 }
 
 export function stripQueryString(urlString: string): string {
-    const url = document.createElement("a");
-    url.href = urlString;
-    return `${url.protocol}//${url.host}${url.pathname}`;
+    return urlString.split("?")[0];
 }
 
 export function stripLastPathElement(url: string): string {

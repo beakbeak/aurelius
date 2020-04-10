@@ -1,6 +1,6 @@
-import { Player } from "./core/player.js";
-import setupPlayerUi from "./ui/player.js";
-import setupDirUi from "./ui/dir.js";
+import { Player } from "./core/player";
+import setupPlayerUi from "./ui/player";
+import setupDirUi from "./ui/dir";
 
 window.onload = () => {
     const player = new Player();

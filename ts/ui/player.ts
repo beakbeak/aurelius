@@ -1,7 +1,7 @@
-import { Player } from "../core/player.js";
-import { loadDir } from "./dir.js";
-import * as util from "./util.js";
-import * as coreUtil from "../core/util.js";
+import { Player } from "../core/player";
+import { loadDir } from "./dir";
+import * as util from "./util";
+import * as coreUtil from "../core/util";
 
 let player: Player;
 

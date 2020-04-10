@@ -1,4 +1,4 @@
-import { PlaylistItem } from "./playlist.js";
+import { PlaylistItem } from "./playlist";
 
 export class PlayHistory {
     private static readonly _maxLength = 1024;

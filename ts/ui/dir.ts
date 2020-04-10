@@ -1,5 +1,5 @@
-import { Player } from "../core/player.js";
-import { DirInfo, fetchDirInfo } from "../core/dir.js";
+import { Player } from "../core/player";
+import { DirInfo, fetchDirInfo } from "../core/dir";
 
 let player: Player;
 

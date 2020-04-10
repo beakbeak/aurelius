@@ -1,7 +1,7 @@
-import { Track, StreamOptions } from "./track.js";
-import { Playlist, LocalPlaylist, RemotePlaylist }  from "./playlist.js";
-import { PlayHistory } from "./history.js";
-import EventDispatcher from "./eventdispatcher.js";
+import { Track, StreamOptions } from "./track";
+import { Playlist, LocalPlaylist, RemotePlaylist }  from "./playlist";
+import { PlayHistory } from "./history";
+import EventDispatcher from "./eventdispatcher";
 
 export interface PlayerEventMap {
     play: () => void;

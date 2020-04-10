@@ -26,7 +26,7 @@ COPY --chown=www-data:www-data . /aurelius
 USER www-data
 WORKDIR /aurelius/cmd/aurelius
 RUN go build \
-    && npm install \
+    && npm install --only=prod \
     && npm run build
 
 ################################################################################
