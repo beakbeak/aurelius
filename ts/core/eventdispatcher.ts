@@ -1,9 +1,15 @@
-export default class EventDispatcher<M extends Record<keyof M, (...args: any[]) => any>> {
+/**
+ * EventDispatcher provides type-safe methods for listening for and dispatching
+ * events.
+ */
+export default class EventDispatcher<
+    EventMap extends Record<keyof EventMap, (...args: any[]) => any>
+> {
     private readonly _listeners: {[key: string]: ((...args: any[]) => any)[] | undefined} = {};
 
-    public addEventListener<K extends keyof M>(
+    public addEventListener<K extends keyof EventMap>(
         key: K,
-        value: M[K],
+        value: EventMap[K],
     ): void {
         let listeners = this._listeners[key as string];
         if (listeners === undefined) {
@@ -13,9 +19,9 @@ export default class EventDispatcher<M extends Record<keyof M, (...args: any[]) 
         listeners.push(value);
     }
 
-    protected _dispatchEvent<K extends keyof M>(
+    protected _dispatchEvent<K extends keyof EventMap>(
         key: K,
-        ...args: Parameters<M[K]>
+        ...args: Parameters<EventMap[K]>
     ): void {
         let listeners = this._listeners[key as string];
         if (listeners === undefined) {
