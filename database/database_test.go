@@ -26,7 +26,7 @@ var (
 	// tests to update baseline.json
 	updateBaselines = os.Getenv("UPDATE_BASELINES") == "1"
 
-	testDataPath     = filepath.Join("..", "test-data")
+	testDataPath     = filepath.Join("..", "test")
 	testDataDbPath   = filepath.Join(testDataPath, "db")
 	baselineJsonPath = filepath.Join(testDataPath, "baseline.json")
 
