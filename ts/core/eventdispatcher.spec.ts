@@ -1,5 +1,6 @@
 import EventDispatcher from "./eventdispatcher";
-import { strict as assert } from "assert";
+
+import { ok } from "assert";
 
 interface TestEventMap {
     test: (x: number) => void;
@@ -26,7 +27,7 @@ describe("EventDispatcher", function () {
 
         const expectedValue = 1;
         ed.dispatchEvent("test", expectedValue);
-        assert.ok(firstValue === expectedValue && secondValue === expectedValue);
+        ok(firstValue === expectedValue && secondValue === expectedValue);
     });
 });
 

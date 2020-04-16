@@ -22,20 +22,20 @@ export class LocalPlaylist implements Playlist {
         return this._urls.length;
     }
 
-    public at(pos: number): Promise<PlaylistItem | undefined> {
+    public async at(pos: number): Promise<PlaylistItem | undefined> {
         const url = this._urls[pos];
         if (url === undefined) {
-            return Promise.resolve(undefined);
+            return undefined;
         }
-        return Promise.resolve({ path: url, pos: pos });
+        return { path: url, pos: pos };
     }
 
-    public random(): Promise<PlaylistItem | undefined> {
+    public async random(): Promise<PlaylistItem | undefined> {
         if (this._urls.length < 1) {
-            return Promise.resolve(undefined);
+            return undefined;
         }
         const pos = util.randomInt(0, this._urls.length);
-        return Promise.resolve({ path: this._urls[pos], pos: pos });
+        return { path: this._urls[pos], pos: pos };
     }
 }
 

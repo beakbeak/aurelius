@@ -1,5 +1,5 @@
 import { Track, StreamOptions } from "./track";
-import { Playlist, LocalPlaylist, RemotePlaylist }  from "./playlist";
+import { Playlist, LocalPlaylist, RemotePlaylist } from "./playlist";
 import { PlayHistory } from "./history";
 import EventDispatcher from "./eventdispatcher";
 

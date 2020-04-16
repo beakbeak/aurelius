@@ -528,11 +528,14 @@ func TestWithSymlinks(t *testing.T) {
 		}
 	}
 
-	playlistPath := filepath.Join(testDataDbPath, "playlist.m3u")
-	writeStringToFile(t, playlistPath, strings.Join(playlist, "\n"))
+	playlistName := "temp-playlist.m3u"
+	playlistFilePath := filepath.Join(testDataDbPath, playlistName)
+	playlistDbPath := "/db/" + playlistName
+
+	writeStringToFile(t, playlistFilePath, strings.Join(playlist, "\n"))
 	defer (func() {
-		if err := os.Remove(playlistPath); err != nil {
-			t.Logf("Remove(\"%s\") failed: %v", playlistPath, err)
+		if err := os.Remove(playlistFilePath); err != nil {
+			t.Logf("Remove(\"%s\") failed: %v", playlistFilePath, err)
 			t.Fail()
 		}
 	})()
@@ -540,15 +543,15 @@ func TestWithSymlinks(t *testing.T) {
 	db := createDefaultDatabase(t)
 
 	t.Run("Playlist", func(t *testing.T) {
-		if length := getPlaylistLength(t, db, "/db/playlist.m3u"); length != len(playlist) {
+		if length := getPlaylistLength(t, db, playlistDbPath); length != len(playlist) {
 			t.Fatalf("expected playlist length to be %v, got %v", len(playlist), length)
 		}
 
-		getPlaylistEntryShouldFail(t, db, "/db/playlist.m3u", -1)
-		getPlaylistEntryShouldFail(t, db, "/db/playlist.m3u", len(playlist))
+		getPlaylistEntryShouldFail(t, db, playlistDbPath, -1)
+		getPlaylistEntryShouldFail(t, db, playlistDbPath, len(playlist))
 
 		for i := 0; i < len(playlist); i++ {
-			entry := getPlaylistEntry(t, db, "/db/playlist.m3u", i)
+			entry := getPlaylistEntry(t, db, playlistDbPath, i)
 
 			var trackInfo struct {
 				Name string

@@ -141,10 +141,7 @@ function populateTracks(info: DirInfo): void {
     }
     trackList.innerHTML = html;
 
-    const trackUrls: string[] = [];
-    for (const file of info.tracks) {
-        trackUrls.push(file.url);
-    }
+    const trackUrls = info.tracks.map(pathUrl => pathUrl.url);
 
     const links = trackList.getElementsByTagName("a");
     for (let i = 0; i < links.length; ++i) {

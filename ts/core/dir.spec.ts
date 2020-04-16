@@ -1,6 +1,7 @@
 import { host } from "../test-setup";
-import { strict as assert } from "assert";
 import { fetchDirInfo } from "./dir";
+
+import { ok } from "assert";
 
 describe("directory listing", function () {
     it("succeeds and contains 'test.flac'", async function () {
@@ -12,6 +13,6 @@ describe("directory listing", function () {
                 found = true;
             }
         }
-        assert.ok(found);
+        ok(found);
     });
 });

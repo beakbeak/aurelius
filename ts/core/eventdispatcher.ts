@@ -1,6 +1,16 @@
 /**
  * EventDispatcher provides type-safe methods for listening for and dispatching
- * events.
+ * events described by a TypeScript `interface`.
+ *
+ * Example:
+ *
+ *      interface Foo {
+ *          fooEvent: (x: Bar) => number;
+ *          barEvent: (y: Baz) => void;
+ *      }
+ *      class FooDispatcher extends EventDispatcher<Foo> {
+ *          // ...
+ *      }
  */
 export default class EventDispatcher<
     EventMap extends Record<keyof EventMap, (...args: any[]) => any>
