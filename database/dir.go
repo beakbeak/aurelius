@@ -72,7 +72,11 @@ func (db *Database) handleDirInfoRequest(
 		Playlists []PathUrl `json:"playlists"`
 		Tracks    []PathUrl `json:"tracks"`
 	}
-	result := Result{}
+	result := Result{
+		Dirs:      make([]PathUrl, 0),
+		Playlists: make([]PathUrl, 0),
+		Tracks:    make([]PathUrl, 0),
+	}
 
 	for _, info := range infos {
 		mode := info.Mode()

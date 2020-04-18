@@ -89,7 +89,7 @@ function populateDirs(info: DirInfo): void {
 function populatePlaylists(info: DirInfo): void {
     playlistList.style.display = "none";
 
-    if (!info.playlists) {
+    if (info.playlists.length === 0) {
         playlistList.innerHTML = "";
         return;
     }
@@ -126,7 +126,7 @@ function populatePlaylists(info: DirInfo): void {
 function populateTracks(info: DirInfo): void {
     trackList.style.display = "none";
 
-    if (!info.tracks) {
+    if (info.tracks.length === 0) {
         trackList.innerHTML = "";
         return;
     }
