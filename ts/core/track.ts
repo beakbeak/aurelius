@@ -10,6 +10,10 @@ export interface TrackInfo {
     favorite: boolean;
 }
 
+export async function fetchTrackInfo(url: string): Promise<TrackInfo> {
+    return util.fetchJson<TrackInfo>(`${url}/info`);
+}
+
 export interface StreamOptions {
     codec?: "mp3" | "vorbis" | "flac" | "wav";
     quality?: number;
@@ -78,7 +82,7 @@ export class Track {
     ): Promise<Track> {
         options = util.copyJson(options);
 
-        const info = await util.fetchJson<TrackInfo>(`${url}/info`);
+        const info = await fetchTrackInfo(url);
 
         let audio: HTMLAudioElement;
         if (recycledTrack !== undefined) {

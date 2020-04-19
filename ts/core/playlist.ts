@@ -52,7 +52,7 @@ export class RemotePlaylist implements Playlist {
         this._length = length;
     }
 
-    public static async fetch(url: string): Promise<Playlist> {
+    public static async fetch(url: string): Promise<RemotePlaylist> {
         interface Info {
             length: number;
         }
