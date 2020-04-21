@@ -54,6 +54,9 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         if (this.track === undefined) {
             return Promise.resolve();
         }
+        if (this.track.seekTo(seconds)) {
+            return Promise.resolve();
+        }
         return this._play(this.track.url, seconds);
     }
 

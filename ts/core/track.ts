@@ -155,4 +155,17 @@ export class Track {
     public buffered(): TimeRanges {
         return this._audio.buffered;
     }
+
+    public seekTo(seconds: number): boolean {
+        const adjustedTime = seconds - this.startTime;
+
+        const ranges = this._audio.buffered;
+        for (let i = 0; i < ranges.length; ++i) {
+            if (adjustedTime >= ranges.start(i) && adjustedTime < ranges.end(i)) {
+                this._audio.currentTime = adjustedTime;
+                return true;
+            }
+        }
+        return false;
+    }
 }
