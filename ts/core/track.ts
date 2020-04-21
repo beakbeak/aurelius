@@ -26,36 +26,26 @@ export interface StreamOptions {
 }
 
 export class Track {
-    public readonly url: string;
-    public readonly info: TrackInfo;
-    public readonly options: StreamOptions;
-    public readonly startTime: number;
-    public readonly audio: HTMLAudioElement;
-
     private _listeners: { name: string; func: any; }[] = [];
 
     private constructor(
-        url: string,
-        info: TrackInfo,
-        options: StreamOptions,
-        startTime: number,
-        audio: HTMLAudioElement,
+        public readonly url: string,
+        public readonly info: TrackInfo,
+        public readonly options: StreamOptions,
+        public readonly startTime: number,
+        private readonly _audio: HTMLAudioElement,
+        private readonly _playablePromise: Promise<void>,
     ) {
-        this.url = url;
-        this.info = info;
-        this.options = options;
-        this.startTime = startTime;
-        this.audio = audio;
     }
 
     public destroy(): void {
         for (const listener of this._listeners) {
-            this.audio.removeEventListener(listener.name, listener.func);
+            this._audio.removeEventListener(listener.name, listener.func);
         }
         this._listeners.length = 0;
 
-        this.audio.pause();
-        this.audio.src = "";
+        this._audio.pause();
+        this._audio.src = "";
     }
 
     private static streamQuery(
@@ -87,14 +77,14 @@ export class Track {
         let audio: HTMLAudioElement;
         if (recycledTrack !== undefined) {
             recycledTrack.destroy();
-            audio = recycledTrack.audio;
+            audio = recycledTrack._audio;
         } else {
             audio = new Audio();
         }
         
         audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
-        await new Promise((resolve, reject) => {
+        const playablePromise = new Promise<void>((resolve, reject) => {
             audio.src = `${url}/stream${Track.streamQuery(options, startTime)}`;
             audio.oncanplay = () => {
                 resolve();
@@ -103,7 +93,30 @@ export class Track {
                 reject(reason);
             };
         });
-        return new Track(url, info, options, startTime, audio);
+        return new Track(url, info, options, startTime, audio, playablePromise);
+    }
+
+    public isPlayable(): boolean {
+        return this._audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+    }
+
+    public waitUntilPlayable(): Promise<void> {
+        return this._playablePromise;
+    }
+
+    public async play(): Promise<void> {
+        if (!this.isPlayable()) {
+            await this.waitUntilPlayable();
+        }
+        this._audio.play();
+    }
+
+    public pause(): void {
+        this._audio.pause();
+    }
+
+    public isPaused(): boolean {
+        return this._audio.paused;
     }
 
     public addEventListener<K extends keyof HTMLMediaElementEventMap>(
@@ -112,7 +125,7 @@ export class Track {
         useCapture?: boolean,
     ): void {
         this._listeners.push({ name: name, func: func });
-        this.audio.addEventListener(name, func, useCapture);
+        this._audio.addEventListener(name, func, useCapture);
     }
 
     public async favorite(): Promise<void> {
@@ -132,6 +145,14 @@ export class Track {
     }
 
     public currentTime(): number {
-        return this.startTime + this.audio.currentTime;
+        return this.startTime + this._audio.currentTime;
+    }
+
+    public rewind(): void {
+        this._audio.currentTime = 0;
+    }
+
+    public buffered(): TimeRanges {
+        return this._audio.buffered;
     }
 }

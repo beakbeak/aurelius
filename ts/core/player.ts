@@ -40,13 +40,13 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             if (!await this.next()) {
                 this.pause();
                 if (this.track !== undefined) {
-                    this.track.audio.currentTime = 0;
+                    this.track.rewind();
                 }
                 this._dispatchEvent("ended");
             }
         });
 
-        track.audio.play();
+        await track.play();
         this._dispatchEvent("play");
     }
 
@@ -152,18 +152,18 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     public pause(): void {
-        if (this.track === undefined || this.track.audio.paused) {
+        if (this.track === undefined || this.track.isPaused()) {
             return;
         }
-        this.track.audio.pause();
+        this.track.pause();
         this._dispatchEvent("pause");
     }
 
     public unpause(): void {
-        if (this.track === undefined || !this.track.audio.paused) {
+        if (this.track === undefined || !this.track.isPaused()) {
             return;
         }
-        this.track.audio.play();
+        this.track.play();
         this._dispatchEvent("unpause");
     }
 

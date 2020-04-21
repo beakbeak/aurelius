@@ -267,7 +267,7 @@ function updateBuffer(): void {
         return;
     }
 
-    const ranges = track.audio.buffered;
+    const ranges = track.buffered();
     if (ranges.length > 0 && track.info.duration > 0) {
         const start = track.startTime + ranges.start(0);
         const end = track.startTime + ranges.end(ranges.length - 1);
@@ -284,7 +284,7 @@ function updateBuffer(): void {
 function updateButtons(): void {
     const track = player.track;
 
-    if (track === undefined || track.audio.paused) {
+    if (track === undefined || track.isPaused()) {
         playButton.style.display = "";
         pauseButton.style.display = "none";
         if (track === undefined) {
