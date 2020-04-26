@@ -72,9 +72,17 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
     public async playList(
         playlistUrlOrTrackUrls: string | string[],
-        random = false,
-        startPos = 0,
+        configOverride?: {
+            random?: boolean,
+            startPos?: number,
+        }
     ): Promise<boolean> {
+        const config = {
+            random: false,
+            startPos: 0,
+            ...configOverride
+        };
+
         if (typeof playlistUrlOrTrackUrls === "string") {
             const url = playlistUrlOrTrackUrls;
             this.playlist = await RemotePlaylist.fetch(url);
@@ -83,9 +91,9 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             this.playlist = new LocalPlaylist(trackUrls);
         }
 
-        this.playlistPos = startPos - 1;
+        this.playlistPos = config.startPos - 1;
         this.history = new PlayHistory();
-        this.random = random;
+        this.random = config.random;
 
         return this.next();
     }

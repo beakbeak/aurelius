@@ -116,7 +116,7 @@ function populatePlaylists(info: DirInfo): void {
         };
         randomLink.onclick = (e) => {
             e.preventDefault();
-            player.playList(link.href, true);
+            player.playList(link.href, { random: true });
         };
     }
 
@@ -149,7 +149,7 @@ function populateTracks(info: DirInfo): void {
 
         link.onclick = (e) => {
             e.preventDefault();
-            player.playList(trackUrls, false, i);
+            player.playList(trackUrls, { startPos: i });
         };
     }
 
