@@ -4,7 +4,7 @@ import { Player } from "./player";
 import { fetchTrackInfo } from "./track";
 import { RemotePlaylist } from "./playlist";
 
-import { ok } from "assert";
+import { ok, strictEqual } from "assert";
 
 const playlistUrl = `${host}/db/test.m3u`;
 const trackUrl = `${host}/db/test.flac`;
@@ -140,5 +140,24 @@ describe("Player", function () {
 
         ok(!player.hasPrevious());
         ok(!await player.previous());
+    });
+
+    it("seeks within a track", async function () {
+        // HTMLMediaElement is not actually implemented in the testing context,
+        // so some values are not checked and some expected behavior may be
+        // unreliable if the test is run in a browser.
+
+        const player = new Player();
+
+        await player.seekTo(10);
+        await player.playTrack(trackUrl);
+
+        if (player.track === undefined) {
+            throw new Error("player.track is undefined");
+        }
+
+        strictEqual(player.track.currentTime(), 0);
+        await player.seekTo(10);
+        strictEqual(player.track.currentTime(), 10);
     });
 });
