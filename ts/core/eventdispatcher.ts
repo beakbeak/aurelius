@@ -47,11 +47,9 @@ export default class EventDispatcher<
         callback: (key: string, listener: (...args: any[]) => any) => void
     ): void {
         for (const key of Object.keys(this._listeners)) {
-            const listenerArray = this._listeners[key];
-            if (listenerArray !== undefined) {
-                for (const listener of listenerArray) {
-                    callback(key, listener);
-                }
+            const listenerArray = this._listeners[key]!;
+            for (const listener of listenerArray) {
+                callback(key, listener);
             }
         }
     }

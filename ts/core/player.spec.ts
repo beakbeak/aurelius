@@ -10,7 +10,7 @@ const playlistUrl = `${host}/db/test.m3u`;
 const trackUrl = `${host}/db/test.flac`;
 
 describe("Player", function () {
-    it("can favorite/unfavorite", async function () {
+    it("toggles favorite status", async function () {
         const player = new Player();
 
         const gotFavorite = new EventChecker();
