@@ -92,6 +92,8 @@ export class Track {
             audio.onerror = (reason) => {
                 reject(reason);
             };
+
+            audio.load();
         });
         return new Track(url, info, options, startTime, audio, playablePromise);
     }
