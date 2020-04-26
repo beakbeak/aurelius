@@ -57,7 +57,9 @@ export function copyJson(obj: any) {
 }
 
 export function stripQueryString(urlString: string): string {
-    return urlString.split("?")[0];
+    const url = document.createElement("a");
+    url.href = urlString;
+    return `${url.protocol}//${url.host}${url.pathname}`;
 }
 
 export function stripLastPathElement(url: string): string {
