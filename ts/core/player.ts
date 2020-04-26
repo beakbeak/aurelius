@@ -31,10 +31,10 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         this.track = track;
 
         track.addEventListener("progress", () => {
-            this._dispatchEvent("progress");
+            this.dispatchEvent("progress");
         });
         track.addEventListener("timeupdate", () => {
-            this._dispatchEvent("timeupdate");
+            this.dispatchEvent("timeupdate");
         });
         track.addEventListener("ended", async () => {
             if (!await this.next()) {
@@ -42,12 +42,12 @@ export class Player extends EventDispatcher<PlayerEventMap> {
                 if (this.track !== undefined) {
                     this.track.rewind();
                 }
-                this._dispatchEvent("ended");
+                this.dispatchEvent("ended");
             }
         });
 
         await track.play();
-        this._dispatchEvent("play");
+        this.dispatchEvent("play");
     }
 
     public seekTo(seconds: number): Promise<void> {
@@ -159,7 +159,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         this.track.pause();
-        this._dispatchEvent("pause");
+        this.dispatchEvent("pause");
     }
 
     public unpause(): void {
@@ -167,7 +167,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         this.track.play();
-        this._dispatchEvent("unpause");
+        this.dispatchEvent("unpause");
     }
 
     public async favorite(): Promise<void> {
@@ -175,7 +175,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         await this.track.favorite();
-        this._dispatchEvent("favorite");
+        this.dispatchEvent("favorite");
     }
 
     public async unfavorite(): Promise<void> {
@@ -183,7 +183,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         await this.track.unfavorite();
-        this._dispatchEvent("unfavorite");
+        this.dispatchEvent("unfavorite");
     }
 
     public setStreamOptions(options: StreamOptions): void {

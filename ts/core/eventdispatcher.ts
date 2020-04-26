@@ -15,7 +15,7 @@
 export default class EventDispatcher<
     EventMap extends Record<keyof EventMap, (...args: any[]) => any>
 > {
-    private readonly _listeners: {[key: string]: ((...args: any[]) => any)[] | undefined} = {};
+    private _listeners: {[key: string]: ((...args: any[]) => any)[] | undefined} = {};
 
     public addEventListener<K extends keyof EventMap>(
         key: K,
@@ -29,7 +29,7 @@ export default class EventDispatcher<
         listeners.push(value);
     }
 
-    protected _dispatchEvent<K extends keyof EventMap>(
+    protected dispatchEvent<K extends keyof EventMap>(
         key: K,
         ...args: Parameters<EventMap[K]>
     ): void {
@@ -41,5 +41,22 @@ export default class EventDispatcher<
         for (const listener of listeners) {
             listener.apply(undefined, args);
         }
+    }
+
+    protected forEachEventListener(
+        callback: (key: string, listener: (...args: any[]) => any) => void
+    ): void {
+        for (const key of Object.keys(this._listeners)) {
+            const listenerArray = this._listeners[key];
+            if (listenerArray !== undefined) {
+                for (const listener of listenerArray) {
+                    callback(key, listener);
+                }
+            }
+        }
+    }
+
+    protected clearEventListeners() {
+        this._listeners = {};
     }
 }
