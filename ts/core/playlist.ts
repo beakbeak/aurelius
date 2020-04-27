@@ -1,4 +1,4 @@
-import * as util from "./util";
+import { fetchJson, nullToUndefined } from "./json";
 
 export interface PlaylistItem {
     readonly path: string;
@@ -9,6 +9,17 @@ export interface Playlist {
     length(): number;
     at(pos: number): Promise<PlaylistItem | undefined>;
     random(): Promise<PlaylistItem | undefined>;
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+// The maximum is exclusive and the minimum is inclusive
+function randomInt(
+    min: number,
+    max: number,
+): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min)) + min;
 }
 
 export class LocalPlaylist implements Playlist {
@@ -34,7 +45,7 @@ export class LocalPlaylist implements Playlist {
         if (this._urls.length < 1) {
             return undefined;
         }
-        const pos = util.randomInt(0, this._urls.length);
+        const pos = randomInt(0, this._urls.length);
         return { path: this._urls[pos], pos: pos };
     }
 }
@@ -56,7 +67,7 @@ export class RemotePlaylist implements Playlist {
         interface Info {
             length: number;
         }
-        const info = await util.fetchJson<Info>(url);
+        const info = await fetchJson<Info>(url);
         return new RemotePlaylist(url, info.length);
     }
 
@@ -65,7 +76,7 @@ export class RemotePlaylist implements Playlist {
     }
 
     public async at(pos: number): Promise<PlaylistItem | undefined> {
-        return util.nullToUndefined(await util.fetchJson<PlaylistItem | null>(
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(
             `${this.url}?pos=${pos}`
         ));
     }
@@ -74,8 +85,8 @@ export class RemotePlaylist implements Playlist {
         if (this._length < 1) {
             return Promise.resolve(undefined);
         }
-        return util.nullToUndefined(await util.fetchJson<PlaylistItem | null>(
-            `${this.url}?pos=${util.randomInt(0, this._length)}`
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(
+            `${this.url}?pos=${randomInt(0, this._length)}`
         ));
     }
 }

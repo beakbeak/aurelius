@@ -1,4 +1,4 @@
-import * as util from "./util";
+import { fetchJson, postJson, copyJson } from "./json";
 
 export interface TrackInfo {
     readonly name: string;
@@ -11,7 +11,7 @@ export interface TrackInfo {
 }
 
 export async function fetchTrackInfo(url: string): Promise<TrackInfo> {
-    return util.fetchJson<TrackInfo>(`${url}/info`);
+    return fetchJson<TrackInfo>(`${url}/info`);
 }
 
 export interface StreamOptions {
@@ -70,7 +70,7 @@ export class Track {
         startTime = 0,
         recycledTrack?: Track,
     ): Promise<Track> {
-        options = util.copyJson(options);
+        options = copyJson(options);
 
         const info = await fetchTrackInfo(url);
 
@@ -134,7 +134,7 @@ export class Track {
         if (this.info.favorite) {
             return;
         }
-        await util.postJson(`${this.url}/favorite`);
+        await postJson(`${this.url}/favorite`);
         this.info.favorite = true;
     }
 
@@ -142,7 +142,7 @@ export class Track {
         if (!this.info.favorite) {
             return;
         }
-        await util.postJson(`${this.url}/unfavorite`);
+        await postJson(`${this.url}/unfavorite`);
         this.info.favorite = false;
     }
 

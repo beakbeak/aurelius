@@ -1,7 +1,7 @@
 import { Player } from "../core/player";
+import { stripLastPathElement } from "../core/url";
 import { loadDir } from "./dir";
-import * as util from "./util";
-import * as coreUtil from "../core/util";
+import { onDrag } from "./dom";
 
 let player: Player;
 
@@ -20,6 +20,17 @@ let unfavoriteButton: HTMLElement;
 // [0..1]
 let _seekSliderPosition: number | undefined;
 
+function getElement(
+    container: HTMLElement,
+    id: string,
+): HTMLElement {
+    const element = container.querySelector(`#${id}`);
+    if (element === null) {
+        throw new Error(`missing ${id}`);
+    }
+    return element as HTMLElement;
+}
+
 export default function setupPlayerUi(
     inPlayer: Player,
     containerId: string,
@@ -31,17 +42,17 @@ export default function setupPlayerUi(
 
     player = inPlayer;
 
-    statusRight = util.getElement(container, "status-right");
-    playButton = util.getElement(container, "play-button");
-    pauseButton = util.getElement(container, "pause-button");
-    nextButton = util.getElement(container, "next-button");
-    prevButton = util.getElement(container, "prev-button");
-    progressBarEmpty = util.getElement(container, "progress-bar-empty");
-    progressBarFill = util.getElement(container, "progress-bar-fill");
-    seekSlider = util.getElement(container, "seek-slider");
-    durationText = util.getElement(container, "duration");
-    favoriteButton = util.getElement(container, "favorite-button");
-    unfavoriteButton = util.getElement(container, "unfavorite-button");
+    statusRight = getElement(container, "status-right");
+    playButton = getElement(container, "play-button");
+    pauseButton = getElement(container, "pause-button");
+    nextButton = getElement(container, "next-button");
+    prevButton = getElement(container, "prev-button");
+    progressBarEmpty = getElement(container, "progress-bar-empty");
+    progressBarFill = getElement(container, "progress-bar-fill");
+    seekSlider = getElement(container, "seek-slider");
+    durationText = getElement(container, "duration");
+    favoriteButton = getElement(container, "favorite-button");
+    unfavoriteButton = getElement(container, "unfavorite-button");
 
     playButton.onclick = () => {
         player.unpause();
@@ -70,7 +81,7 @@ export default function setupPlayerUi(
 
     statusRight.onclick = () => {
         if (player.track !== undefined) {
-            loadDir(`${coreUtil.stripLastPathElement(player.track.url)}/`);
+            loadDir(`${stripLastPathElement(player.track.url)}/`);
         }
     }
 
@@ -161,7 +172,7 @@ function startSeekSliderDrag(
     _seekSliderPosition = getSeekSliderPosition(anchorScreenX);
     updateTime();
 
-    util.onDrag((screenX) => {
+    onDrag((screenX) => {
         _seekSliderPosition = getSeekSliderPosition(screenX);
         updateTime();
     },

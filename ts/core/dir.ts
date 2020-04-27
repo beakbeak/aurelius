@@ -1,4 +1,5 @@
-import * as util from "./util";
+import { stripQueryString } from "./url";
+import { fetchJson } from "./json";
 
 export interface PathUrl {
     readonly name: string;
@@ -12,5 +13,5 @@ export interface DirInfo {
 }
 
 export function fetchDirInfo(url: string): Promise<DirInfo> {
-    return util.fetchJson<DirInfo>(`${util.stripQueryString(url)}?info`);
+    return fetchJson<DirInfo>(`${stripQueryString(url)}?info`);
 }

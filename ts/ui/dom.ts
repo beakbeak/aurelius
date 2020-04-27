@@ -1,14 +1,3 @@
-export function getElement(
-    container: HTMLElement,
-    id: string,
-): HTMLElement {
-    const element = container.querySelector(`#${id}`);
-    if (element === null) {
-        throw new Error(`missing ${id}`);
-    }
-    return element as HTMLElement;
-}
-
 export function onDrag(
     onMove: (x: number, y: number) => void,
     onStop: (x: number, y: number) => void,
