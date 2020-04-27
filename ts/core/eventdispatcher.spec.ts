@@ -1,6 +1,6 @@
 import EventDispatcher from "./eventdispatcher";
 
-import { ok, deepStrictEqual } from "assert";
+import { strictEqual, deepStrictEqual } from "assert";
 
 interface TestEventMap {
     test: (x: number) => void;
@@ -37,7 +37,8 @@ describe("EventDispatcher", function () {
 
         const expectedValue = 1;
         ed.dispatchEvent("test", expectedValue);
-        ok(firstValue === expectedValue && secondValue === expectedValue);
+        strictEqual(firstValue, expectedValue);
+        strictEqual(secondValue, expectedValue);
     });
 
     it("dispatches an event with no listeners", function () {

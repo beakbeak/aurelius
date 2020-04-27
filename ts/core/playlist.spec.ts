@@ -4,7 +4,7 @@ import { Playlist, LocalPlaylist, RemotePlaylist } from "./playlist";
 import { fetchDirInfo } from "./dir";
 import { fetchTrackInfo } from "./track";
 
-import { ok } from "assert";
+import { ok, strictEqual } from "assert";
 
 function makeCommonTests(
     suiteName: string,
@@ -22,7 +22,7 @@ function makeCommonTests(
                 if (item === undefined) {
                     throw new Error("item is undefined");
                 }
-                ok(item.pos === i);
+                strictEqual(item.pos, i);
 
                 await fetchTrackInfo(`${host}${item.path}`);
             }
