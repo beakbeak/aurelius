@@ -62,15 +62,15 @@ function populateDirs(info: DirInfo): void {
             <i class="material-icons">arrow_back</i>
             <a href="..">Parent directory</a>
         </li>`;
-    if (info.dirs) {
-        for (const dir of info.dirs) {
-            html +=
-                `<li>
-                    <i class="material-icons">folder_open</i>
-                    <a href="${dir.url}/">${dir.name}/</a>
-                </li>`;
-        }
+
+    for (const dir of info.dirs) {
+        html +=
+            `<li>
+                <i class="material-icons">folder_open</i>
+                <a href="${dir.url}/">${dir.name}/</a>
+            </li>`;
     }
+
     dirList.innerHTML = html;
 
     const links = dirList.getElementsByTagName("a");
