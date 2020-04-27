@@ -268,13 +268,19 @@ function updateBuffer(): void {
     }
 
     const ranges = track.buffered();
+
     if (ranges.length > 0 && track.info.duration > 0) {
-        const start = track.startTime + ranges.start(0);
-        const end = track.startTime + ranges.end(ranges.length - 1);
-        progressBarFill.style.left =
-            `${Math.max(0, Math.min(100, (start / track.info.duration) * 100))}%`;
-        progressBarFill.style.width =
-            `${Math.max(0, Math.min(100, ((end - start) / track.info.duration) * 100))}%`;
+        const startTime = track.startTime + ranges.start(0);
+        const endTime = track.startTime + ranges.end(ranges.length - 1);
+
+        const left = startTime / track.info.duration;
+        const width = (endTime - startTime) / track.info.duration;
+
+        const leftPercent = Math.max(0, Math.min(100, left * 100));
+        const widthPercent = Math.max(0, Math.min(100 - leftPercent, width * 100));
+
+        progressBarFill.style.left = `${leftPercent}%`;
+        progressBarFill.style.width = `${widthPercent}%`;
     } else {
         progressBarFill.style.left = "0";
         progressBarFill.style.width = "0";
