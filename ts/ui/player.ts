@@ -139,10 +139,18 @@ function setStatusText(text: string): void {
     const waitPercent = 100 * (waitTime / totalTime);
 
     const style = document.createElement("style");
-    style.innerText =
-        `@keyframes marquee { ${scrollPercent}% { transform: translateX(-${scrollLength}px); }`
-        + ` ${scrollPercent + waitPercent}% {transform: translateX(-${scrollLength}px); }`
-        + ` ${2 * scrollPercent + waitPercent}% {transform: translateX(0px);} }`;
+    style.textContent =
+        `@keyframes marquee {
+            ${scrollPercent}% {
+                transform: translateX(-${scrollLength}px);
+            }
+            ${scrollPercent + waitPercent}% {
+                transform: translateX(-${scrollLength}px);
+            }
+            ${2 * scrollPercent + waitPercent}% {
+                transform: translateX(0px);
+            }
+        }`;
     element.appendChild(style);
     element.style.animation = `marquee ${totalTime}s infinite linear`;
 }
