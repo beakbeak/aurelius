@@ -18,16 +18,17 @@ export type PlayerEvent = keyof PlayerEventMap;
 export class Player extends EventDispatcher<PlayerEventMap> {
     public track?: Track;
     public playlist?: Playlist;
-    public history = new PlayHistory();
-    public playlistPos = -1;
-    public random = false;
-    public streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
+
+    private _history = new PlayHistory();
+    private _playlistPos = -1;
+    private _random = false;
+    private _streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
 
     private async _play(
         url: string,
         startTime?: number,
     ): Promise<void> {
-        const track = await Track.fetch(url, this.streamOptions, startTime, this.track);
+        const track = await Track.fetch(url, this._streamOptions, startTime, this.track);
         this.track = track;
 
         track.addEventListener("progress", () => {
@@ -63,10 +64,10 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     public playTrack(url: string): Promise<void> {
         if (this.playlist !== undefined) {
             this.playlist = undefined;
-            this.playlistPos = -1;
-            this.history = new PlayHistory();
+            this._playlistPos = -1;
+            this._history = new PlayHistory();
         }
-        this.history.push({ path: url, pos: 0 });
+        this._history.push({ path: url, pos: 0 });
         return this._play(url);
     }
 
@@ -91,73 +92,73 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             this.playlist = new LocalPlaylist(trackUrls);
         }
 
-        this.playlistPos = config.startPos - 1;
-        this.history = new PlayHistory();
-        this.random = config.random;
+        this._playlistPos = config.startPos - 1;
+        this._history = new PlayHistory();
+        this._random = config.random;
 
         return this.next();
     }
 
     public hasNext(): boolean {
-        if (this.history.hasNext()) {
+        if (this._history.hasNext()) {
             return true;
         }
         if (this.playlist === undefined || this.playlist.length() < 1) {
             return false;
         }
-        return this.random || this.playlistPos < (this.playlist.length() - 1);
+        return this._random || this._playlistPos < (this.playlist.length() - 1);
     }
 
     public hasPrevious(): boolean {
-        if (this.history.hasPrevious()) {
+        if (this._history.hasPrevious()) {
             return true;
         }
-        if (this.random || this.playlist === undefined || this.playlist.length() < 1) {
+        if (this._random || this.playlist === undefined || this.playlist.length() < 1) {
             return false;
         }
-        return this.playlistPos > 0;
+        return this._playlistPos > 0;
     }
 
     public async next(): Promise<boolean> {
-        let item = this.history.next();
+        let item = this._history.next();
         if (item === undefined) {
             if (this.playlist === undefined || this.playlist.length() < 1) {
                 return false;
             }
 
-            if (this.random) {
+            if (this._random) {
                 item = await this.playlist.random();
-            } else if (this.playlistPos < (this.playlist.length() - 1)) {
-                item = await this.playlist.at(this.playlistPos + 1);
+            } else if (this._playlistPos < (this.playlist.length() - 1)) {
+                item = await this.playlist.at(this._playlistPos + 1);
             }
 
             if (item === undefined) {
                 return false;
             }
-            this.history.push(item);
+            this._history.push(item);
         }
-        this.playlistPos = item.pos;
+        this._playlistPos = item.pos;
         await this._play(item.path);
         return true;
     }
 
     public async previous(): Promise<boolean> {
-        let item = this.history.previous();
+        let item = this._history.previous();
         if (item === undefined) {
-            if (this.random
+            if (this._random
                 || this.playlist === undefined || this.playlist.length() < 1
-                || this.playlistPos <= 0)
+                || this._playlistPos <= 0)
             {
                 return false;
             }
 
-            item = await this.playlist.at(this.playlistPos - 1);
+            item = await this.playlist.at(this._playlistPos - 1);
             if (item === undefined) {
                 return false;
             }
-            this.history.pushFront(item);
+            this._history.pushFront(item);
         }
-        this.playlistPos = item.pos;
+        this._playlistPos = item.pos;
         await this._play(item.path);
         return true;
     }
@@ -195,6 +196,6 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     public setStreamOptions(options: StreamOptions): void {
-        this.streamOptions = options;
+        this._streamOptions = options;
     }
 }
