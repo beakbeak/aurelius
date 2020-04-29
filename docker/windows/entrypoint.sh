@@ -24,5 +24,6 @@ cp \
     /usr/x86_64-w64-mingw32/sys-root/mingw/local/bin/*.dll \
     .
 
+cd ..
 rm -f /src/aurelius.zip
-zip -9r /src/aurelius.zip . -x '*.go' .gitignore
+zip -9r /src/aurelius.zip aurelius -x '*.go' .gitignore
