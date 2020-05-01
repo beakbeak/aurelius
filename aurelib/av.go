@@ -65,14 +65,6 @@ func SetLogLevel(level LogLevel) {
 	C.av_log_set_level(avLevel)
 }
 
-func NetworkInit() {
-	C.avformat_network_init()
-}
-
-func NetworkDeinit() {
-	C.avformat_network_deinit()
-}
-
 func avErr2Str(code C.int) string {
 	var buffer [C.AV_ERROR_MAX_STRING_SIZE]C.char
 	if C.av_strerror(code, &buffer[0], C.AV_ERROR_MAX_STRING_SIZE) < 0 {

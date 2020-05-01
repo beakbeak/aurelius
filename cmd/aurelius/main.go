@@ -35,9 +35,6 @@ func main() {
 		*address = fmt.Sprintf(":%v", *port)
 	}
 
-	aurelib.NetworkInit()
-	defer aurelib.NetworkDeinit()
-
 	var assetsDir string
 	{
 		executable, err := os.Executable()
