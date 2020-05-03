@@ -32,11 +32,6 @@ import (
 	"time"
 )
 
-func init() {
-	C.avRegisterAll()
-	SetLogLevel(LogPanic)
-}
-
 // A LogLevel represents the verbosity of FFmpeg's console logging. It
 // corresponds to FFmpeg's AV_LOG_* constants.
 type LogLevel int
@@ -77,7 +72,13 @@ const (
 	LogTrace
 )
 
-// SetLogLevel controls the verbosity of FFmpeg's console logging.
+func init() {
+	C.avRegisterAll()
+	SetLogLevel(LogPanic)
+}
+
+// SetLogLevel controls the verbosity of FFmpeg's console logging. The default
+// level is LogPanic.
 func SetLogLevel(level LogLevel) {
 	var avLevel C.int
 

@@ -163,9 +163,9 @@ type SinkOptions struct {
 	// See FFmpeg's documentation for AVSampleFormat for a full list of formats.
 	SampleFormat string
 
-	// Codec indicates the audio encoder to use ("flac", "libmp3lame", etc.). It
-	// is passed to FFmpeg's avcodec_find_encoder_by_name().
-	// (Default: "pcm_s16le")
+	// Codec indicates the audio encoder to use ("flac", "libmp3lame",
+	// "libvorbis", etc.). It is passed to FFmpeg's
+	// avcodec_find_encoder_by_name(). (Default: "pcm_s16le")
 	Codec string
 
 	// CompressionLevel controls the strength of compression in a
