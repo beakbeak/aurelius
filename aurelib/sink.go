@@ -16,6 +16,7 @@ avErrorEAGAIN() {
 	return AVERROR(EAGAIN);
 }
 
+// A growable data buffer.
 typedef struct Buffer {
 	size_t size;
 	size_t capacity;
@@ -42,6 +43,7 @@ Buffer_delete(Buffer* b) {
 
 typedef int (*Buffer_write_t)(void*, uint8_t*, int);
 
+// Append data to the Buffer stored in opaque, growing it if necessary.
 int
 Buffer_write(
 	void* opaque,
@@ -64,6 +66,7 @@ Buffer_write(
 
 typedef int (*Buffer_read_t)(void*, uint8_t*, int);
 
+// Consume data_size bytes from the beginning of the Buffer stored in opaque.
 int
 Buffer_read(
 	void* opaque,
@@ -96,33 +99,106 @@ import (
 	"unsafe"
 )
 
+// A Sink encodes raw audio data.
+type Sink interface {
+	// Destroy frees any resources held by the Sink so that it may be discarded.
+	Destroy()
+
+	// StreamInfo returns an object describing the format of audio data accepted
+	// by the Sink.
+	StreamInfo() StreamInfo
+
+	// FrameSize returns the number of samples per Frame expected by Encode.
+	FrameSize() uint
+
+	// Encode encodes a chunk of audio data. It takes ownership of the Frame, so
+	// the caller should not call Frame.Destroy after calling Encode.
+	//
+	// Passing an empty Frame will cause the encoder to flush any buffered data
+	// and conclude encoding. See FlushSink.
+	//
+	// The return value will be true when the encoder has completed encoding and
+	// will no longer accept any Frames.
+	Encode(frame Frame) (done bool, err error)
+
+	// WriteTrailer finalizes data written to the audio container format.
+	//
+	// It should be called after flushing the encoder by passing an empty Frame
+	// to Encode. See FlushSink.
+	WriteTrailer() error
+}
+
+// SinkOptions contains audio format and encoding configuration used by
+// NewBufferSink and NewFileSink. It should be created with NewSinkOptions to
+// provide default values.
 type SinkOptions struct {
-	Channels         uint    // default 2
-	ChannelLayout    string  // optional; overrides Channels
-	SampleRate       uint    // default 44100
-	SampleFormat     string  // default is codec-dependent
-	Codec            string  // default "pcm_s16le"
-	CompressionLevel int     // used for flac
-	Quality          float32 // used for libmp3lame, libvorbis
-	BitRate          uint
+	Channels uint // The number of channels. (Default: 2)
+
+	// ChannelLayout describes the number and position of audio channels. It
+	// uses the same format as FFmpeg's av_get_channel_layout().
+	//
+	// ChannelLayout overrides Channels if specified.
+	//
+	// From the FFmpeg documentation:
+	//     ... can be one or several of the following notations, separated by '+' or '|':
+	//
+	//     * the name of an usual channel layout (mono, stereo, 4.0, quad, 5.0,
+	//       5.0(side), 5.1, 5.1(side), 7.1, 7.1(wide), downmix);
+	//     * the name of a single channel (FL, FR, FC, LFE, BL, BR, FLC, FRC,
+	//       BC, SL, SR, TC, TFL, TFC, TFR, TBL, TBC, TBR, DL, DR);
+	//     * a number of channels, in decimal, followed by 'c', yielding the
+	//       default channel layout for that number of channels
+	//     * a channel layout mask, in hexadecimal starting with "0x" (see the
+	//       AV_CH_* macros).
+	//
+	//     Example: "stereo+FC" = "2c+FC" = "2c+1c" = "0x7"
+	ChannelLayout string
+
+	SampleRate uint // Sample rate in Hz. (Default: 44100)
+
+	// SampleFormat is an abbreviation of the stream's sample format ("s16",
+	// "flt", "u8p", etc.). If unspecified, the format is determined by the
+	// audio codec.
+	//
+	// See FFmpeg's documentation for AVSampleFormat for a full list of formats.
+	SampleFormat string
+
+	// Codec indicates the audio encoder to use ("flac", "libmp3lame", etc.). It
+	// is passed to FFmpeg's avcodec_find_encoder_by_name().
+	// (Default: "pcm_s16le")
+	Codec string
+
+	// CompressionLevel controls the strength of compression in a
+	// codec-dependent way, and corresponds to FFmpeg's
+	// AVCodecContext.compression_level, used by FLAC encoding. A negative value
+	// is ignored. (Default: -1)
+	//
+	// CompressionLevel overrides Quality if specified.
+	CompressionLevel int
+
+	// Quality controls encoding quality in a codec-dependent way, and
+	// corresponds to FFmpeg's AVCodecContext.global_quality, used by, e.g., the
+	// libmp3lame and libvorbis encoders. A value less than -1 is ignored.
+	// (Default: -2)
+	//
+	// Quality overrides BitRate if specified.
+	Quality float32
+
+	// BitRate sets a target number of bits/s to be produced by audio encoding,
+	// and corresponds to FFmpeg's AVCodecContext.bit_rate. A value of 0 is
+	// ignored. (Default: 0)
+	BitRate uint
 
 	// BitExact controls whether to avoid randomness in encoding and muxing. It
-	// corresponds to ffmpeg's AVFMT_FLAG_BITEXACT and AV_CODEC_FLAG_BITEXACT.
+	// corresponds to FFmpeg's AVFMT_FLAG_BITEXACT and AV_CODEC_FLAG_BITEXACT.
+	// (Default: false)
 	//
 	// This should be enabled when deterministic output is needed, such as when
 	// performing automated testing.
 	BitExact bool
 }
 
-type Sink interface {
-	FrameSize() uint
-	StreamInfo() StreamInfo
-
-	Destroy()
-	Encode(frame Frame) (done bool, _ error)
-	WriteTrailer() error
-}
-
+// NewSinkOptions creates a new SinkOptions object with default values.
 func NewSinkOptions() *SinkOptions {
 	return &SinkOptions{
 		Channels:         2,
@@ -218,6 +294,7 @@ type sinkBase struct {
 	runningTime C.int64_t
 }
 
+// Destroy frees any resources held by the Sink so that it may be discarded.
 func (sink *sinkBase) Destroy() {
 	if sink.codecCtx != nil {
 		C.avcodec_free_context(&sink.codecCtx)
@@ -228,11 +305,13 @@ func (sink *sinkBase) Destroy() {
 	}
 }
 
+// A FileSink writes encoded audio to a file in the local filesystem.
 type FileSink struct {
 	sinkBase
 	ioCtx *C.AVIOContext
 }
 
+// Destroy frees any resources held by the Sink so that it may be discarded.
 func (sink *FileSink) Destroy() {
 	sink.sinkBase.Destroy()
 
@@ -241,6 +320,11 @@ func (sink *FileSink) Destroy() {
 	}
 }
 
+// NewFileSink creates a new FileSink that writes encoded audio to the file
+// specified by path. The container format is inferred from the file extension.
+//
+// The Sink is backed by a heap-allocated C data structure, so it must be
+// destroyed with Destroy before it is discarded.
 func NewFileSink(
 	path string,
 	options *SinkOptions,
@@ -274,12 +358,14 @@ func NewFileSink(
 	return &sink, nil
 }
 
+// A BufferSink writes encoded audio to a memory buffer.
 type BufferSink struct {
 	sinkBase
 	ioCtx  *C.AVIOContext
 	buffer *C.Buffer
 }
 
+// Destroy frees any resources held by the Sink so that it may be discarded.
 func (sink *BufferSink) Destroy() {
 	sink.sinkBase.Destroy()
 
@@ -294,11 +380,18 @@ func (sink *BufferSink) Destroy() {
 	}
 }
 
+// NewBufferSink creates a new BufferSink that will store audio data in the
+// container format specified by containerFormatName (e.g., "matroska", "mp3",
+// "ogg", "flac" -- different from the codec specified by SinkOptions.Codec).
+// The format name is interpreted by FFmpeg's av_guess_format().
+//
+// The Sink is backed by a heap-allocated C data structure, so it must be
+// destroyed with Destroy before it is discarded.
 func NewBufferSink(
-	formatName string,
+	containerFormatName string,
 	options *SinkOptions,
 ) (*BufferSink, error) {
-	cFormatName := C.CString(formatName)
+	cFormatName := C.CString(containerFormatName)
 	defer C.free(unsafe.Pointer(cFormatName))
 
 	format := C.av_guess_format(cFormatName, nil, nil)
@@ -338,10 +431,13 @@ func NewBufferSink(
 	return &sink, nil
 }
 
+// Buffer returns the current contents of the BufferSink's encoded data buffer.
 func (sink *BufferSink) Buffer() []byte {
 	return (*[1 << 30]byte)(unsafe.Pointer(sink.buffer.data))[:sink.buffer.size:sink.buffer.capacity]
 }
 
+// Drain discards at most the first byteCount bytes from the BufferSink's
+// encoded data buffer. It returns the number of bytes discarded.
 func (sink *BufferSink) Drain(byteCount uint) uint {
 	return uint(C.Buffer_read(unsafe.Pointer(sink.buffer), nil, C.int(byteCount)))
 }
@@ -417,6 +513,7 @@ func (sink *sinkBase) init(
 	return nil
 }
 
+// FrameSize returns the number of samples per Frame expected by Encode.
 func (sink *sinkBase) FrameSize() uint {
 	value := sink.codecCtx.frame_size
 	if value <= 0 {
@@ -425,8 +522,15 @@ func (sink *sinkBase) FrameSize() uint {
 	return uint(value)
 }
 
-// consumes Frame
-func (sink *sinkBase) Encode(frame Frame) (done bool, _ error) {
+// Encode encodes a chunk of audio data. It takes ownership of the Frame, so the
+// caller should not call Frame.Destroy after calling Encode.
+//
+// Passing an empty Frame will cause the encoder to flush any buffered data and
+// conclude encoding. See FlushSink.
+//
+// The return value will be true when the encoder has completed encoding and
+// will no longer accept any Frames.
+func (sink *sinkBase) Encode(frame Frame) (done bool, err error) {
 	defer frame.Destroy()
 
 	// XXX
@@ -472,6 +576,10 @@ func (sink *sinkBase) write() (eof bool, _ error) {
 	return false, nil
 }
 
+// WriteTrailer finalizes data written to the audio container format.
+//
+// It should be called after flushing the encoder by passing an empty Frame to
+// Encode. See FlushSink.
 func (sink *sinkBase) WriteTrailer() error {
 	if err := C.av_write_trailer(sink.formatCtx); err < 0 {
 		return fmt.Errorf("failed to write trailer: %s", avErr2Str(err))
@@ -479,11 +587,14 @@ func (sink *sinkBase) WriteTrailer() error {
 	return nil
 }
 
+// StreamInfo returns an object describing the format of audio data accepted by
+// the Sink.
 func (sink *sinkBase) StreamInfo() StreamInfo {
 	return sink.codecCtx.streamInfo()
 }
 
-// FlushSink flushes a Sink by Encode()ing an empty Frame and calling WriteTrailer().
+// FlushSink flushes a Sink by passing an empty Frame to Encode and calling
+// WriteTrailer.
 func FlushSink(sink Sink) error {
 	if _, err := sink.Encode(Frame{}); err != nil {
 		return fmt.Errorf("failed to encode empty frame: %v", err)

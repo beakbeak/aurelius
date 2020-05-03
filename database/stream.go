@@ -268,7 +268,7 @@ PlayLoop:
 				if receiveStatus != aurelib.ReceiveFrameCopyAndCallAgain {
 					break
 				}
-				if err = src.CopyFrame(fifo, resampler); err != nil {
+				if err = src.ResampleFrame(resampler, fifo); err != nil {
 					util.Debug.Printf("failed to copy frame to output: %v\n", err)
 					done = true
 					break DecodeLoop

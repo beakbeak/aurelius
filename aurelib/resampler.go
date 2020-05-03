@@ -18,6 +18,8 @@ import (
 	"unsafe"
 )
 
+// A Resampler converts unencoded audio data between different sample rates and
+// formats. It is used by Source.ResampleFrame.
 type Resampler struct {
 	swr            *C.SwrContext
 	buffer         **C.uint8_t
@@ -26,6 +28,7 @@ type Resampler struct {
 	bufferFormat   int32
 }
 
+// Destroy frees C heap memory used by the Resampler.
 func (rs *Resampler) Destroy() {
 	if rs.swr != nil {
 		C.swr_free(&rs.swr)
@@ -40,6 +43,11 @@ func (rs *Resampler) destroyBuffer() {
 	}
 }
 
+// NewResampler creates a new Resampler. Before first use, it must be configured
+// with the Setup method.
+//
+// The Resampler is backed by a heap-allocated C data structure, so it must be
+// destroyed with Destroy before it is discarded.
 func NewResampler() (*Resampler, error) {
 	rs := Resampler{}
 
@@ -49,6 +57,11 @@ func NewResampler() (*Resampler, error) {
 	return &rs, nil
 }
 
+// Setup configures the Resampler to convert audio data from the format
+// described by srcInfo to the format described by sinkInfo.
+//
+// The loudness of the converted data will be scaled by the 'volume' argument. A
+// value of 1 will prevent the volume from being changed.
 func (rs *Resampler) Setup(
 	srcInfo StreamInfo,
 	sinkInfo StreamInfo,
@@ -109,13 +122,13 @@ func (rs *Resampler) growBuffer(sampleCount C.int) error {
 	return nil
 }
 
-func (rs *Resampler) convert(
-	in **C.uint8_t,
+func (rs *Resampler) resample(
+	inBuffer **C.uint8_t,
 	inSamples C.int,
 	out *Fifo,
 ) (writtenSamples C.int, _ error) {
 	if rs.buffer == nil {
-		return 0, fmt.Errorf("convert() called without Setup()")
+		return 0, fmt.Errorf("resample() called without Setup()")
 	}
 
 	if maxOutSamples := C.swr_get_out_samples(rs.swr, inSamples); maxOutSamples >= 0 {
@@ -127,7 +140,7 @@ func (rs *Resampler) convert(
 			"failed to calculate output buffer size: %v", avErr2Str(maxOutSamples))
 	}
 
-	outSamples := C.swr_convert(rs.swr, rs.buffer, rs.bufferSamples, in, inSamples)
+	outSamples := C.swr_convert(rs.swr, rs.buffer, rs.bufferSamples, inBuffer, inSamples)
 	if outSamples < 0 {
 		return 0, fmt.Errorf("failed to convert samples: %v", avErr2Str(outSamples))
 	}
