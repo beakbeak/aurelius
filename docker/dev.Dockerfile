@@ -28,7 +28,7 @@ RUN echo "export PATH=${PATH}:~/go/bin" >> /home/code/.bashrc && \
     github.com/ramya-rao-a/go-outline \
     github.com/go-delve/delve/cmd/dlv
 
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/77e211ba75b7802fe5e40b276bca0e928553fc7f/install.sh \
     | sh -s -- -b $(go env GOPATH)/bin v1.24.0
 
 EXPOSE 9090
