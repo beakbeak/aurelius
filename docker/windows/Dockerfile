@@ -1,5 +1,6 @@
-# Git repository should be mounted at /src
-# Package will be built as /src/aurelius.zip
+# This Dockerfile produces a Windows binary package of Aurelius using MinGW.
+# The Aurelius Git repository should be mounted at /src
+# The package will be built as /src/aurelius.zip
 
 FROM fedora:31
 
