@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sb/aurelius/internal/textcache"
 	"sb/aurelius/internal/util"
 	"time"
 )
@@ -18,7 +19,7 @@ type Database struct {
 	prefix        string
 	root          string
 	htmlPath      string
-	playlistCache *FileCache
+	playlistCache *textcache.FileCache
 
 	throttleStreaming      bool
 	deterministicStreaming bool
@@ -51,7 +52,7 @@ func New(
 		prefix:        prefix,
 		root:          rootPath,
 		htmlPath:      htmlPath,
-		playlistCache: NewFileCache(),
+		playlistCache: textcache.New(),
 
 		throttleStreaming:      true,
 		deterministicStreaming: false,

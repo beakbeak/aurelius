@@ -1,4 +1,4 @@
-package database
+package textcache
 
 import (
 	"bufio"
@@ -18,7 +18,7 @@ type FileCache struct {
 	files map[string]*cachedFile
 }
 
-func NewFileCache() *FileCache {
+func New() *FileCache {
 	return &FileCache{files: make(map[string]*cachedFile)}
 }
 
