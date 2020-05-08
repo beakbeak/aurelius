@@ -1,4 +1,21 @@
-package database
+// Package fragment provides an aurelib.Source that streams a subsection of an
+// audio file.
+//
+// The subsection is defined in a text file with the same name as the source
+// audio file with an index number and ".txt" appended. For example,
+// MyTrack.flac.1.txt would describe subsection 1 of MyTrack.flac. The index
+// number is appended to the source file's "track" tag.
+//
+// The descriptor file contains lines indicating the start and/or end times of
+// the subsection. If either time is unspecified, the start or end time of the
+// source file will be used, respectively.
+//
+// The lines are written as "start" or "end" followed by a time accepted by
+// time.ParseDuration. For example:
+//
+//     start 15s
+//     end 5m30s
+package fragment
 
 import (
 	"bufio"
@@ -14,6 +31,7 @@ var (
 	reFragment = regexp.MustCompile(`(?i)^(.+?)\.([0-9]+)\.txt$`)
 )
 
+// A Fragment is an aurelib.Source that streams a subsection of an audio file.
 type Fragment struct {
 	*aurelib.FileSource
 
@@ -21,11 +39,14 @@ type Fragment struct {
 	endTime   time.Duration
 }
 
-func isFragment(path string) bool {
+// IsFragment returns true if the path is in the format used by fragment
+// descriptors.
+func IsFragment(path string) bool {
 	return reFragment.MatchString(path)
 }
 
-func newFragment(path string) (*Fragment, error) {
+// New creates a new Fragment from the descriptor specified by path.
+func New(path string) (*Fragment, error) {
 	f := Fragment{startTime: -1, endTime: -1}
 	success := false
 
@@ -131,10 +152,12 @@ StatementLoop:
 	return nil
 }
 
+// See aurelib.Source.Duration.
 func (f *Fragment) Duration() time.Duration {
 	return f.endTime - f.startTime
 }
 
+// See aurelib.Source.SeekTo.
 func (f *Fragment) SeekTo(offset time.Duration) error {
 	offset += f.startTime
 	if offset > f.endTime {
@@ -143,6 +166,7 @@ func (f *Fragment) SeekTo(offset time.Duration) error {
 	return f.FileSource.SeekTo(offset)
 }
 
+// See aurelib.Source.ReceiveFrame.
 func (f *Fragment) ReceiveFrame() (aurelib.ReceiveFrameStatus, error) {
 	status, err := f.FileSource.ReceiveFrame()
 	if err == nil && status == aurelib.ReceiveFrameCopyAndCallAgain && f.FileSource.FrameStartTime() >= f.endTime {

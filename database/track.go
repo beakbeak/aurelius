@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sb/aurelius/aurelib"
+	"sb/aurelius/fragment"
 	"sb/aurelius/internal/util"
 	"time"
 )
@@ -81,8 +82,8 @@ func (db *Database) IsFavorite(path string) (bool, error) {
 }
 
 func newAudioSource(path string) (aurelib.Source, error) {
-	if isFragment(path) {
-		return newFragment(path)
+	if fragment.IsFragment(path) {
+		return fragment.New(path)
 	}
 	return aurelib.NewFileSource(path)
 }
