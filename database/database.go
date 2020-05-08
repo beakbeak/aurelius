@@ -19,7 +19,7 @@ type Database struct {
 	prefix        string
 	root          string
 	htmlPath      string
-	playlistCache *textcache.FileCache
+	playlistCache *textcache.TextCache
 
 	throttleStreaming      bool
 	deterministicStreaming bool

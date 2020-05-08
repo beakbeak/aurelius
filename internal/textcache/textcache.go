@@ -1,3 +1,5 @@
+// Package textcache provides a thread-safe read/write text file cache. Accessed
+// files are mirrored fully in memory.
 package textcache
 
 import (
@@ -8,21 +10,40 @@ import (
 	"time"
 )
 
+type TextCache struct {
+	mutex sync.Mutex
+	files map[string]*cachedFile
+}
+
 type cachedFile struct {
 	ModTime time.Time
 	Lines   []string
 }
 
-type FileCache struct {
-	mutex sync.Mutex
-	files map[string]*cachedFile
+// New creates a new TextCache.
+func New() *TextCache {
+	return &TextCache{files: make(map[string]*cachedFile)}
 }
 
-func New() *FileCache {
-	return &FileCache{files: make(map[string]*cachedFile)}
+// Get returns the contents of a file as an array of lines.
+// Newline characters are stripped.
+func (c *TextCache) Get(path string) ([]string, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	return c.unsafeGet(path)
 }
 
-func (c *FileCache) unsafeGetWithInfo(
+func (c *TextCache) unsafeGet(path string) ([]string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err // not reformatting because caller may call os.IsNotExist(err)
+	}
+
+	return c.unsafeGetWithInfo(path, info)
+}
+
+func (c *TextCache) unsafeGetWithInfo(
 	path string,
 	info os.FileInfo,
 ) ([]string, error) {
@@ -54,23 +75,18 @@ func (c *FileCache) unsafeGetWithInfo(
 	return cached.Lines, nil
 }
 
-func (c *FileCache) unsafeGet(path string) ([]string, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, err // not reformatting because caller may call os.IsNotExist(err)
-	}
-
-	return c.unsafeGetWithInfo(path, info)
-}
-
-func (c *FileCache) Get(path string) ([]string, error) {
+// Write joins lines with "\n" and writes them to the file specified by path.
+func (c *TextCache) Write(
+	path string,
+	lines []string,
+) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	return c.unsafeGet(path)
+	return c.unsafeWrite(path, lines)
 }
 
-func (c *FileCache) unsafeWrite(
+func (c *TextCache) unsafeWrite(
 	path string,
 	lines []string,
 ) error {
@@ -105,34 +121,13 @@ func (c *FileCache) unsafeWrite(
 	return nil
 }
 
-func (c *FileCache) Write(
-	path string,
-	lines []string,
-) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	return c.unsafeWrite(path, lines)
-}
-
-func (c *FileCache) modifyImpl(
-	path string,
-	modifier func(lines []string) ([]string, error),
-	lines []string,
-) error {
-	lines, err := modifier(lines)
-	if err != nil {
-		return err
-	}
-	if lines == nil {
-		return nil
-	}
-
-	return c.unsafeWrite(path, lines)
-}
-
-// returning nil from modifier will result in no change
-func (c *FileCache) Modify(
+// Modify combines the functionality of Get and Write. It passes the contents of
+// a file as an array of lines to modifier and writes the returned result to
+// path, joining the strings with "\n".
+//
+// An error will be returned if the file does not exist. If modifier returns
+// nil, the file will not be written.
+func (c *TextCache) Modify(
 	path string,
 	modifier func(lines []string) ([]string, error),
 ) error {
@@ -147,8 +142,13 @@ func (c *FileCache) Modify(
 	return c.modifyImpl(path, modifier, lines)
 }
 
-// returning nil from modifier will result in no change
-func (c *FileCache) CreateOrModify(
+// CreateOrModify performs the same operation as Modify, but will create the
+// file if it does not exist. It passes the contents of a file as an array of
+// lines to modifier and writes the returned result to path, joining the strings
+// with "\n".
+//
+// If modifier returns nil, the file will not be written.
+func (c *TextCache) CreateOrModify(
 	path string,
 	modifier func(lines []string) ([]string, error),
 ) error {
@@ -168,4 +168,20 @@ func (c *FileCache) CreateOrModify(
 	}
 
 	return c.modifyImpl(path, modifier, lines)
+}
+
+func (c *TextCache) modifyImpl(
+	path string,
+	modifier func(lines []string) ([]string, error),
+	lines []string,
+) error {
+	lines, err := modifier(lines)
+	if err != nil {
+		return err
+	}
+	if lines == nil {
+		return nil
+	}
+
+	return c.unsafeWrite(path, lines)
 }
