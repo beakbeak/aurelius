@@ -7,7 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/util"
+	"sb/aurelius/internal/util"
 )
 
 var (

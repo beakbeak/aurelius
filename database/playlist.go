@@ -3,7 +3,7 @@ package database
 import (
 	"net/http"
 	"path"
-	"sb/aurelius/util"
+	"sb/aurelius/internal/util"
 	"strconv"
 )
 

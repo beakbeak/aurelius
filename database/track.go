@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/util"
+	"sb/aurelius/internal/util"
 	"time"
 )
 

@@ -3,7 +3,7 @@ package database
 import (
 	"net/http"
 	"sb/aurelius/aurelib"
-	"sb/aurelius/util"
+	"sb/aurelius/internal/util"
 	"strconv"
 	"time"
 )

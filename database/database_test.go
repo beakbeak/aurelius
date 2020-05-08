@@ -16,7 +16,7 @@ import (
 	"reflect"
 	"runtime"
 	"sb/aurelius/database"
-	"sb/aurelius/util"
+	"sb/aurelius/internal/util"
 	"strings"
 	"testing"
 )

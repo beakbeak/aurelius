@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/database"
-	"sb/aurelius/util"
+	"sb/aurelius/internal/util"
 
 	"github.com/gorilla/mux"
 )
