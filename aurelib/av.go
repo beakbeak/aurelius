@@ -1,5 +1,5 @@
 /*
-Aurelib is a thin wrapper around FFmpeg's audio decoding and encoding
+Package aurelib is a thin wrapper around FFmpeg's audio decoding and encoding
 functionality.
 
 Raw audio data is produced by a Source (usually decoded from a compressed file
