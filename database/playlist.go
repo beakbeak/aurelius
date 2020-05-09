@@ -22,20 +22,20 @@ func (db *Database) handlePlaylistRequest(
 	query := req.URL.Query()
 	if posStr, ok := query["pos"]; ok {
 		if len(lines) < 1 {
-			util.WriteJson(w, nil)
+			writeJson(w, nil)
 			return
 		}
 
 		pos64, err := strconv.ParseInt(posStr[0], 0, 0)
 		if err != nil {
 			util.Debug.Printf("failed to parse playlist position '%v': %v\n", posStr, err)
-			util.WriteJson(w, nil)
+			writeJson(w, nil)
 			return
 		}
 		pos := int(pos64)
 
 		if pos < 0 || pos >= len(lines) {
-			util.WriteJson(w, nil)
+			writeJson(w, nil)
 			return
 		}
 
@@ -44,7 +44,7 @@ func (db *Database) handlePlaylistRequest(
 			Path string `json:"path"`
 		}
 
-		util.WriteJson(w, Result{
+		writeJson(w, Result{
 			Pos:  pos,
 			Path: db.toUrlPath(path.Join(path.Dir(dbPath), lines[pos])),
 		})
@@ -53,7 +53,7 @@ func (db *Database) handlePlaylistRequest(
 			Length int `json:"length"`
 		}
 
-		util.WriteJson(w, Result{
+		writeJson(w, Result{
 			Length: len(lines),
 		})
 	}

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -98,4 +99,23 @@ func (db *Database) ServeHTTP(
 	}
 
 	http.NotFound(w, req)
+}
+
+func writeJson(
+	w http.ResponseWriter,
+	data interface{},
+) {
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		Debug.Printf("failed to marshal JSON: %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache, no-store")
+
+	if _, err := w.Write(dataJson); err != nil {
+		Debug.Printf("failed to write response: %v\n", err)
+	}
 }

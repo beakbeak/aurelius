@@ -120,5 +120,5 @@ func (db *Database) handleDirInfoRequest(
 		}
 	}
 
-	util.WriteJson(w, result)
+	writeJson(w, result)
 }

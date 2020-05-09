@@ -1,8 +1,6 @@
 package util
 
 import (
-	"encoding/json"
-	"net/http"
 	"strings"
 )
 
@@ -23,23 +21,4 @@ func LowerCaseKeys(data map[string]string) map[string]string {
 	return FilterKeys(data, func(s string) (string, bool) {
 		return strings.ToLower(s), true
 	})
-}
-
-func WriteJson(
-	w http.ResponseWriter,
-	data interface{},
-) {
-	dataJson, err := json.Marshal(data)
-	if err != nil {
-		Debug.Printf("failed to marshal JSON: %v\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-cache, no-store")
-
-	if _, err := w.Write(dataJson); err != nil {
-		Debug.Printf("failed to write response: %v\n", err)
-	}
 }

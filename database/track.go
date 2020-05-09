@@ -43,14 +43,14 @@ func (db *Database) handleTrackRequest(
 				util.Debug.Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
-				util.WriteJson(w, nil)
+				writeJson(w, nil)
 			}
 		case "unfavorite":
 			if err := db.Unfavorite(urlPath); err != nil {
 				util.Debug.Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
-				util.WriteJson(w, nil)
+				writeJson(w, nil)
 			}
 		default:
 			handled = false
@@ -125,7 +125,7 @@ func (db *Database) handleInfoRequest(
 		result.Favorite = favorite
 	}
 
-	util.WriteJson(w, result)
+	writeJson(w, result)
 }
 
 func (db *Database) Favorite(path string) error {
