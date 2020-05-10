@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sb/aurelius/aurelib"
 )
 
 type LogLevel int
@@ -38,6 +39,10 @@ func SetLogLevel(level LogLevel) {
 	}
 	if level >= LogLevelCount {
 		level = LogLevelCount - 1
+	}
+
+	if level >= LogDebug {
+		aurelib.SetLogLevel(aurelib.LogInfo)
 	}
 
 	logLevel = level

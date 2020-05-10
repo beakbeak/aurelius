@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sb/aurelius/aurelib"
 	"sb/aurelius/database"
 
 	"github.com/gorilla/mux"
@@ -25,11 +24,6 @@ func main() {
 	)
 	flag.Parse()
 
-	database.SetLogLevel(database.LogLevel(*logLevel - 1))
-	if *logLevel > 1 {
-		aurelib.SetLogLevel(aurelib.LogInfo)
-	}
-
 	if len(*address) == 0 {
 		*address = fmt.Sprintf(":%v", *port)
 	}
@@ -43,6 +37,7 @@ func main() {
 		assetsDir = filepath.Dir(executable)
 	}
 
+	database.SetLogLevel(database.LogLevel(*logLevel - 1))
 	db, err := database.New("/db", *dbPath, "html")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
