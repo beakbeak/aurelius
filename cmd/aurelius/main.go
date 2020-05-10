@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/database"
-	"sb/aurelius/internal/util"
 
 	"github.com/gorilla/mux"
 )
@@ -21,12 +20,12 @@ func main() {
 		port     = flag.Int("port", 9090, "port on which to listen for connections")
 		cert     = flag.String("cert", "", "TLS certificate file")
 		key      = flag.String("key", "", "TLS key file")
-		logLevel = flag.Int("log", 2, "log verbosity (1-3)")
+		logLevel = flag.Uint("log", 2, "log verbosity (1-3)")
 		dbPath   = flag.String("db", ".", "path to database root")
 	)
 	flag.Parse()
 
-	util.SetLogLevel(*logLevel)
+	database.SetLogLevel(database.LogLevel(*logLevel))
 	if *logLevel > 1 {
 		aurelib.SetLogLevel(aurelib.LogInfo)
 	}

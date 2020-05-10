@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sb/aurelius/internal/textcache"
-	"sb/aurelius/internal/util"
 	"time"
 )
 
@@ -45,7 +44,7 @@ func New(
 		return nil, fmt.Errorf("not a directory: %v", rootPath)
 	}
 
-	util.Debug.Printf("database opened: prefix='%v' root='%v'", prefix, rootPath)
+	logger(LogDebug).Printf("database opened: prefix='%v' root='%v'", prefix, rootPath)
 
 	quotedPrefix := regexp.QuoteMeta(prefix)
 
@@ -78,22 +77,22 @@ func (db *Database) ServeHTTP(
 		return
 	}
 
-	util.Debug.Printf("DB request: %v\n", req.URL.Path)
+	logger(LogDebug).Printf("DB request: %v\n", req.URL.Path)
 
 	if matches := db.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
-		util.Debug.Println("dir request", matches)
+		logger(LogDebug).Println("dir request", matches)
 		db.handleDirRequest(matches[2], w, req)
 		return
 	}
 
 	if matches := db.rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
-		util.Debug.Println("playlist request", matches)
+		logger(LogDebug).Println("playlist request", matches)
 		db.handlePlaylistRequest(matches[1], w, req)
 		return
 	}
 
 	if matches := db.reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
-		util.Debug.Println("track request", matches)
+		logger(LogDebug).Println("track request", matches)
 		db.handleTrackRequest(matches[1], matches[2], w, req)
 		return
 	}
@@ -107,7 +106,7 @@ func writeJson(
 ) {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
-		Debug.Printf("failed to marshal JSON: %v\n", err)
+		logger(LogDebug).Printf("failed to marshal JSON: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -116,6 +115,6 @@ func writeJson(
 	w.Header().Set("Cache-Control", "no-cache, no-store")
 
 	if _, err := w.Write(dataJson); err != nil {
-		Debug.Printf("failed to write response: %v\n", err)
+		logger(LogDebug).Printf("failed to write response: %v\n", err)
 	}
 }

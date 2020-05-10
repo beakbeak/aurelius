@@ -3,7 +3,6 @@ package database
 import (
 	"net/http"
 	"path"
-	"sb/aurelius/internal/util"
 	"strconv"
 )
 
@@ -16,7 +15,7 @@ func (db *Database) handlePlaylistRequest(
 	lines, err := db.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
-		util.Debug.Printf("failed to load '%v': %v", fsPath, err)
+		logger(LogDebug).Printf("failed to load '%v': %v", fsPath, err)
 	}
 
 	query := req.URL.Query()
@@ -28,7 +27,7 @@ func (db *Database) handlePlaylistRequest(
 
 		pos64, err := strconv.ParseInt(posStr[0], 0, 0)
 		if err != nil {
-			util.Debug.Printf("failed to parse playlist position '%v': %v\n", posStr, err)
+			logger(LogDebug).Printf("failed to parse playlist position '%v': %v\n", posStr, err)
 			writeJson(w, nil)
 			return
 		}

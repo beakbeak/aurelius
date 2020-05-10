@@ -16,7 +16,6 @@ import (
 	"reflect"
 	"runtime"
 	"sb/aurelius/database"
-	"sb/aurelius/internal/util"
 	"strings"
 	"testing"
 )
@@ -264,6 +263,7 @@ func unmarshalJson(
 func createDefaultDatabase(t *testing.T) *database.Database {
 	clearFavorites(t)
 
+	database.SetLogLevel(database.LogDebug)
 	db, err := database.New("/db", testDataDbPath, htmlPath)
 	if err != nil {
 		t.Fatalf("failed to create Database: %v", err)
@@ -663,9 +663,6 @@ func TestStream(t *testing.T) {
 	db := createDefaultDatabase(t)
 	db.SetThrottleStreaming(false)
 	db.SetDeterministicStreaming(true)
-
-	// disable some noisy logging
-	util.SetLogLevel(2)
 
 	baselines := readBaselines()
 

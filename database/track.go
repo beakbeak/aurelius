@@ -40,14 +40,14 @@ func (db *Database) handleTrackRequest(
 		switch subRequest {
 		case "favorite":
 			if err := db.Favorite(urlPath); err != nil {
-				util.Debug.Printf("Favorite failed: %v\n", err)
+				logger(LogDebug).Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
 			}
 		case "unfavorite":
 			if err := db.Unfavorite(urlPath); err != nil {
-				util.Debug.Printf("Unfavorite failed: %v\n", err)
+				logger(LogDebug).Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
@@ -96,7 +96,7 @@ func (db *Database) handleInfoRequest(
 ) {
 	src, err := newAudioSource(filePath)
 	if err != nil {
-		util.Debug.Printf("failed to open source '%v': %v\n", filePath, err)
+		logger(LogDebug).Printf("failed to open source '%v': %v\n", filePath, err)
 		http.NotFound(w, req)
 		return
 	}
@@ -120,7 +120,7 @@ func (db *Database) handleInfoRequest(
 	}
 
 	if favorite, err := db.IsFavorite(urlPath); err != nil {
-		util.Debug.Printf("isFavorite failed: %v", err)
+		logger(LogDebug).Printf("isFavorite failed: %v", err)
 	} else {
 		result.Favorite = favorite
 	}

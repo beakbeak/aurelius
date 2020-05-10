@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/internal/util"
 )
 
 var (
@@ -40,7 +39,7 @@ func (db *Database) handleDirInfoRequest(
 	infos, err := ioutil.ReadDir(fsDirPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		util.Debug.Printf("ReadDir failed: %v\n", err)
+		logger(LogDebug).Printf("ReadDir failed: %v\n", err)
 		return
 	}
 
@@ -86,13 +85,13 @@ func (db *Database) handleDirInfoRequest(
 			linkPath := filepath.Join(fsDirPath, info.Name())
 			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
-				util.Debug.Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
+				logger(LogDebug).Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
 				continue
 			}
 
 			linkedInfo, err := os.Stat(linkedPath)
 			if err != nil {
-				util.Debug.Printf("stat '%v' failed: %v\n", linkedPath, err)
+				logger(LogDebug).Printf("stat '%v' failed: %v\n", linkedPath, err)
 				continue
 			}
 			mode = linkedInfo.Mode()
