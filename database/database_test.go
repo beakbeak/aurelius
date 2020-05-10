@@ -634,7 +634,7 @@ func TestStream(t *testing.T) {
 				},
 				{
 					{"codec", []string{"mp3", "vorbis"}},
-					{"bitRate", []string{"256"}},
+					{"kbitRate", []string{"256"}},
 				},
 				{
 					{"codec", []string{"foo"}},

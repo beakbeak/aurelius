@@ -17,7 +17,7 @@ export async function fetchTrackInfo(url: string): Promise<TrackInfo> {
 export interface StreamOptions {
     codec?: "mp3" | "vorbis" | "flac" | "wav";
     quality?: number;
-    bitRate?: number;
+    kbitRate?: number;
     sampleRate?: number;
     sampleFormat?: string;
     channelLayout?: string;

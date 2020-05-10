@@ -113,11 +113,11 @@ func (db *Database) handleStreamRequest(
 		}
 	}
 
-	if bitRateArgs, ok := query["bitRate"]; ok {
-		if bitRate, err := strconv.ParseUint(bitRateArgs[0], 0, 0); err == nil {
-			options.BitRate = uint(bitRate) * 1000
+	if kbitRateArgs, ok := query["kbitRate"]; ok {
+		if kbitRate, err := strconv.ParseUint(kbitRateArgs[0], 0, 0); err == nil {
+			options.BitRate = uint(kbitRate) * 1000
 		} else {
-			badRequest("invalid bit rate requested: %v (%v)\n", bitRateArgs[0], err)
+			badRequest("invalid kbit rate requested: %v (%v)\n", kbitRateArgs[0], err)
 			return
 		}
 	}
