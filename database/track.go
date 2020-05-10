@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sb/aurelius/aurelib"
 	"sb/aurelius/fragment"
-	"sb/aurelius/internal/util"
+	"strings"
 	"time"
 )
 
@@ -88,6 +88,25 @@ func newAudioSource(path string) (aurelib.Source, error) {
 	return aurelib.NewFileSource(path)
 }
 
+func filterKeys(
+	data map[string]string,
+	filter func(string) (string, bool),
+) map[string]string {
+	out := make(map[string]string, len(data))
+	for key, value := range data {
+		if outKey, ok := filter(key); ok {
+			out[outKey] = value
+		}
+	}
+	return out
+}
+
+func lowerCaseKeys(data map[string]string) map[string]string {
+	return filterKeys(data, func(s string) (string, bool) {
+		return strings.ToLower(s), true
+	})
+}
+
 func (db *Database) handleInfoRequest(
 	urlPath string,
 	filePath string,
@@ -116,7 +135,7 @@ func (db *Database) handleInfoRequest(
 		Duration:        float64(src.Duration()) / float64(time.Second),
 		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
 		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
-		Tags:            util.LowerCaseKeys(src.Tags()),
+		Tags:            lowerCaseKeys(src.Tags()),
 	}
 
 	if favorite, err := db.IsFavorite(urlPath); err != nil {
