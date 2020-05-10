@@ -12,8 +12,7 @@ const (
 	LogInfo LogLevel = iota
 	LogDebug
 	LogNoise
-
-	logLevelCount
+	LogLevelCount
 	LogNone LogLevel = -1
 )
 
@@ -28,7 +27,7 @@ func init() {
 		log.New(ioutil.Discard, "DEBUG: ", 0),
 		log.New(ioutil.Discard, "NOISE: ", 0),
 	)
-	if len(loggers) != int(logLevelCount) {
+	if len(loggers) != int(LogLevelCount) {
 		panic("missing Logger")
 	}
 }
@@ -37,13 +36,13 @@ func SetLogLevel(level LogLevel) {
 	if logLevel == level {
 		return
 	}
-	if level >= logLevelCount {
-		level = logLevelCount - 1
+	if level >= LogLevelCount {
+		level = LogLevelCount - 1
 	}
 
 	logLevel = level
 
-	for i := LogLevel(0); i < logLevelCount; i++ {
+	for i := LogLevel(0); i < LogLevelCount; i++ {
 		if level >= i {
 			loggers[i].SetOutput(ioutil.Discard)
 			loggers[i].SetFlags(0)

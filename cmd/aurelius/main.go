@@ -20,12 +20,12 @@ func main() {
 		port     = flag.Int("port", 9090, "port on which to listen for connections")
 		cert     = flag.String("cert", "", "TLS certificate file")
 		key      = flag.String("key", "", "TLS key file")
-		logLevel = flag.Uint("log", 2, "log verbosity (1-3)")
+		logLevel = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", database.LogLevelCount))
 		dbPath   = flag.String("db", ".", "path to database root")
 	)
 	flag.Parse()
 
-	database.SetLogLevel(database.LogLevel(*logLevel))
+	database.SetLogLevel(database.LogLevel(*logLevel - 1))
 	if *logLevel > 1 {
 		aurelib.SetLogLevel(aurelib.LogInfo)
 	}
