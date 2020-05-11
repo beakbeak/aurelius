@@ -15,26 +15,26 @@ var (
 	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
 )
 
-func (db *Library) handleDirRequest(
-	dbDirPath string,
+func (ml *Library) handleDirRequest(
+	libraryDirPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
 	query := req.URL.Query()
 
 	if _, ok := query["info"]; ok {
-		db.handleDirInfoRequest(dbDirPath, w)
+		ml.handleDirInfoRequest(libraryDirPath, w)
 		return
 	}
 
-	http.ServeFile(w, req, db.toHtmlPath("main.html"))
+	http.ServeFile(w, req, ml.toHtmlPath("main.html"))
 }
 
-func (db *Library) handleDirInfoRequest(
-	dbDirPath string,
+func (ml *Library) handleDirInfoRequest(
+	libraryDirPath string,
 	w http.ResponseWriter,
 ) {
-	fsDirPath := db.toFileSystemPath(dbDirPath)
+	fsDirPath := ml.toFileSystemPath(libraryDirPath)
 
 	infos, err := ioutil.ReadDir(fsDirPath)
 	if err != nil {
@@ -51,18 +51,18 @@ func (db *Library) handleDirInfoRequest(
 	makeRelativePathUrl := func(name string) PathUrl {
 		return PathUrl{
 			Name: name,
-			Url:  db.toUrlPath(path.Join(dbDirPath, name)),
+			Url:  ml.toUrlPath(path.Join(libraryDirPath, name)),
 		}
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
-		dbPath, err := db.toLibraryPathWithContext(fsPath, fsDirPath)
+		libraryPath, err := ml.toLibraryPathWithContext(fsPath, fsDirPath)
 		if err != nil {
 			return PathUrl{}, err
 		}
 		return PathUrl{
 			Name: name,
-			Url:  db.toUrlPath(dbPath),
+			Url:  ml.toUrlPath(libraryPath),
 		}, nil
 	}
 

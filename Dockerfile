@@ -1,4 +1,4 @@
-# Media library should be mounted at /db
+# Media library should be mounted at /media
 
 # Shared base stage ############################################################
 
@@ -43,4 +43,4 @@ EXPOSE 9090
 
 USER www-data
 WORKDIR /aurelius
-ENTRYPOINT ["./aurelius", "-db", "/db"]
+ENTRYPOINT ["./aurelius", "-media", "/media"]

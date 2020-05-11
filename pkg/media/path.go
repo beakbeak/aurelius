@@ -9,25 +9,25 @@ import (
 	"strings"
 )
 
-func (db *Library) toFileSystemPath(dbPath string) string {
-	return filepath.Join(db.root, dbPath)
+func (ml *Library) toFileSystemPath(libraryPath string) string {
+	return filepath.Join(ml.root, libraryPath)
 }
 
-func (db *Library) toLibraryPath(fsPath string) (string, error) {
-	dbPath, err := filepath.Rel(db.root, fsPath)
+func (ml *Library) toLibraryPath(fsPath string) (string, error) {
+	libraryPath, err := filepath.Rel(ml.root, fsPath)
 	if err != nil {
 		return "", err
 	}
 
-	dbPath = filepath.ToSlash(dbPath)
+	libraryPath = filepath.ToSlash(libraryPath)
 
-	if strings.HasPrefix(dbPath, "..") || strings.HasPrefix(dbPath, "/") {
+	if strings.HasPrefix(libraryPath, "..") || strings.HasPrefix(libraryPath, "/") {
 		return "", fmt.Errorf("path is not under media library root")
 	}
-	return dbPath, nil
+	return libraryPath, nil
 }
 
-func (db *Library) toLibraryPathWithContext(fsPath, context string) (string, error) {
+func (ml *Library) toLibraryPathWithContext(fsPath, context string) (string, error) {
 	realContext, err := filepath.EvalSymlinks(context)
 	if err != nil {
 		return "", err
@@ -39,22 +39,22 @@ func (db *Library) toLibraryPathWithContext(fsPath, context string) (string, err
 	}
 	fsPathInContext = filepath.Join(context, fsPathInContext)
 
-	dbPathInContext, err := db.toLibraryPath(fsPathInContext)
+	libraryPathInContext, err := ml.toLibraryPath(fsPathInContext)
 	if err == nil {
 		// contextualized path may be invalid if resolved path is at a
 		// different level of indirection than context
-		if _, err := os.Stat(db.toFileSystemPath(dbPathInContext)); err == nil {
-			return dbPathInContext, nil
+		if _, err := os.Stat(ml.toFileSystemPath(libraryPathInContext)); err == nil {
+			return libraryPathInContext, nil
 		}
 	}
-	return db.toLibraryPath(fsPath)
+	return ml.toLibraryPath(fsPath)
 }
 
-func (db *Library) toUrlPath(dbPath string) string {
-	urlPath := path.Join(db.prefix, dbPath)
+func (ml *Library) toUrlPath(libraryPath string) string {
+	urlPath := path.Join(ml.prefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
 }
 
-func (db *Library) toHtmlPath(path string) string {
-	return filepath.Join(db.htmlPath, path)
+func (ml *Library) toHtmlPath(path string) string {
+	return filepath.Join(ml.htmlPath, path)
 }

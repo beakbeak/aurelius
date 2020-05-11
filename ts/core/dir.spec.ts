@@ -6,7 +6,7 @@ import { ok } from "assert";
 
 describe("directory listing", function () {
     it("succeeds and contains 'test.flac'", async function () {
-        const dir = await fetchDirInfo(`${host}/db/`);
+        const dir = await fetchDirInfo(`${host}/media/`);
 
         let found = false;
         for (const track of dir.tracks) {

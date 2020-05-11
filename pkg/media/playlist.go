@@ -6,13 +6,13 @@ import (
 	"strconv"
 )
 
-func (db *Library) handlePlaylistRequest(
-	dbPath string,
+func (ml *Library) handlePlaylistRequest(
+	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	fsPath := db.toFileSystemPath(dbPath)
-	lines, err := db.playlistCache.Get(fsPath)
+	fsPath := ml.toFileSystemPath(libraryPath)
+	lines, err := ml.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
 		logger(LogDebug).Printf("failed to load '%v': %v", fsPath, err)
@@ -45,7 +45,7 @@ func (db *Library) handlePlaylistRequest(
 
 		writeJson(w, Result{
 			Pos:  pos,
-			Path: db.toUrlPath(path.Join(path.Dir(dbPath), lines[pos])),
+			Path: ml.toUrlPath(path.Join(path.Dir(libraryPath), lines[pos])),
 		})
 	} else {
 		type Result struct {

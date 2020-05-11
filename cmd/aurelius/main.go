@@ -16,11 +16,11 @@ func main() {
 	var (
 		address = flag.String(
 			"address", "", "address at which to listen for connections; overrides port setting")
-		port     = flag.Int("port", 9090, "port on which to listen for connections")
-		cert     = flag.String("cert", "", "TLS certificate file")
-		key      = flag.String("key", "", "TLS key file")
-		logLevel = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
-		dbPath   = flag.String("db", ".", "path to media library root")
+		port      = flag.Int("port", 9090, "port on which to listen for connections")
+		cert      = flag.String("cert", "", "TLS certificate file")
+		key       = flag.String("key", "", "TLS key file")
+		logLevel  = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
+		mediaPath = flag.String("media", ".", "path to media library root")
 	)
 	flag.Parse()
 
@@ -38,16 +38,16 @@ func main() {
 	}
 
 	media.SetLogLevel(media.LogLevel(*logLevel - 1))
-	db, err := media.NewLibrary("/db", *dbPath, "html")
+	ml, err := media.NewLibrary("/media", *mediaPath, "html")
 	if err != nil {
 		log.Fatalf("failed to open media library: %v", err)
 	}
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, "/db/", http.StatusFound)
+		http.Redirect(w, req, "/media/", http.StatusFound)
 	})
-	router.PathPrefix(db.Prefix() + "/").Handler(db)
+	router.PathPrefix(ml.Prefix() + "/").Handler(ml)
 	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 
 	http.Handle("/", router)

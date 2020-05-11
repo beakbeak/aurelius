@@ -10,31 +10,31 @@ import (
 // SetThrottleStreaming controls whether streaming throughput is limited to
 // playback speed. If set to false, streaming throughput is not limited.
 // Default: true.
-func (db *Library) SetThrottleStreaming(value bool) {
-	db.throttleStreaming = value
+func (ml *Library) SetThrottleStreaming(value bool) {
+	ml.throttleStreaming = value
 }
 
 // ThrottleStreaming returns whether streaming throughput is limited to playback
 // speed. If false, streaming throughput is not limited. Default: true.
-func (db *Library) ThrottleStreaming() bool {
-	return db.throttleStreaming
+func (ml *Library) ThrottleStreaming() bool {
+	return ml.throttleStreaming
 }
 
 // SetDeterministicStreaming controls whether to avoid randomness in encoding
 // and muxing. It should be enabled when deterministic output is needed, such as
 // when performing automated testing. Default: false.
-func (db *Library) SetDeterministicStreaming(value bool) {
-	db.deterministicStreaming = value
+func (ml *Library) SetDeterministicStreaming(value bool) {
+	ml.deterministicStreaming = value
 }
 
 // DeterministicStreaming returns whether to avoid randomness in encoding and
 // muxing. It should be enabled when deterministic output is needed, such as
 // when performing automated testing. Default: false.
-func (db *Library) DeterministicStreaming() bool {
-	return db.deterministicStreaming
+func (ml *Library) DeterministicStreaming() bool {
+	return ml.deterministicStreaming
 }
 
-func (db *Library) handleStreamRequest(
+func (ml *Library) handleStreamRequest(
 	path string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -182,7 +182,7 @@ func (db *Library) handleStreamRequest(
 		}
 	}
 
-	if db.deterministicStreaming {
+	if ml.deterministicStreaming {
 		options.BitExact = true
 	}
 
@@ -300,7 +300,7 @@ PlayLoop:
 			break PlayLoop
 		}
 
-		if db.throttleStreaming {
+		if ml.throttleStreaming {
 			// calculate playedTime with millisecond precision to prevent overflow
 			playedTime := time.Duration(((playedSamples * 1000) /
 				uint64(sinkStreamInfo.SampleRate)) * 1000000)

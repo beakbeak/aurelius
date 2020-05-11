@@ -41,13 +41,13 @@ function makeCommonTests(
     });
 }
 
-async function makeLocalPlaylist(dbPath = ""): Promise<LocalPlaylist> {
-    const dir = await fetchDirInfo(`${host}/db/${dbPath}`);
+async function makeLocalPlaylist(libraryPath = ""): Promise<LocalPlaylist> {
+    const dir = await fetchDirInfo(`${host}/media/${libraryPath}`);
     return new LocalPlaylist(dir.tracks.map(pathUrl => pathUrl.url));
 }
 
-async function makeRemotePlaylist(dbPath = "test.m3u"): Promise<RemotePlaylist> {
-    return RemotePlaylist.fetch(`${host}/db/${dbPath}`);
+async function makeRemotePlaylist(libraryPath = "test.m3u"): Promise<RemotePlaylist> {
+    return RemotePlaylist.fetch(`${host}/media/${libraryPath}`);
 }
 
 makeCommonTests("LocalPlaylist", makeLocalPlaylist);

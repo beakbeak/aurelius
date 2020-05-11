@@ -25,12 +25,12 @@ var (
 	// tests to update baseline.json
 	updateBaselines = os.Getenv("UPDATE_BASELINES") == "1"
 
-	testDataPath     = filepath.Join("..", "..", "test")
-	testDataDbPath   = filepath.Join(testDataPath, "db")
-	baselineJsonPath = filepath.Join(testDataPath, "baseline.json")
+	testDataPath      = filepath.Join("..", "..", "test")
+	testDataMediaPath = filepath.Join(testDataPath, "db")
+	baselineJsonPath  = filepath.Join(testDataPath, "baseline.json")
 
-	favoritesDbPath   = "/db/Favorites.m3u"
-	favoritesFilePath = filepath.Join(testDataDbPath, "Favorites.m3u")
+	favoritesLibraryPath = "/media/Favorites.m3u"
+	favoritesFilePath    = filepath.Join(testDataMediaPath, "Favorites.m3u")
 
 	htmlPath = filepath.Join("..", "..", "cmd", "aurelius")
 
@@ -264,11 +264,11 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	clearFavorites(t)
 
 	media.SetLogLevel(media.LogDebug)
-	db, err := media.NewLibrary("/db", testDataDbPath, htmlPath)
+	ml, err := media.NewLibrary("/media", testDataMediaPath, htmlPath)
 	if err != nil {
 		t.Fatalf("failed to create Library: %v", err)
 	}
-	return db
+	return ml
 }
 
 func clearFavorites(t *testing.T) {
@@ -286,21 +286,21 @@ func clearFavorites(t *testing.T) {
 
 func isFavorite(
 	t *testing.T,
-	db *media.Library,
+	ml *media.Library,
 	path string,
 ) bool {
-	jsonBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
+	jsonBytes := simpleRequest(t, ml, "GET", "/media/"+path+"/info", "")
 
 	var track struct{ Favorite bool }
 	unmarshalJson(t, jsonBytes, &track)
 
-	expectedValue, err := db.IsFavorite(path)
+	expectedValue, err := ml.IsFavorite(path)
 	if err != nil {
-		t.Fatalf("db.IsFavorite(\"%s\") failed: %v", path, err)
+		t.Fatalf("ml.IsFavorite(\"%s\") failed: %v", path, err)
 	}
 
 	if expectedValue != track.Favorite {
-		t.Fatalf("db.IsFavorite(\"%s\") doesn't match track info", path)
+		t.Fatalf("ml.IsFavorite(\"%s\") doesn't match track info", path)
 	}
 	return track.Favorite
 }
@@ -341,9 +341,9 @@ func getPlaylistEntryShouldFail(
 func getPlaylistLength(
 	t *testing.T,
 	handler http.Handler,
-	dbPath string,
+	libraryPath string,
 ) int {
-	jsonBytes := simpleRequest(t, handler, "GET", dbPath, "")
+	jsonBytes := simpleRequest(t, handler, "GET", libraryPath, "")
 
 	var playlist struct{ Length int }
 	unmarshalJson(t, jsonBytes, &playlist)
@@ -374,9 +374,9 @@ func getDirInfo(
 /* Tests **********************************************************************/
 
 func TestTrackInfo(t *testing.T) {
-	db := createDefaultLibrary(t)
+	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
+	simpleRequestShouldFail(t, ml, "GET", "/media/nonexistent.mp3/info", "")
 
 	baselines := readBaselines()
 
@@ -388,7 +388,7 @@ func TestTrackInfo(t *testing.T) {
 				t.Parallel()
 			}
 
-			body := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
+			body := simpleRequest(t, ml, "GET", "/media/"+path+"/info", "")
 
 			var trackInfo map[string]interface{}
 			if err := json.Unmarshal(body, &trackInfo); err != nil {
@@ -415,44 +415,44 @@ func TestTrackInfo(t *testing.T) {
 }
 
 func TestFavorite(t *testing.T) {
-	db := createDefaultLibrary(t)
+	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/favorite", "")
-	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/unfavorite", "")
+	simpleRequestShouldFail(t, ml, "POST", "/media/nonexistent.mp3/favorite", "")
+	simpleRequestShouldFail(t, ml, "POST", "/media/nonexistent.mp3/unfavorite", "")
 
 	path := testFiles[0]
 
-	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
+	simpleRequest(t, ml, "POST", "/media/"+path+"/unfavorite", "")
 
-	if isFavorite(t, db, path) {
+	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
 
-	simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
+	simpleRequest(t, ml, "POST", "/media/"+path+"/favorite", "")
 
-	if !isFavorite(t, db, path) {
+	if !isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
 	}
 
-	simpleRequest(t, db, "POST", "/db/"+path+"/unfavorite", "")
+	simpleRequest(t, ml, "POST", "/media/"+path+"/unfavorite", "")
 
-	if isFavorite(t, db, path) {
+	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
 }
 
 func TestFavoritesLength(t *testing.T) {
-	db := createDefaultLibrary(t)
+	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, db, "GET", favoritesDbPath, "")
+	simpleRequestShouldFail(t, ml, "GET", favoritesLibraryPath, "")
 
 	for i := 0; i < 2; i++ {
 		for _, path := range testFiles {
-			simpleRequest(t, db, "POST", "/db/"+path+"/favorite", "")
+			simpleRequest(t, ml, "POST", "/media/"+path+"/favorite", "")
 		}
 	}
 
-	length := getPlaylistLength(t, db, favoritesDbPath)
+	length := getPlaylistLength(t, ml, favoritesLibraryPath)
 	expectedLength := len(testFiles)
 	if length != expectedLength {
 		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
@@ -461,7 +461,7 @@ func TestFavoritesLength(t *testing.T) {
 
 func TestWithSymlinks(t *testing.T) {
 	for _, baseName := range []string{"dir1", "dir2"} {
-		dir := filepath.Join(testDataDbPath, baseName)
+		dir := filepath.Join(testDataMediaPath, baseName)
 		if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
 			t.Fatalf("RemoveAll(\"%s\") failed: %v", dir, err)
 		}
@@ -480,7 +480,7 @@ func TestWithSymlinks(t *testing.T) {
 	useSymlinks := true
 	{
 		linkTarget := filepath.Join("..", "dir1")
-		linkName := filepath.Join(testDataDbPath, "dir2", "dir1link")
+		linkName := filepath.Join(testDataMediaPath, "dir2", "dir1link")
 
 		if err := os.Symlink(linkTarget, linkName); err != nil {
 			t.Logf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
@@ -515,7 +515,7 @@ func TestWithSymlinks(t *testing.T) {
 
 		linkTarget := filepath.Join("..", "test.flac")
 		for _, baseName := range baseNames {
-			linkName := filepath.Join(testDataDbPath, "dir1", baseName)
+			linkName := filepath.Join(testDataMediaPath, "dir1", baseName)
 			if err := os.Symlink(linkTarget, linkName); err != nil {
 				t.Fatalf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
 			}
@@ -529,8 +529,8 @@ func TestWithSymlinks(t *testing.T) {
 	}
 
 	playlistName := "temp-playlist.m3u"
-	playlistFilePath := filepath.Join(testDataDbPath, playlistName)
-	playlistDbPath := "/db/" + playlistName
+	playlistFilePath := filepath.Join(testDataMediaPath, playlistName)
+	playlistLibraryPath := "/media/" + playlistName
 
 	writeStringToFile(t, playlistFilePath, strings.Join(playlist, "\n"))
 	defer (func() {
@@ -540,23 +540,23 @@ func TestWithSymlinks(t *testing.T) {
 		}
 	})()
 
-	db := createDefaultLibrary(t)
+	ml := createDefaultLibrary(t)
 
 	t.Run("Playlist", func(t *testing.T) {
-		if length := getPlaylistLength(t, db, playlistDbPath); length != len(playlist) {
+		if length := getPlaylistLength(t, ml, playlistLibraryPath); length != len(playlist) {
 			t.Fatalf("expected playlist length to be %v, got %v", len(playlist), length)
 		}
 
-		getPlaylistEntryShouldFail(t, db, playlistDbPath, -1)
-		getPlaylistEntryShouldFail(t, db, playlistDbPath, len(playlist))
+		getPlaylistEntryShouldFail(t, ml, playlistLibraryPath, -1)
+		getPlaylistEntryShouldFail(t, ml, playlistLibraryPath, len(playlist))
 
 		for i := 0; i < len(playlist); i++ {
-			entry := getPlaylistEntry(t, db, playlistDbPath, i)
+			entry := getPlaylistEntry(t, ml, playlistLibraryPath, i)
 
 			var trackInfo struct {
 				Name string
 			}
-			jsonBytes := simpleRequest(t, db, "GET", entry.Path+"/info", "")
+			jsonBytes := simpleRequest(t, ml, "GET", entry.Path+"/info", "")
 			unmarshalJson(t, jsonBytes, &trackInfo)
 
 			expectedName := path.Base(playlist[i])
@@ -571,17 +571,17 @@ func TestWithSymlinks(t *testing.T) {
 		var testDir func(string)
 
 		testDir = func(path string) {
-			info := getDirInfo(t, db, path)
+			info := getDirInfo(t, ml, path)
 
 			for _, playlistUrl := range info.Playlists {
-				getPlaylistLength(t, db, playlistUrl.Url)
+				getPlaylistLength(t, ml, playlistUrl.Url)
 			}
 
 			for _, trackUrl := range info.Tracks {
 				var trackInfo struct {
 					Name string
 				}
-				jsonBytes := simpleRequest(t, db, "GET", trackUrl.Url+"/info", "")
+				jsonBytes := simpleRequest(t, ml, "GET", trackUrl.Url+"/info", "")
 				unmarshalJson(t, jsonBytes, &trackInfo)
 
 				expectedName := trackUrl.Name
@@ -597,7 +597,7 @@ func TestWithSymlinks(t *testing.T) {
 			}
 		}
 
-		testDir("/db")
+		testDir("/media")
 	})
 }
 
@@ -660,9 +660,9 @@ func TestStream(t *testing.T) {
 		},
 	}
 
-	db := createDefaultLibrary(t)
-	db.SetThrottleStreaming(false)
-	db.SetDeterministicStreaming(true)
+	ml := createDefaultLibrary(t)
+	ml.SetThrottleStreaming(false)
+	ml.SetDeterministicStreaming(true)
 
 	baselines := readBaselines()
 
@@ -687,8 +687,8 @@ func TestStream(t *testing.T) {
 						t.Parallel()
 					}
 
-					uri := "/db/" + path + "/stream" + query
-					body, statusCode := simpleRequestWithStatus(t, db, "GET", uri, "")
+					uri := "/media/" + path + "/stream" + query
+					body, statusCode := simpleRequestWithStatus(t, ml, "GET", uri, "")
 
 					baselineHash := baselineHashes[query]
 

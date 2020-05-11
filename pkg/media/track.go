@@ -12,13 +12,13 @@ import (
 
 const favoritesPath = "Favorites.m3u"
 
-func (db *Library) handleTrackRequest(
+func (ml *Library) handleTrackRequest(
 	urlPath string,
 	subRequest string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	filePath := db.toFileSystemPath(urlPath)
+	filePath := ml.toFileSystemPath(urlPath)
 	if info, err := os.Stat(filePath); err != nil || !info.Mode().IsRegular() {
 		http.NotFound(w, req)
 		return
@@ -30,23 +30,23 @@ func (db *Library) handleTrackRequest(
 	case http.MethodGet:
 		switch subRequest {
 		case "stream":
-			db.handleStreamRequest(filePath, w, req)
+			ml.handleStreamRequest(filePath, w, req)
 		case "info":
-			db.handleInfoRequest(urlPath, filePath, w, req)
+			ml.handleInfoRequest(urlPath, filePath, w, req)
 		default:
 			handled = false
 		}
 	case http.MethodPost:
 		switch subRequest {
 		case "favorite":
-			if err := db.Favorite(urlPath); err != nil {
+			if err := ml.Favorite(urlPath); err != nil {
 				logger(LogDebug).Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
 			}
 		case "unfavorite":
-			if err := db.Unfavorite(urlPath); err != nil {
+			if err := ml.Unfavorite(urlPath); err != nil {
 				logger(LogDebug).Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
@@ -64,8 +64,8 @@ func (db *Library) handleTrackRequest(
 	}
 }
 
-func (db *Library) IsFavorite(path string) (bool, error) {
-	favorites, err := db.playlistCache.Get(db.toFileSystemPath(favoritesPath))
+func (ml *Library) IsFavorite(path string) (bool, error) {
+	favorites, err := ml.playlistCache.Get(ml.toFileSystemPath(favoritesPath))
 	switch {
 	case os.IsNotExist(err):
 		return false, nil
@@ -107,7 +107,7 @@ func lowerCaseKeys(data map[string]string) map[string]string {
 	})
 }
 
-func (db *Library) handleInfoRequest(
+func (ml *Library) handleInfoRequest(
 	urlPath string,
 	filePath string,
 	w http.ResponseWriter,
@@ -138,7 +138,7 @@ func (db *Library) handleInfoRequest(
 		Tags:            lowerCaseKeys(src.Tags()),
 	}
 
-	if favorite, err := db.IsFavorite(urlPath); err != nil {
+	if favorite, err := ml.IsFavorite(urlPath); err != nil {
 		logger(LogDebug).Printf("isFavorite failed: %v", err)
 	} else {
 		result.Favorite = favorite
@@ -147,9 +147,9 @@ func (db *Library) handleInfoRequest(
 	writeJson(w, result)
 }
 
-func (db *Library) Favorite(path string) error {
-	return db.playlistCache.CreateOrModify(
-		db.toFileSystemPath(favoritesPath),
+func (ml *Library) Favorite(path string) error {
+	return ml.playlistCache.CreateOrModify(
+		ml.toFileSystemPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
 			for _, line := range favorites {
 				if line == path {
@@ -161,9 +161,9 @@ func (db *Library) Favorite(path string) error {
 	)
 }
 
-func (db *Library) Unfavorite(path string) error {
-	return db.playlistCache.CreateOrModify(
-		db.toFileSystemPath(favoritesPath),
+func (ml *Library) Unfavorite(path string) error {
+	return ml.playlistCache.CreateOrModify(
+		ml.toFileSystemPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
 			for index, line := range favorites {
 				if line == path {

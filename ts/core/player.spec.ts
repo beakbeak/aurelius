@@ -6,9 +6,9 @@ import { fetchDirInfo } from "./dir";
 
 import { ok, strictEqual } from "assert";
 
-const localPlaylistDir = `${host}/db/`;
-const remotePlaylistUrl = `${host}/db/test.m3u`;
-const trackUrl = `${host}/db/test.flac`;
+const localPlaylistDir = `${host}/media/`;
+const remotePlaylistUrl = `${host}/media/test.m3u`;
+const trackUrl = `${host}/media/test.flac`;
 
 describe("Player", function () {
     it("toggles favorite status", async function () {

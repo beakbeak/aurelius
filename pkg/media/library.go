@@ -48,7 +48,7 @@ func NewLibrary(
 
 	quotedPrefix := regexp.QuoteMeta(prefix)
 
-	db := Library{
+	ml := Library{
 		prefix:        prefix,
 		root:          rootPath,
 		htmlPath:      htmlPath,
@@ -61,39 +61,39 @@ func NewLibrary(
 		rePlaylistPath: regexp.MustCompile(`^` + quotedPrefix + `/((?i).+?\.m3u)$`),
 		reTrackPath:    regexp.MustCompile(`^` + quotedPrefix + `/(.+?)/([^/]+)$`),
 	}
-	return &db, nil
+	return &ml, nil
 }
 
-func (db *Library) Prefix() string {
-	return db.prefix
+func (ml *Library) Prefix() string {
+	return ml.prefix
 }
 
-func (db *Library) ServeHTTP(
+func (ml *Library) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	if req.URL.Path == db.prefix {
-		http.Redirect(w, req, db.prefix+"/", http.StatusFound)
+	if req.URL.Path == ml.prefix {
+		http.Redirect(w, req, ml.prefix+"/", http.StatusFound)
 		return
 	}
 
-	logger(LogDebug).Printf("DB request: %v\n", req.URL.Path)
+	logger(LogDebug).Printf("media request: %v\n", req.URL.Path)
 
-	if matches := db.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
+	if matches := ml.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		logger(LogDebug).Println("dir request", matches)
-		db.handleDirRequest(matches[2], w, req)
+		ml.handleDirRequest(matches[2], w, req)
 		return
 	}
 
-	if matches := db.rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
+	if matches := ml.rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		logger(LogDebug).Println("playlist request", matches)
-		db.handlePlaylistRequest(matches[1], w, req)
+		ml.handlePlaylistRequest(matches[1], w, req)
 		return
 	}
 
-	if matches := db.reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
+	if matches := ml.reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		logger(LogDebug).Println("track request", matches)
-		db.handleTrackRequest(matches[1], matches[2], w, req)
+		ml.handleTrackRequest(matches[1], matches[2], w, req)
 		return
 	}
 
