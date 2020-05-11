@@ -26,7 +26,7 @@ var (
 	updateBaselines = os.Getenv("UPDATE_BASELINES") == "1"
 
 	testDataPath      = filepath.Join("..", "..", "test")
-	testDataMediaPath = filepath.Join(testDataPath, "db")
+	testDataMediaPath = filepath.Join(testDataPath, "media")
 	baselineJsonPath  = filepath.Join(testDataPath, "baseline.json")
 
 	favoritesLibraryPath = "/media/Favorites.m3u"
