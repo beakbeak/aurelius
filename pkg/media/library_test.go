@@ -286,22 +286,14 @@ func clearFavorites(t *testing.T) {
 
 func isFavorite(
 	t *testing.T,
-	ml *media.Library,
+	handler http.Handler,
 	path string,
 ) bool {
-	jsonBytes := simpleRequest(t, ml, "GET", "/media/"+path+"/info", "")
+	jsonBytes := simpleRequest(t, handler, "GET", "/media/"+path+"/info", "")
 
 	var track struct{ Favorite bool }
 	unmarshalJson(t, jsonBytes, &track)
 
-	expectedValue, err := ml.IsFavorite(path)
-	if err != nil {
-		t.Fatalf("ml.IsFavorite(\"%s\") failed: %v", path, err)
-	}
-
-	if expectedValue != track.Favorite {
-		t.Fatalf("ml.IsFavorite(\"%s\") doesn't match track info", path)
-	}
 	return track.Favorite
 }
 

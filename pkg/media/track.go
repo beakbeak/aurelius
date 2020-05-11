@@ -39,14 +39,14 @@ func (ml *Library) handleTrackRequest(
 	case http.MethodPost:
 		switch subRequest {
 		case "favorite":
-			if err := ml.Favorite(urlPath); err != nil {
+			if err := ml.setFavorite(urlPath, true); err != nil {
 				logger(LogDebug).Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
 			}
 		case "unfavorite":
-			if err := ml.Unfavorite(urlPath); err != nil {
+			if err := ml.setFavorite(urlPath, false); err != nil {
 				logger(LogDebug).Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
@@ -62,49 +62,6 @@ func (ml *Library) handleTrackRequest(
 	if !handled {
 		http.NotFound(w, req)
 	}
-}
-
-func (ml *Library) IsFavorite(path string) (bool, error) {
-	favorites, err := ml.playlistCache.Get(ml.toFileSystemPath(favoritesPath))
-	switch {
-	case os.IsNotExist(err):
-		return false, nil
-	case err != nil:
-		return false, err
-	}
-
-	for _, line := range favorites {
-		if line == path {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func newAudioSource(path string) (aurelib.Source, error) {
-	if fragment.IsFragment(path) {
-		return fragment.New(path)
-	}
-	return aurelib.NewFileSource(path)
-}
-
-func filterKeys(
-	data map[string]string,
-	filter func(string) (string, bool),
-) map[string]string {
-	out := make(map[string]string, len(data))
-	for key, value := range data {
-		if outKey, ok := filter(key); ok {
-			out[outKey] = value
-		}
-	}
-	return out
-}
-
-func lowerCaseKeys(data map[string]string) map[string]string {
-	return filterKeys(data, func(s string) (string, bool) {
-		return strings.ToLower(s), true
-	})
 }
 
 func (ml *Library) handleInfoRequest(
@@ -138,7 +95,7 @@ func (ml *Library) handleInfoRequest(
 		Tags:            lowerCaseKeys(src.Tags()),
 	}
 
-	if favorite, err := ml.IsFavorite(urlPath); err != nil {
+	if favorite, err := ml.isFavorite(urlPath); err != nil {
 		logger(LogDebug).Printf("isFavorite failed: %v", err)
 	} else {
 		result.Favorite = favorite
@@ -147,30 +104,76 @@ func (ml *Library) handleInfoRequest(
 	writeJson(w, result)
 }
 
-func (ml *Library) Favorite(path string) error {
-	return ml.playlistCache.CreateOrModify(
-		ml.toFileSystemPath(favoritesPath),
-		func(favorites []string) ([]string, error) {
-			for _, line := range favorites {
-				if line == path {
-					return nil, nil
-				}
-			}
-			return append(favorites, path), nil
-		},
-	)
+func newAudioSource(path string) (aurelib.Source, error) {
+	if fragment.IsFragment(path) {
+		return fragment.New(path)
+	}
+	return aurelib.NewFileSource(path)
 }
 
-func (ml *Library) Unfavorite(path string) error {
-	return ml.playlistCache.CreateOrModify(
-		ml.toFileSystemPath(favoritesPath),
-		func(favorites []string) ([]string, error) {
-			for index, line := range favorites {
-				if line == path {
-					return append(favorites[:index], favorites[index+1:]...), nil
+func (ml *Library) isFavorite(path string) (bool, error) {
+	favorites, err := ml.playlistCache.Get(ml.toFileSystemPath(favoritesPath))
+	switch {
+	case os.IsNotExist(err):
+		return false, nil
+	case err != nil:
+		return false, err
+	}
+
+	for _, line := range favorites {
+		if line == path {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (ml *Library) setFavorite(
+	path string,
+	favorite bool,
+) error {
+	if favorite {
+		return ml.playlistCache.CreateOrModify(
+			ml.toFileSystemPath(favoritesPath),
+			func(favorites []string) ([]string, error) {
+				for _, line := range favorites {
+					if line == path {
+						return nil, nil
+					}
 				}
-			}
-			return nil, nil
-		},
-	)
+				return append(favorites, path), nil
+			},
+		)
+	} else {
+		return ml.playlistCache.CreateOrModify(
+			ml.toFileSystemPath(favoritesPath),
+			func(favorites []string) ([]string, error) {
+				for index, line := range favorites {
+					if line == path {
+						return append(favorites[:index], favorites[index+1:]...), nil
+					}
+				}
+				return nil, nil
+			},
+		)
+	}
+}
+
+func filterKeys(
+	data map[string]string,
+	filter func(string) (string, bool),
+) map[string]string {
+	out := make(map[string]string, len(data))
+	for key, value := range data {
+		if outKey, ok := filter(key); ok {
+			out[outKey] = value
+		}
+	}
+	return out
+}
+
+func lowerCaseKeys(data map[string]string) map[string]string {
+	return filterKeys(data, func(s string) (string, bool) {
+		return strings.ToLower(s), true
+	})
 }
