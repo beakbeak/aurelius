@@ -12,7 +12,7 @@ import (
 
 const favoritesPath = "Favorites.m3u"
 
-func (db *Database) handleTrackRequest(
+func (db *Library) handleTrackRequest(
 	urlPath string,
 	subRequest string,
 	w http.ResponseWriter,
@@ -64,7 +64,7 @@ func (db *Database) handleTrackRequest(
 	}
 }
 
-func (db *Database) IsFavorite(path string) (bool, error) {
+func (db *Library) IsFavorite(path string) (bool, error) {
 	favorites, err := db.playlistCache.Get(db.toFileSystemPath(favoritesPath))
 	switch {
 	case os.IsNotExist(err):
@@ -107,7 +107,7 @@ func lowerCaseKeys(data map[string]string) map[string]string {
 	})
 }
 
-func (db *Database) handleInfoRequest(
+func (db *Library) handleInfoRequest(
 	urlPath string,
 	filePath string,
 	w http.ResponseWriter,
@@ -147,7 +147,7 @@ func (db *Database) handleInfoRequest(
 	writeJson(w, result)
 }
 
-func (db *Database) Favorite(path string) error {
+func (db *Library) Favorite(path string) error {
 	return db.playlistCache.CreateOrModify(
 		db.toFileSystemPath(favoritesPath),
 		func(favorites []string) ([]string, error) {
@@ -161,7 +161,7 @@ func (db *Database) Favorite(path string) error {
 	)
 }
 
-func (db *Database) Unfavorite(path string) error {
+func (db *Library) Unfavorite(path string) error {
 	return db.playlistCache.CreateOrModify(
 		db.toFileSystemPath(favoritesPath),
 		func(favorites []string) ([]string, error) {

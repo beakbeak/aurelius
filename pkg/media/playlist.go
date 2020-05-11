@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func (db *Database) handlePlaylistRequest(
+func (db *Library) handlePlaylistRequest(
 	dbPath string,
 	w http.ResponseWriter,
 	req *http.Request,

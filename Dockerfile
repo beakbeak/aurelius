@@ -1,4 +1,4 @@
-# Database should be mounted at /db
+# Media library should be mounted at /db
 
 # Shared base stage ############################################################
 

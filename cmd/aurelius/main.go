@@ -20,7 +20,7 @@ func main() {
 		cert     = flag.String("cert", "", "TLS certificate file")
 		key      = flag.String("key", "", "TLS key file")
 		logLevel = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
-		dbPath   = flag.String("db", ".", "path to database root")
+		dbPath   = flag.String("db", ".", "path to media library root")
 	)
 	flag.Parse()
 
@@ -38,9 +38,9 @@ func main() {
 	}
 
 	media.SetLogLevel(media.LogLevel(*logLevel - 1))
-	db, err := media.New("/db", *dbPath, "html")
+	db, err := media.NewLibrary("/db", *dbPath, "html")
 	if err != nil {
-		log.Fatalf("failed to open database: %v", err)
+		log.Fatalf("failed to open media library: %v", err)
 	}
 
 	router := mux.NewRouter()

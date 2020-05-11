@@ -258,15 +258,15 @@ func unmarshalJson(
 	}
 }
 
-/* Database utilities *********************************************************/
+/* Library utilities **********************************************************/
 
-func createDefaultDatabase(t *testing.T) *media.Database {
+func createDefaultLibrary(t *testing.T) *media.Library {
 	clearFavorites(t)
 
 	media.SetLogLevel(media.LogDebug)
-	db, err := media.New("/db", testDataDbPath, htmlPath)
+	db, err := media.NewLibrary("/db", testDataDbPath, htmlPath)
 	if err != nil {
-		t.Fatalf("failed to create Database: %v", err)
+		t.Fatalf("failed to create Library: %v", err)
 	}
 	return db
 }
@@ -286,7 +286,7 @@ func clearFavorites(t *testing.T) {
 
 func isFavorite(
 	t *testing.T,
-	db *media.Database,
+	db *media.Library,
 	path string,
 ) bool {
 	jsonBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
@@ -374,7 +374,7 @@ func getDirInfo(
 /* Tests **********************************************************************/
 
 func TestTrackInfo(t *testing.T) {
-	db := createDefaultDatabase(t)
+	db := createDefaultLibrary(t)
 
 	simpleRequestShouldFail(t, db, "GET", "/db/nonexistent.mp3/info", "")
 
@@ -415,7 +415,7 @@ func TestTrackInfo(t *testing.T) {
 }
 
 func TestFavorite(t *testing.T) {
-	db := createDefaultDatabase(t)
+	db := createDefaultLibrary(t)
 
 	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/favorite", "")
 	simpleRequestShouldFail(t, db, "POST", "/db/nonexistent.mp3/unfavorite", "")
@@ -442,7 +442,7 @@ func TestFavorite(t *testing.T) {
 }
 
 func TestFavoritesLength(t *testing.T) {
-	db := createDefaultDatabase(t)
+	db := createDefaultLibrary(t)
 
 	simpleRequestShouldFail(t, db, "GET", favoritesDbPath, "")
 
@@ -540,7 +540,7 @@ func TestWithSymlinks(t *testing.T) {
 		}
 	})()
 
-	db := createDefaultDatabase(t)
+	db := createDefaultLibrary(t)
 
 	t.Run("Playlist", func(t *testing.T) {
 		if length := getPlaylistLength(t, db, playlistDbPath); length != len(playlist) {
@@ -660,7 +660,7 @@ func TestStream(t *testing.T) {
 		},
 	}
 
-	db := createDefaultDatabase(t)
+	db := createDefaultLibrary(t)
 	db.SetThrottleStreaming(false)
 	db.SetDeterministicStreaming(true)
 

@@ -10,31 +10,31 @@ import (
 // SetThrottleStreaming controls whether streaming throughput is limited to
 // playback speed. If set to false, streaming throughput is not limited.
 // Default: true.
-func (db *Database) SetThrottleStreaming(value bool) {
+func (db *Library) SetThrottleStreaming(value bool) {
 	db.throttleStreaming = value
 }
 
 // ThrottleStreaming returns whether streaming throughput is limited to playback
 // speed. If false, streaming throughput is not limited. Default: true.
-func (db *Database) ThrottleStreaming() bool {
+func (db *Library) ThrottleStreaming() bool {
 	return db.throttleStreaming
 }
 
 // SetDeterministicStreaming controls whether to avoid randomness in encoding
 // and muxing. It should be enabled when deterministic output is needed, such as
 // when performing automated testing. Default: false.
-func (db *Database) SetDeterministicStreaming(value bool) {
+func (db *Library) SetDeterministicStreaming(value bool) {
 	db.deterministicStreaming = value
 }
 
 // DeterministicStreaming returns whether to avoid randomness in encoding and
 // muxing. It should be enabled when deterministic output is needed, such as
 // when performing automated testing. Default: false.
-func (db *Database) DeterministicStreaming() bool {
+func (db *Library) DeterministicStreaming() bool {
 	return db.deterministicStreaming
 }
 
-func (db *Database) handleStreamRequest(
+func (db *Library) handleStreamRequest(
 	path string,
 	w http.ResponseWriter,
 	req *http.Request,

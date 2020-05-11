@@ -15,7 +15,7 @@ var (
 	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
 )
 
-func (db *Database) handleDirRequest(
+func (db *Library) handleDirRequest(
 	dbDirPath string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -30,7 +30,7 @@ func (db *Database) handleDirRequest(
 	http.ServeFile(w, req, db.toHtmlPath("main.html"))
 }
 
-func (db *Database) handleDirInfoRequest(
+func (db *Library) handleDirInfoRequest(
 	dbDirPath string,
 	w http.ResponseWriter,
 ) {
@@ -56,7 +56,7 @@ func (db *Database) handleDirInfoRequest(
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
-		dbPath, err := db.toDatabasePathWithContext(fsPath, fsDirPath)
+		dbPath, err := db.toLibraryPathWithContext(fsPath, fsDirPath)
 		if err != nil {
 			return PathUrl{}, err
 		}

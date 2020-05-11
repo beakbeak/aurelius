@@ -15,7 +15,7 @@ const (
 	playAhead = 10000 * time.Millisecond
 )
 
-type Database struct {
+type Library struct {
 	prefix        string
 	root          string
 	htmlPath      string
@@ -29,11 +29,11 @@ type Database struct {
 	reTrackPath    *regexp.Regexp
 }
 
-func New(
+func NewLibrary(
 	prefix string,
 	rootPath string,
 	htmlPath string,
-) (*Database, error) {
+) (*Library, error) {
 	var err error
 	if rootPath, err = filepath.EvalSymlinks(rootPath); err != nil {
 		return nil, err
@@ -44,11 +44,11 @@ func New(
 		return nil, fmt.Errorf("not a directory: %v", rootPath)
 	}
 
-	logger(LogDebug).Printf("database opened: prefix='%v' root='%v'", prefix, rootPath)
+	logger(LogDebug).Printf("media library opened: prefix='%v' root='%v'", prefix, rootPath)
 
 	quotedPrefix := regexp.QuoteMeta(prefix)
 
-	db := Database{
+	db := Library{
 		prefix:        prefix,
 		root:          rootPath,
 		htmlPath:      htmlPath,
@@ -64,11 +64,11 @@ func New(
 	return &db, nil
 }
 
-func (db *Database) Prefix() string {
+func (db *Library) Prefix() string {
 	return db.prefix
 }
 
-func (db *Database) ServeHTTP(
+func (db *Library) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
