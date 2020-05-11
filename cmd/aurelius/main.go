@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sb/aurelius/pkg/database"
+	database "sb/aurelius/pkg/media"
 
 	"github.com/gorilla/mux"
 )

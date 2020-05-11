@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sb/aurelius/pkg/database"
+	database "sb/aurelius/pkg/media"
 	"strings"
 	"testing"
 )
