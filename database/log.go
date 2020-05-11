@@ -49,11 +49,11 @@ func SetLogLevel(level LogLevel) {
 
 	for i := LogLevel(0); i < LogLevelCount; i++ {
 		if level >= i {
-			loggers[i].SetOutput(ioutil.Discard)
-			loggers[i].SetFlags(0)
-		} else {
 			loggers[i].SetOutput(os.Stdout)
 			loggers[i].SetFlags(log.Ltime | log.Lmicroseconds | log.Ldate | log.Lshortfile)
+		} else {
+			loggers[i].SetOutput(ioutil.Discard)
+			loggers[i].SetFlags(0)
 		}
 	}
 }
