@@ -1,4 +1,4 @@
-package database
+package media
 
 import (
 	"net/http"

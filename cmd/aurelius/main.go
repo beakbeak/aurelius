@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	database "sb/aurelius/pkg/media"
+	"sb/aurelius/pkg/media"
 
 	"github.com/gorilla/mux"
 )
@@ -19,7 +19,7 @@ func main() {
 		port     = flag.Int("port", 9090, "port on which to listen for connections")
 		cert     = flag.String("cert", "", "TLS certificate file")
 		key      = flag.String("key", "", "TLS key file")
-		logLevel = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", database.LogLevelCount))
+		logLevel = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
 		dbPath   = flag.String("db", ".", "path to database root")
 	)
 	flag.Parse()
@@ -37,8 +37,8 @@ func main() {
 		assetsDir = filepath.Dir(executable)
 	}
 
-	database.SetLogLevel(database.LogLevel(*logLevel - 1))
-	db, err := database.New("/db", *dbPath, "html")
+	media.SetLogLevel(media.LogLevel(*logLevel - 1))
+	db, err := media.New("/db", *dbPath, "html")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}

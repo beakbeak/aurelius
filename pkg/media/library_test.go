@@ -1,4 +1,4 @@
-package database_test
+package media_test
 
 import (
 	"bufio"
@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	database "sb/aurelius/pkg/media"
+	"sb/aurelius/pkg/media"
 	"strings"
 	"testing"
 )
@@ -260,11 +260,11 @@ func unmarshalJson(
 
 /* Database utilities *********************************************************/
 
-func createDefaultDatabase(t *testing.T) *database.Database {
+func createDefaultDatabase(t *testing.T) *media.Database {
 	clearFavorites(t)
 
-	database.SetLogLevel(database.LogDebug)
-	db, err := database.New("/db", testDataDbPath, htmlPath)
+	media.SetLogLevel(media.LogDebug)
+	db, err := media.New("/db", testDataDbPath, htmlPath)
 	if err != nil {
 		t.Fatalf("failed to create Database: %v", err)
 	}
@@ -286,7 +286,7 @@ func clearFavorites(t *testing.T) {
 
 func isFavorite(
 	t *testing.T,
-	db *database.Database,
+	db *media.Database,
 	path string,
 ) bool {
 	jsonBytes := simpleRequest(t, db, "GET", "/db/"+path+"/info", "")
