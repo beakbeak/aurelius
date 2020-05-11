@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/aurelib"
+	"sb/aurelius/pkg/aurelib"
 	"time"
 )
 

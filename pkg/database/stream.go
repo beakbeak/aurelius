@@ -2,7 +2,7 @@ package database
 
 import (
 	"net/http"
-	"sb/aurelius/aurelib"
+	"sb/aurelius/pkg/aurelib"
 	"strconv"
 	"time"
 )

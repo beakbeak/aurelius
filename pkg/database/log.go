@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"sb/aurelius/aurelib"
+	"sb/aurelius/pkg/aurelib"
 )
 
 type LogLevel int

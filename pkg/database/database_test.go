@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sb/aurelius/database"
+	"sb/aurelius/pkg/database"
 	"strings"
 	"testing"
 )
@@ -25,14 +25,14 @@ var (
 	// tests to update baseline.json
 	updateBaselines = os.Getenv("UPDATE_BASELINES") == "1"
 
-	testDataPath     = filepath.Join("..", "test")
+	testDataPath     = filepath.Join("..", "..", "test")
 	testDataDbPath   = filepath.Join(testDataPath, "db")
 	baselineJsonPath = filepath.Join(testDataPath, "baseline.json")
 
 	favoritesDbPath   = "/db/Favorites.m3u"
 	favoritesFilePath = filepath.Join(testDataDbPath, "Favorites.m3u")
 
-	htmlPath = filepath.Join("..", "cmd", "aurelius")
+	htmlPath = filepath.Join("..", "..", "cmd", "aurelius")
 
 	testFiles = []string{
 		"test.flac",

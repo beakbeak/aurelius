@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sb/aurelius/aurelib"
-	"sb/aurelius/fragment"
+	"sb/aurelius/pkg/aurelib"
+	"sb/aurelius/pkg/fragment"
 	"strings"
 	"time"
 )

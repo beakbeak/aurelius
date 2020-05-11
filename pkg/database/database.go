@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/internal/textcache"
+	"sb/aurelius/pkg/textcache"
 	"time"
 )
 
