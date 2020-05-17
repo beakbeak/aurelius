@@ -19,15 +19,14 @@ const (
 
 var (
 	logLevel = LogNone
-	loggers  []*log.Logger
-)
-
-func init() {
-	loggers = append(loggers,
+	loggers  = [...]*log.Logger{
 		log.New(ioutil.Discard, "INFO: ", 0),
 		log.New(ioutil.Discard, "DEBUG: ", 0),
 		log.New(ioutil.Discard, "NOISE: ", 0),
-	)
+	}
+)
+
+func init() {
 	if len(loggers) != int(LogLevelCount) {
 		panic("missing Logger")
 	}
