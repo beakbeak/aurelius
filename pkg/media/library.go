@@ -11,15 +11,13 @@ import (
 	"time"
 )
 
-const (
-	playAhead = 10000 * time.Millisecond
-)
-
 type Library struct {
 	prefix        string
 	root          string
 	htmlPath      string
 	playlistCache *textcache.TextCache
+
+	playAhead time.Duration
 
 	throttleStreaming      bool
 	deterministicStreaming bool
@@ -53,6 +51,8 @@ func NewLibrary(
 		root:          rootPath,
 		htmlPath:      htmlPath,
 		playlistCache: textcache.New(),
+
+		playAhead: 10000 * time.Millisecond,
 
 		throttleStreaming:      true,
 		deterministicStreaming: false,
