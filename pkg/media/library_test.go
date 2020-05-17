@@ -264,7 +264,14 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	clearFavorites(t)
 
 	media.SetLogLevel(media.LogDebug)
-	ml, err := media.NewLibrary("/media", testDataMediaPath, htmlPath)
+
+	mlConfig := media.NewLibraryConfig()
+	mlConfig.RootPath = testDataMediaPath
+	mlConfig.HtmlPath = htmlPath
+	mlConfig.ThrottleStreaming = false
+	mlConfig.DeterministicStreaming = true
+
+	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
 		t.Fatalf("failed to create Library: %v", err)
 	}
@@ -653,9 +660,6 @@ func TestStream(t *testing.T) {
 	}
 
 	ml := createDefaultLibrary(t)
-	ml.SetThrottleStreaming(false)
-	ml.SetDeterministicStreaming(true)
-
 	baselines := readBaselines()
 
 	for _, input := range inputArray {

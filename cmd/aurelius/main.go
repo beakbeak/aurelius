@@ -38,7 +38,12 @@ func main() {
 	}
 
 	media.SetLogLevel(media.LogLevel(*logLevel - 1))
-	ml, err := media.NewLibrary("/media", *mediaPath, "html")
+
+	mlConfig := media.NewLibraryConfig()
+	mlConfig.RootPath = *mediaPath
+	mlConfig.HtmlPath = "html"
+
+	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
 		log.Fatalf("failed to open media library: %v", err)
 	}
@@ -47,7 +52,7 @@ func main() {
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/media/", http.StatusFound)
 	})
-	router.PathPrefix(ml.Prefix() + "/").Handler(ml)
+	router.PathPrefix(mlConfig.Prefix + "/").Handler(ml)
 	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 
 	http.Handle("/", router)

@@ -11,69 +11,82 @@ import (
 	"time"
 )
 
+type LibraryConfig struct {
+	Prefix   string
+	RootPath string
+	HtmlPath string
+
+	// PlayAhead controls how far beyond the current play position to stream
+	// when streaming is throttled. (Default: 10s)
+	PlayAhead time.Duration
+
+	// ThrottleStreaming controls whether streaming throughput is limited to
+	// playback speed. If false, streaming throughput is not limited.
+	// (Default: true)
+	ThrottleStreaming bool
+
+	// DeterministicStreaming controls whether to avoid randomness in encoding
+	// and muxing. It should be set to true when deterministic output is needed,
+	// such as when performing automated testing. (Default: false)
+	DeterministicStreaming bool
+}
+
+func NewLibraryConfig() *LibraryConfig {
+	return &LibraryConfig{
+		Prefix:            "/media",
+		PlayAhead:         10 * time.Second,
+		ThrottleStreaming: true,
+	}
+}
+
 type Library struct {
-	prefix        string
-	root          string
-	htmlPath      string
+	config LibraryConfig
+
 	playlistCache *textcache.TextCache
-
-	playAhead time.Duration
-
-	throttleStreaming      bool
-	deterministicStreaming bool
 
 	reDirPath      *regexp.Regexp
 	rePlaylistPath *regexp.Regexp
 	reTrackPath    *regexp.Regexp
 }
 
-func NewLibrary(
-	prefix string,
-	rootPath string,
-	htmlPath string,
-) (*Library, error) {
+func NewLibrary(config *LibraryConfig) (*Library, error) {
 	var err error
-	if rootPath, err = filepath.EvalSymlinks(rootPath); err != nil {
+
+	if config.RootPath == "" {
+		return nil, fmt.Errorf("RootPath is empty")
+	}
+	if config.RootPath, err = filepath.EvalSymlinks(config.RootPath); err != nil {
 		return nil, err
 	}
-	if info, err := os.Stat(rootPath); err != nil {
+	if info, err := os.Stat(config.RootPath); err != nil {
 		return nil, err
 	} else if !info.Mode().IsDir() {
-		return nil, fmt.Errorf("not a directory: %v", rootPath)
+		return nil, fmt.Errorf("not a directory: %v", config.RootPath)
 	}
 
-	logger(LogDebug).Printf("media library opened: prefix='%v' root='%v'", prefix, rootPath)
-
-	quotedPrefix := regexp.QuoteMeta(prefix)
-
+	quotedPrefix := regexp.QuoteMeta(config.Prefix)
 	ml := Library{
-		prefix:        prefix,
-		root:          rootPath,
-		htmlPath:      htmlPath,
+		config: *config,
+
 		playlistCache: textcache.New(),
-
-		playAhead: 10000 * time.Millisecond,
-
-		throttleStreaming:      true,
-		deterministicStreaming: false,
 
 		reDirPath:      regexp.MustCompile(`^` + quotedPrefix + `/((.*?)/)?$`),
 		rePlaylistPath: regexp.MustCompile(`^` + quotedPrefix + `/((?i).+?\.m3u)$`),
 		reTrackPath:    regexp.MustCompile(`^` + quotedPrefix + `/(.+?)/([^/]+)$`),
 	}
-	return &ml, nil
-}
 
-func (ml *Library) Prefix() string {
-	return ml.prefix
+	logger(LogDebug).Printf(
+		"media library opened: prefix='%v' root='%v'", config.Prefix, config.RootPath)
+
+	return &ml, nil
 }
 
 func (ml *Library) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	if req.URL.Path == ml.prefix {
-		http.Redirect(w, req, ml.prefix+"/", http.StatusFound)
+	if req.URL.Path == ml.config.Prefix {
+		http.Redirect(w, req, ml.config.Prefix+"/", http.StatusFound)
 		return
 	}
 

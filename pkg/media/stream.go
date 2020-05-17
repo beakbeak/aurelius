@@ -7,45 +7,6 @@ import (
 	"time"
 )
 
-// SetThrottleStreaming controls whether streaming throughput is limited to
-// playback speed. If set to false, streaming throughput is not limited.
-// (Default: true)
-func (ml *Library) SetThrottleStreaming(value bool) {
-	ml.throttleStreaming = value
-}
-
-// ThrottleStreaming returns whether streaming throughput is limited to playback
-// speed. If false, streaming throughput is not limited. (Default: true)
-func (ml *Library) ThrottleStreaming() bool {
-	return ml.throttleStreaming
-}
-
-// SetPlayAhead controls how far beyond the current play position to stream when
-// streaming is throttled. (Default: 10s)
-func (ml *Library) SetPlayAhead(value time.Duration) {
-	ml.playAhead = value
-}
-
-// PlayAhead returns how far beyond the current play position to stream when
-// streaming is throttled. (Default: 10s)
-func (ml *Library) PlayAhead() time.Duration {
-	return ml.playAhead
-}
-
-// SetDeterministicStreaming controls whether to avoid randomness in encoding
-// and muxing. It should be enabled when deterministic output is needed, such as
-// when performing automated testing. (Default: false)
-func (ml *Library) SetDeterministicStreaming(value bool) {
-	ml.deterministicStreaming = value
-}
-
-// DeterministicStreaming returns whether to avoid randomness in encoding and
-// muxing. It should be enabled when deterministic output is needed, such as
-// when performing automated testing. (Default: false)
-func (ml *Library) DeterministicStreaming() bool {
-	return ml.deterministicStreaming
-}
-
 func (ml *Library) handleStreamRequest(
 	path string,
 	w http.ResponseWriter,
@@ -194,7 +155,7 @@ func (ml *Library) handleStreamRequest(
 		}
 	}
 
-	if ml.deterministicStreaming {
+	if ml.config.DeterministicStreaming {
 		options.BitExact = true
 	}
 
@@ -312,11 +273,11 @@ PlayLoop:
 			break PlayLoop
 		}
 
-		if ml.throttleStreaming && ml.playAhead > 0 {
+		if ml.config.ThrottleStreaming && ml.config.PlayAhead > 0 {
 			// calculate playedTime with millisecond precision to prevent overflow
 			playedTime := time.Duration(((playedSamples * 1000) /
 				uint64(sinkStreamInfo.SampleRate)) * 1000000)
-			timeToSleep := playedTime - ml.playAhead - time.Since(startTime)
+			timeToSleep := playedTime - ml.config.PlayAhead - time.Since(startTime)
 			if timeToSleep > time.Millisecond {
 				logger(LogNoise).Printf("sleeping %v", timeToSleep)
 				time.Sleep(timeToSleep)

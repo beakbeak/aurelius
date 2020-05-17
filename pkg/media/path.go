@@ -10,11 +10,11 @@ import (
 )
 
 func (ml *Library) toFileSystemPath(libraryPath string) string {
-	return filepath.Join(ml.root, libraryPath)
+	return filepath.Join(ml.config.RootPath, libraryPath)
 }
 
 func (ml *Library) toLibraryPath(fsPath string) (string, error) {
-	libraryPath, err := filepath.Rel(ml.root, fsPath)
+	libraryPath, err := filepath.Rel(ml.config.RootPath, fsPath)
 	if err != nil {
 		return "", err
 	}
@@ -51,10 +51,10 @@ func (ml *Library) toLibraryPathWithContext(fsPath, context string) (string, err
 }
 
 func (ml *Library) toUrlPath(libraryPath string) string {
-	urlPath := path.Join(ml.prefix, libraryPath)
+	urlPath := path.Join(ml.config.Prefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
 }
 
 func (ml *Library) toHtmlPath(path string) string {
-	return filepath.Join(ml.htmlPath, path)
+	return filepath.Join(ml.config.HtmlPath, path)
 }
