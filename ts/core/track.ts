@@ -14,7 +14,7 @@ export async function fetchTrackInfo(url: string): Promise<TrackInfo> {
     return fetchJson<TrackInfo>(`${url}/info`);
 }
 
-export interface StreamOptions {
+export interface StreamConfig {
     codec?: "mp3" | "vorbis" | "flac" | "wav";
     quality?: number;
     kbitRate?: number;
@@ -31,7 +31,7 @@ export class Track {
     private constructor(
         public readonly url: string,
         public readonly info: TrackInfo,
-        public readonly options: StreamOptions,
+        public readonly streamConfig: StreamConfig,
         public readonly startTime: number,
         private readonly _audio: HTMLAudioElement,
         private readonly _playablePromise: Promise<void>,
@@ -49,14 +49,14 @@ export class Track {
     }
 
     private static streamQuery(
-        options: StreamOptions,
+        config: StreamConfig,
         startTime = 0,
     ): string {
-        const keys = Object.keys(options) as (keyof StreamOptions)[];
+        const keys = Object.keys(config) as (keyof StreamConfig)[];
         let query = "";
         let i = 0;
         for (; i < keys.length; ++i) {
-            query += `${i === 0 ? "?" : "&"}${keys[i]}=${options[keys[i]]}`;
+            query += `${i === 0 ? "?" : "&"}${keys[i]}=${config[keys[i]]}`;
         }
         if (startTime > 0) {
             query += `${i === 0 ? "?" : "&"}startTime=${startTime}s`;
@@ -66,11 +66,11 @@ export class Track {
 
     public static async fetch(
         url: string,
-        options: StreamOptions,
+        streamConfig: StreamConfig,
         startTime = 0,
         recycledTrack?: Track,
     ): Promise<Track> {
-        options = copyJson(options);
+        streamConfig = copyJson(streamConfig);
 
         const info = await fetchTrackInfo(url);
 
@@ -85,7 +85,7 @@ export class Track {
         audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
         const playablePromise = new Promise<void>((resolve, reject) => {
-            audio.src = `${url}/stream${Track.streamQuery(options, startTime)}`;
+            audio.src = `${url}/stream${Track.streamQuery(streamConfig, startTime)}`;
             audio.oncanplay = () => {
                 resolve();
             };
@@ -95,7 +95,7 @@ export class Track {
 
             audio.load();
         });
-        return new Track(url, info, options, startTime, audio, playablePromise);
+        return new Track(url, info, streamConfig, startTime, audio, playablePromise);
     }
 
     public isPlayable(): boolean {

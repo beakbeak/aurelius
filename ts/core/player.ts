@@ -1,4 +1,4 @@
-import { Track, StreamOptions } from "./track";
+import { Track, StreamConfig } from "./track";
 import { Playlist, LocalPlaylist, RemotePlaylist } from "./playlist";
 import { PlayHistory } from "./history";
 import EventDispatcher from "./eventdispatcher";
@@ -22,13 +22,13 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
-    private _streamOptions: StreamOptions = { codec: "vorbis", quality: 8 };
+    private _streamConfig: StreamConfig = { codec: "vorbis", quality: 8 };
 
     private async _play(
         url: string,
         startTime?: number,
     ): Promise<void> {
-        const track = await Track.fetch(url, this._streamOptions, startTime, this.track);
+        const track = await Track.fetch(url, this._streamConfig, startTime, this.track);
         this.track = track;
 
         track.addEventListener("progress", () => {
@@ -195,7 +195,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         this.dispatchEvent("unfavorite");
     }
 
-    public setStreamOptions(options: StreamOptions): void {
-        this._streamOptions = options;
+    public setStreamConfig(config: StreamConfig): void {
+        this._streamConfig = config;
     }
 }

@@ -10,6 +10,6 @@ window.onload = () => {
 
     // XXX hack alert
     if (/([0-9]+\.){3}[0-9]+/.test(window.location.hostname)) {
-        player.setStreamOptions({ codec: "wav" });
+        player.setStreamConfig({ codec: "wav" });
     }
 };
