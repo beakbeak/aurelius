@@ -128,10 +128,10 @@ type Sink interface {
 	WriteTrailer() error
 }
 
-// SinkOptions contains audio format and encoding configuration used by
-// NewBufferSink and NewFileSink. It should be created with NewSinkOptions to
+// SinkConfig contains audio format and encoding configuration used by
+// NewBufferSink and NewFileSink. It should be created with NewSinkConfig to
 // provide default values.
-type SinkOptions struct {
+type SinkConfig struct {
 	Channels uint // The number of channels. (Default: 2)
 
 	// ChannelLayout describes the number and position of audio channels. It
@@ -198,9 +198,9 @@ type SinkOptions struct {
 	BitExact bool
 }
 
-// NewSinkOptions creates a new SinkOptions object with default values.
-func NewSinkOptions() *SinkOptions {
-	return &SinkOptions{
+// NewSinkConfig creates a new SinkConfig object with default values.
+func NewSinkConfig() *SinkConfig {
+	return &SinkConfig{
 		Channels:         2,
 		SampleRate:       44100,
 		Codec:            "pcm_s16le",
@@ -209,12 +209,12 @@ func NewSinkOptions() *SinkOptions {
 	}
 }
 
-func (options *SinkOptions) getChannels() (C.int, C.uint64_t) {
+func (config *SinkConfig) getChannels() (C.int, C.uint64_t) {
 	var channels C.int
 	var channelLayout C.uint64_t
 
-	if options.ChannelLayout != "" {
-		channelLayoutName := C.CString(options.ChannelLayout)
+	if config.ChannelLayout != "" {
+		channelLayoutName := C.CString(config.ChannelLayout)
 		defer C.free(unsafe.Pointer(channelLayoutName))
 
 		if channelLayout = C.av_get_channel_layout(channelLayoutName); channelLayout != 0 {
@@ -222,7 +222,7 @@ func (options *SinkOptions) getChannels() (C.int, C.uint64_t) {
 		}
 	}
 	if channels == 0 {
-		channels = C.int(options.Channels)
+		channels = C.int(config.Channels)
 		channelLayout = C.uint64_t(C.av_get_default_channel_layout(channels))
 	}
 	return channels, channelLayout
@@ -242,10 +242,10 @@ func (codec *C.AVCodec) allowedFormats() []C.enum_AVSampleFormat {
 	return formatArray[:formatCount:formatCount]
 }
 
-func (options *SinkOptions) getSampleFormat(
+func (config *SinkConfig) getSampleFormat(
 	allowedFormats []C.enum_AVSampleFormat,
 ) C.enum_AVSampleFormat {
-	if options.SampleFormat == "" {
+	if config.SampleFormat == "" {
 		return allowedFormats[0]
 	}
 
@@ -258,7 +258,7 @@ func (options *SinkOptions) getSampleFormat(
 		return false
 	}
 
-	formatName := C.CString(options.SampleFormat)
+	formatName := C.CString(config.SampleFormat)
 	defer C.free(unsafe.Pointer(formatName))
 
 	format := C.av_get_sample_fmt(formatName)
@@ -280,8 +280,8 @@ func (options *SinkOptions) getSampleFormat(
 	return allowedFormats[0]
 }
 
-func (options *SinkOptions) getCodec() *C.AVCodec {
-	cCodecName := C.CString(options.Codec)
+func (config *SinkConfig) getCodec() *C.AVCodec {
+	cCodecName := C.CString(config.Codec)
 	defer C.free(unsafe.Pointer(cCodecName))
 
 	return C.avcodec_find_encoder_by_name(cCodecName)
@@ -327,7 +327,7 @@ func (sink *FileSink) Destroy() {
 // destroyed with Destroy before it is discarded.
 func NewFileSink(
 	path string,
-	options *SinkOptions,
+	config *SinkConfig,
 ) (*FileSink, error) {
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
@@ -350,7 +350,7 @@ func NewFileSink(
 		return nil, fmt.Errorf("failed to open file: %v", avErr2Str(avErr))
 	}
 
-	if err := sink.init(format, sink.ioCtx, options); err != nil {
+	if err := sink.init(format, sink.ioCtx, config); err != nil {
 		return nil, err
 	}
 
@@ -382,14 +382,14 @@ func (sink *BufferSink) Destroy() {
 
 // NewBufferSink creates a new BufferSink that will store audio data in the
 // container format specified by containerFormatName (e.g., "matroska", "mp3",
-// "ogg", "flac" -- different from the codec specified by SinkOptions.Codec).
+// "ogg", "flac" -- different from the codec specified by SinkConfig.Codec).
 // The format name is interpreted by FFmpeg's av_guess_format().
 //
 // The Sink is backed by a heap-allocated C data structure, so it must be
 // destroyed with Destroy before it is discarded.
 func NewBufferSink(
 	containerFormatName string,
-	options *SinkOptions,
+	config *SinkConfig,
 ) (*BufferSink, error) {
 	cFormatName := C.CString(containerFormatName)
 	defer C.free(unsafe.Pointer(cFormatName))
@@ -423,7 +423,7 @@ func NewBufferSink(
 		return nil, fmt.Errorf("failed to allocate I/O context")
 	}
 
-	if err := sink.init(format, sink.ioCtx, options); err != nil {
+	if err := sink.init(format, sink.ioCtx, config); err != nil {
 		return nil, err
 	}
 
@@ -445,7 +445,7 @@ func (sink *BufferSink) Drain(byteCount uint) uint {
 func (sink *sinkBase) init(
 	format *C.AVOutputFormat,
 	ioCtx *C.AVIOContext,
-	options *SinkOptions,
+	config *SinkConfig,
 ) error {
 	if sink.formatCtx = C.avformat_alloc_context(); sink.formatCtx == nil {
 		return fmt.Errorf("failed to allocate format context")
@@ -454,7 +454,7 @@ func (sink *sinkBase) init(
 	sink.formatCtx.oformat = format
 	sink.formatCtx.pb = ioCtx
 
-	if options.BitExact {
+	if config.BitExact {
 		sink.formatCtx.flags |= C.AVFMT_FLAG_BITEXACT
 	}
 
@@ -465,29 +465,29 @@ func (sink *sinkBase) init(
 
 	// set the sample rate for the container
 	stream.time_base.num = 1
-	stream.time_base.den = C.int(options.SampleRate)
+	stream.time_base.den = C.int(config.SampleRate)
 
-	codec := options.getCodec()
+	codec := config.getCodec()
 	if codec == nil {
-		return fmt.Errorf("failed to find output encoder '%v'", options.Codec)
+		return fmt.Errorf("failed to find output encoder '%v'", config.Codec)
 	}
 
 	if sink.codecCtx = C.avcodec_alloc_context3(codec); sink.codecCtx == nil {
 		return fmt.Errorf("failed to allocate encoding context")
 	}
 
-	sink.codecCtx.channels, sink.codecCtx.channel_layout = options.getChannels()
-	sink.codecCtx.sample_rate = C.int(options.SampleRate)
-	sink.codecCtx.sample_fmt = options.getSampleFormat(codec.allowedFormats())
+	sink.codecCtx.channels, sink.codecCtx.channel_layout = config.getChannels()
+	sink.codecCtx.sample_rate = C.int(config.SampleRate)
+	sink.codecCtx.sample_fmt = config.getSampleFormat(codec.allowedFormats())
 	sink.codecCtx.time_base = stream.time_base
 
-	if options.CompressionLevel >= 0 {
-		sink.codecCtx.compression_level = C.int(options.CompressionLevel)
-	} else if options.Quality >= -1. {
+	if config.CompressionLevel >= 0 {
+		sink.codecCtx.compression_level = C.int(config.CompressionLevel)
+	} else if config.Quality >= -1. {
 		sink.codecCtx.flags |= C.AV_CODEC_FLAG_QSCALE
-		sink.codecCtx.global_quality = C.int(options.Quality * C.FF_QP2LAMBDA)
-	} else if options.BitRate != 0 {
-		sink.codecCtx.bit_rate = C.int64_t(options.BitRate)
+		sink.codecCtx.global_quality = C.int(config.Quality * C.FF_QP2LAMBDA)
+	} else if config.BitRate != 0 {
+		sink.codecCtx.bit_rate = C.int64_t(config.BitRate)
 	}
 
 	// some container formats (like MP4) require global headers to be present.
@@ -496,7 +496,7 @@ func (sink *sinkBase) init(
 		sink.codecCtx.flags |= C.AV_CODEC_FLAG_GLOBAL_HEADER
 	}
 
-	if options.BitExact {
+	if config.BitExact {
 		sink.codecCtx.flags |= C.AV_CODEC_FLAG_BITEXACT
 	}
 

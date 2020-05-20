@@ -42,12 +42,12 @@ func (ml *Library) handleStreamRequest(
 	*/
 
 	// set up sink
-	options := aurelib.NewSinkOptions()
-	options.ChannelLayout = srcStreamInfo.ChannelLayout()
-	options.SampleFormat = srcStreamInfo.SampleFormat()
-	options.SampleRate = srcStreamInfo.SampleRate
+	config := aurelib.NewSinkConfig()
+	config.ChannelLayout = srcStreamInfo.ChannelLayout()
+	config.SampleFormat = srcStreamInfo.SampleFormat()
+	config.SampleRate = srcStreamInfo.SampleRate
 
-	options.Codec = "pcm_s16le"
+	config.Codec = "pcm_s16le"
 	formatName := "wav"
 	mimeType := "audio/wav"
 	replayGainStr := "track"
@@ -58,15 +58,15 @@ func (ml *Library) handleStreamRequest(
 	if codec, ok := query["codec"]; ok {
 		switch codec[0] {
 		case "mp3":
-			options.Codec = "libmp3lame"
+			config.Codec = "libmp3lame"
 			formatName = "mp3"
 			mimeType = "audio/mp3"
 		case "vorbis":
-			options.Codec = "libvorbis"
+			config.Codec = "libvorbis"
 			formatName = "ogg"
 			mimeType = "audio/ogg"
 		case "flac":
-			options.Codec = "flac"
+			config.Codec = "flac"
 			formatName = "flac"
 			mimeType = "audio/flac"
 		case "wav":
@@ -79,7 +79,7 @@ func (ml *Library) handleStreamRequest(
 
 	if qualityArgs, ok := query["quality"]; ok {
 		if quality, err := strconv.ParseFloat(qualityArgs[0], 32); err == nil {
-			options.Quality = float32(quality)
+			config.Quality = float32(quality)
 		} else {
 			badRequest("invalid quality requested: %v (%v)\n", qualityArgs[0], err)
 			return
@@ -88,7 +88,7 @@ func (ml *Library) handleStreamRequest(
 
 	if kbitRateArgs, ok := query["kbitRate"]; ok {
 		if kbitRate, err := strconv.ParseUint(kbitRateArgs[0], 0, 0); err == nil {
-			options.BitRate = uint(kbitRate) * 1000
+			config.BitRate = uint(kbitRate) * 1000
 		} else {
 			badRequest("invalid kbit rate requested: %v (%v)\n", kbitRateArgs[0], err)
 			return
@@ -97,7 +97,7 @@ func (ml *Library) handleStreamRequest(
 
 	if sampleRateArgs, ok := query["sampleRate"]; ok {
 		if sampleRate, err := strconv.ParseUint(sampleRateArgs[0], 0, 0); err == nil {
-			options.SampleRate = uint(sampleRate)
+			config.SampleRate = uint(sampleRate)
 		} else {
 			badRequest("invalid sample rate requested: %v (%v)\n", sampleRateArgs[0], err)
 			return
@@ -105,10 +105,10 @@ func (ml *Library) handleStreamRequest(
 	}
 
 	if sampleFormatArgs, ok := query["sampleFormat"]; ok {
-		options.SampleFormat = sampleFormatArgs[0]
+		config.SampleFormat = sampleFormatArgs[0]
 	}
 	if channelLayoutArgs, ok := query["channelLayout"]; ok {
-		options.ChannelLayout = channelLayoutArgs[0]
+		config.ChannelLayout = channelLayoutArgs[0]
 	}
 	if replayGainArgs, ok := query["replayGain"]; ok {
 		replayGainStr = replayGainArgs[0]
@@ -156,10 +156,10 @@ func (ml *Library) handleStreamRequest(
 	}
 
 	if ml.config.DeterministicStreaming {
-		options.BitExact = true
+		config.BitExact = true
 	}
 
-	sink, err := aurelib.NewBufferSink(formatName, options)
+	sink, err := aurelib.NewBufferSink(formatName, config)
 	if err != nil {
 		internalError("failed to create sink: %v\n", err)
 		return

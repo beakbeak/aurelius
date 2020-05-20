@@ -152,7 +152,7 @@ func channelLayoutToString(channelLayout int64) string {
 }
 
 // ChannelLayout returns the stream's channel layout in a form that can be
-// assigned to SinkOptions.ChannelLayout. It is not human-readable.
+// assigned to SinkConfig.ChannelLayout. It is not human-readable.
 func (info *StreamInfo) ChannelLayout() string {
 	return channelLayoutToString(info.channelLayout)
 }
@@ -162,7 +162,7 @@ func sampleFormatToString(sampleFormat int32) string {
 }
 
 // SampleFormat returns an abbreviation of the stream's sample format ("s16",
-// "flt", "u8p", etc.). It can be assigned to SinkOptions.SampleFormat.
+// "flt", "u8p", etc.). It can be assigned to SinkConfig.SampleFormat.
 //
 // See FFmpeg's documentation for AVSampleFormat for a full list of formats.
 func (info *StreamInfo) SampleFormat() string {
