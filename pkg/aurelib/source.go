@@ -328,7 +328,7 @@ func (src *sourceBase) ReplayGain(
 // if the error is recoverable and Decode can be safely called again.
 func (src *sourceBase) Decode() (err error, recoverable bool) {
 	var packet C.AVPacket
-	packet.init()
+	initPacket(&packet)
 
 	if err := C.av_read_frame(src.formatCtx, &packet); err == C.avErrorEOF() {
 		// return?
@@ -416,7 +416,7 @@ func (src *sourceBase) Tags() map[string]string {
 // StreamInfo returns an object describing the format of audio data produced by
 // the Source.
 func (src *sourceBase) StreamInfo() StreamInfo {
-	return src.codecCtx.streamInfo()
+	return streamInfoFromCodecContext(src.codecCtx)
 }
 
 // Duration returns the duration of the audio stream.

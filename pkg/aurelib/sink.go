@@ -228,7 +228,7 @@ func (config *SinkConfig) getChannels() (C.int, C.uint64_t) {
 	return channels, channelLayout
 }
 
-func (codec *C.AVCodec) allowedFormats() []C.enum_AVSampleFormat {
+func allowedFormatsFromCodec(codec *C.AVCodec) []C.enum_AVSampleFormat {
 	if codec.sample_fmts == nil {
 		return []C.enum_AVSampleFormat{C.AV_SAMPLE_FMT_NONE}
 	}
@@ -478,7 +478,7 @@ func (sink *sinkBase) init(
 
 	sink.codecCtx.channels, sink.codecCtx.channel_layout = config.getChannels()
 	sink.codecCtx.sample_rate = C.int(config.SampleRate)
-	sink.codecCtx.sample_fmt = config.getSampleFormat(codec.allowedFormats())
+	sink.codecCtx.sample_fmt = config.getSampleFormat(allowedFormatsFromCodec(codec))
 	sink.codecCtx.time_base = stream.time_base
 
 	if config.CompressionLevel >= 0 {
@@ -556,7 +556,7 @@ func (sink *sinkBase) Encode(frame Frame) (done bool, err error) {
 
 func (sink *sinkBase) write() (eof bool, _ error) {
 	var packet C.AVPacket
-	packet.init()
+	initPacket(&packet)
 	defer C.av_packet_unref(&packet)
 
 	for {
@@ -590,7 +590,7 @@ func (sink *sinkBase) WriteTrailer() error {
 // StreamInfo returns an object describing the format of audio data accepted by
 // the Sink.
 func (sink *sinkBase) StreamInfo() StreamInfo {
-	return sink.codecCtx.streamInfo()
+	return streamInfoFromCodecContext(sink.codecCtx)
 }
 
 // FlushSink flushes a Sink by passing an empty Frame to Encode and calling

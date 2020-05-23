@@ -114,13 +114,13 @@ func avErr2Str(code C.int) string {
 	return C.GoString(&buffer[0])
 }
 
-func (packet *C.AVPacket) init() {
+func initPacket(packet *C.AVPacket) {
 	C.av_init_packet(packet)
 	packet.data = nil
 	packet.size = 0
 }
 
-func (ctx *C.AVCodecContext) channelLayout() C.int64_t {
+func channelLayoutFromCodecContext(ctx *C.AVCodecContext) C.int64_t {
 	if ctx.channel_layout != 0 {
 		return C.int64_t(ctx.channel_layout)
 	}
@@ -135,11 +135,11 @@ type StreamInfo struct {
 	channelLayout int64
 }
 
-func (ctx *C.AVCodecContext) streamInfo() StreamInfo {
+func streamInfoFromCodecContext(ctx *C.AVCodecContext) StreamInfo {
 	return StreamInfo{
 		SampleRate:    uint(ctx.sample_rate),
 		sampleFormat:  ctx.sample_fmt,
-		channelLayout: int64(ctx.channelLayout()),
+		channelLayout: int64(channelLayoutFromCodecContext(ctx)),
 	}
 }
 
