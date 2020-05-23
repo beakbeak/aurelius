@@ -77,8 +77,7 @@ func init() {
 	SetLogLevel(LogPanic)
 }
 
-// SetLogLevel controls the verbosity of FFmpeg's console logging. The default
-// level is LogPanic.
+// SetLogLevel controls the verbosity of FFmpeg's console logging. (Default: LogPanic)
 func SetLogLevel(level LogLevel) {
 	var avLevel C.int
 

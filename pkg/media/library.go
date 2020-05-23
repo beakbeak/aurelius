@@ -1,3 +1,5 @@
+// Package media provides an HTTP API for exploring and streaming a library of
+// audio media files.
 package media
 
 import (
@@ -11,10 +13,15 @@ import (
 	"time"
 )
 
+// LibraryConfig contains configuration parameters used by NewLibrary. It should
+// be created with NewLibraryConfig to provide default values.
 type LibraryConfig struct {
-	Prefix   string
-	RootPath string
-	HtmlPath string
+	RootPath string // The path to the media files in the local filesystem.
+	HtmlPath string // The path to the bundled HTML files in the local filesystem.
+
+	// Prefix is the URL path prefix used for HTTP requests routed to the
+	// Library. (Default: "/media")
+	Prefix string
 
 	// PlayAhead controls how far beyond the current play position to stream
 	// when streaming is throttled. (Default: 10s)
@@ -31,6 +38,7 @@ type LibraryConfig struct {
 	DeterministicStreaming bool
 }
 
+// NewLibraryConfig creates a new LibraryConfig object with default values.
 func NewLibraryConfig() *LibraryConfig {
 	return &LibraryConfig{
 		Prefix:            "/media",
@@ -39,6 +47,8 @@ func NewLibraryConfig() *LibraryConfig {
 	}
 }
 
+// A Library provides an HTTP API for exploring and streaming a library of audio
+// media files.
 type Library struct {
 	config LibraryConfig
 
@@ -49,6 +59,7 @@ type Library struct {
 	reTrackPath    *regexp.Regexp
 }
 
+// NewLibrary creates a new Library object.
 func NewLibrary(config *LibraryConfig) (*Library, error) {
 	var err error
 

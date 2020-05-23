@@ -7,14 +7,15 @@ import (
 	"sb/aurelius/pkg/aurelib"
 )
 
+// A LogLevel represents the verbosity of console logging.
 type LogLevel int
 
 const (
-	LogInfo LogLevel = iota
-	LogDebug
-	LogNoise
+	LogInfo  LogLevel = iota // Low-volume status information.
+	LogDebug                 // Information useful for general debugging.
+	LogNoise                 // High-volume debugging information useful in specific situations.
 	LogLevelCount
-	LogNone LogLevel = -1
+	LogNone LogLevel = -1 // Logging is disabled.
 )
 
 var (
@@ -32,6 +33,7 @@ func init() {
 	}
 }
 
+// SetLogLevel controls the verbosity of console logging. (Default: LogNone)
 func SetLogLevel(level LogLevel) {
 	if logLevel == level {
 		return
