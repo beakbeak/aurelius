@@ -28,12 +28,17 @@ func (ml *Library) toLibraryPath(fsPath string) (string, error) {
 }
 
 func (ml *Library) toLibraryPathWithContext(fsPath, context string) (string, error) {
+	realFsPath, err := filepath.EvalSymlinks(fsPath)
+	if err != nil {
+		return "", err
+	}
+
 	realContext, err := filepath.EvalSymlinks(context)
 	if err != nil {
 		return "", err
 	}
 
-	fsPathInContext, err := filepath.Rel(realContext, fsPath)
+	fsPathInContext, err := filepath.Rel(realContext, realFsPath)
 	if err != nil {
 		return "", err
 	}
