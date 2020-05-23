@@ -21,10 +21,10 @@ let unfavoriteButton: HTMLElement;
 let _seekSliderPosition: number | undefined;
 
 function getElement(
-    container: HTMLElement,
+    ancestor: HTMLElement,
     id: string,
 ): HTMLElement {
-    const element = container.querySelector(`#${id}`);
+    const element = ancestor.querySelector(`#${id}`);
     if (element === null) {
         throw new Error(`missing ${id}`);
     }

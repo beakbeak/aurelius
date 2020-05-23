@@ -5,6 +5,7 @@ export function sendJsonRequest<Response>(
 ): Promise<Response> {
     const req = new XMLHttpRequest();
     req.open(method, url);
+
     return new Promise((resolve, reject) => {
         req.onreadystatechange = () => {
             if (req.readyState !== req.DONE) {

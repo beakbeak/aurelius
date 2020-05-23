@@ -25,6 +25,22 @@ export interface StreamConfig {
 //    preventClipping?: boolean;
 }
 
+function streamQueryString(
+    config: StreamConfig,
+    startTime = 0,
+): string {
+    const keys = Object.keys(config) as (keyof StreamConfig)[];
+    let query = "";
+    let i = 0;
+    for (; i < keys.length; ++i) {
+        query += `${i === 0 ? "?" : "&"}${keys[i]}=${config[keys[i]]}`;
+    }
+    if (startTime > 0) {
+        query += `${i === 0 ? "?" : "&"}startTime=${startTime}s`;
+    }
+    return query;
+}
+
 export class Track {
     private _listeners: { name: string; func: any; }[] = [];
 
@@ -48,22 +64,6 @@ export class Track {
         this._audio.src = "";
     }
 
-    private static streamQuery(
-        config: StreamConfig,
-        startTime = 0,
-    ): string {
-        const keys = Object.keys(config) as (keyof StreamConfig)[];
-        let query = "";
-        let i = 0;
-        for (; i < keys.length; ++i) {
-            query += `${i === 0 ? "?" : "&"}${keys[i]}=${config[keys[i]]}`;
-        }
-        if (startTime > 0) {
-            query += `${i === 0 ? "?" : "&"}startTime=${startTime}s`;
-        }
-        return query;
-    }
-
     public static async fetch(
         url: string,
         streamConfig: StreamConfig,
@@ -85,7 +85,7 @@ export class Track {
         audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
         const playablePromise = new Promise<void>((resolve, reject) => {
-            audio.src = `${url}/stream${Track.streamQuery(streamConfig, startTime)}`;
+            audio.src = `${url}/stream${streamQueryString(streamConfig, startTime)}`;
             audio.oncanplay = () => {
                 resolve();
             };

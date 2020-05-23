@@ -16,20 +16,20 @@ func (ml *Library) handleStreamRequest(
 		w.WriteHeader(status)
 		logger(LogDebug).Printf(format, args...)
 	}
-	internalError := func(format string, args ...interface{}) {
+	rejectInternalError := func(format string, args ...interface{}) {
 		reject(http.StatusInternalServerError, format, args...)
 	}
-	badRequest := func(format string, args ...interface{}) {
+	rejectBadRequest := func(format string, args ...interface{}) {
 		reject(http.StatusBadRequest, format, args...)
 	}
-	notFound := func(format string, args ...interface{}) {
+	rejectNotFound := func(format string, args ...interface{}) {
 		reject(http.StatusNotFound, format, args...)
 	}
 
 	// set up source
 	src, err := newAudioSource(path)
 	if err != nil {
-		notFound("failed to open '%v': %v\n", path, err)
+		rejectNotFound("failed to open '%v': %v\n", path, err)
 		return
 	}
 	defer src.Destroy()
@@ -71,7 +71,7 @@ func (ml *Library) handleStreamRequest(
 		case "wav":
 			// already set up
 		default:
-			badRequest("unknown codec requested: %v\n", codec[0])
+			rejectBadRequest("unknown codec requested: %v\n", codec[0])
 			return
 		}
 	}
@@ -80,7 +80,7 @@ func (ml *Library) handleStreamRequest(
 		if quality, err := strconv.ParseFloat(qualityArgs[0], 32); err == nil {
 			config.Quality = float32(quality)
 		} else {
-			badRequest("invalid quality requested: %v (%v)\n", qualityArgs[0], err)
+			rejectBadRequest("invalid quality requested: %v (%v)\n", qualityArgs[0], err)
 			return
 		}
 	}
@@ -89,7 +89,7 @@ func (ml *Library) handleStreamRequest(
 		if kbitRate, err := strconv.ParseUint(kbitRateArgs[0], 0, 0); err == nil {
 			config.BitRate = uint(kbitRate) * 1000
 		} else {
-			badRequest("invalid kbit rate requested: %v (%v)\n", kbitRateArgs[0], err)
+			rejectBadRequest("invalid kbit rate requested: %v (%v)\n", kbitRateArgs[0], err)
 			return
 		}
 	}
@@ -98,7 +98,7 @@ func (ml *Library) handleStreamRequest(
 		if sampleRate, err := strconv.ParseUint(sampleRateArgs[0], 0, 0); err == nil {
 			config.SampleRate = uint(sampleRate)
 		} else {
-			badRequest("invalid sample rate requested: %v (%v)\n", sampleRateArgs[0], err)
+			rejectBadRequest("invalid sample rate requested: %v (%v)\n", sampleRateArgs[0], err)
 			return
 		}
 	}
@@ -115,7 +115,7 @@ func (ml *Library) handleStreamRequest(
 
 	if preventClippingArgs, ok := query["preventClipping"]; ok {
 		if preventClipping, err = strconv.ParseBool(preventClippingArgs[0]); err != nil {
-			badRequest("invalid value for preventClipping: %v (%v)\n", preventClippingArgs[0], err)
+			rejectBadRequest("invalid value for preventClipping: %v (%v)\n", preventClippingArgs[0], err)
 			return
 		}
 	}
@@ -129,7 +129,7 @@ func (ml *Library) handleStreamRequest(
 	case "off":
 		// already set up
 	default:
-		badRequest("invalid ReplayGain mode: %v\n", replayGainStr)
+		rejectBadRequest("invalid ReplayGain mode: %v\n", replayGainStr)
 		return
 	}
 
@@ -142,10 +142,10 @@ func (ml *Library) handleStreamRequest(
 	if startTimeArgs, ok := query["startTime"]; ok {
 		startTime, err := time.ParseDuration(startTimeArgs[0])
 		if err != nil {
-			badRequest("invalid start time: %v (%v)\n", startTimeArgs[0], err)
+			rejectBadRequest("invalid start time: %v (%v)\n", startTimeArgs[0], err)
 			return
 		} else if startTime < 0 {
-			badRequest("invalid start time: %v\n", startTimeArgs[0])
+			rejectBadRequest("invalid start time: %v\n", startTimeArgs[0])
 			return
 		} else if startTime > 0 {
 			if err := src.SeekTo(startTime); err != nil {
@@ -160,7 +160,7 @@ func (ml *Library) handleStreamRequest(
 
 	sink, err := aurelib.NewBufferSink(formatName, config)
 	if err != nil {
-		internalError("failed to create sink: %v\n", err)
+		rejectInternalError("failed to create sink: %v\n", err)
 		return
 	}
 	defer sink.Destroy()
@@ -170,7 +170,7 @@ func (ml *Library) handleStreamRequest(
 	// set up FIFO
 	fifo, err := aurelib.NewFifo(sinkStreamInfo)
 	if err != nil {
-		internalError("failed to create FIFO: %v\n", err)
+		rejectInternalError("failed to create FIFO: %v\n", err)
 		return
 	}
 	defer fifo.Destroy()
@@ -178,13 +178,13 @@ func (ml *Library) handleStreamRequest(
 	// set up resampler
 	resampler, err := aurelib.NewResampler()
 	if err != nil {
-		internalError("failed to create resampler: %v\n", err)
+		rejectInternalError("failed to create resampler: %v\n", err)
 		return
 	}
 	defer resampler.Destroy()
 
 	if err := resampler.Setup(srcStreamInfo, sinkStreamInfo, volume); err != nil {
-		internalError("failed to setup resampler: %v\n", err)
+		rejectInternalError("failed to setup resampler: %v\n", err)
 		return
 	}
 

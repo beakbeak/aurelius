@@ -15,25 +15,27 @@
 export default class EventDispatcher<
     EventMap extends Record<keyof EventMap, (...args: any[]) => any>
 > {
-    private _listeners: {[key: string]: ((...args: any[]) => any)[] | undefined} = {};
+    private _listeners: {[eventName: string]: ((...args: any[]) => any)[] | undefined} = {};
 
+    /** Set a function to be called when a particular event is dispatched. */
     public addEventListener<K extends keyof EventMap>(
-        key: K,
+        eventName: K,
         value: EventMap[K],
     ): void {
-        let listeners = this._listeners[key as string];
+        let listeners = this._listeners[eventName as string];
         if (listeners === undefined) {
             listeners = [];
-            this._listeners[key as string] = listeners;
+            this._listeners[eventName as string] = listeners;
         }
         listeners.push(value);
     }
 
+    /** Call each listener of a given event with the supplied arguments. */
     protected dispatchEvent<K extends keyof EventMap>(
-        key: K,
+        eventName: K,
         ...args: Parameters<EventMap[K]>
     ): void {
-        let listeners = this._listeners[key as string];
+        let listeners = this._listeners[eventName as string];
         if (listeners === undefined) {
             return;
         }
@@ -43,17 +45,19 @@ export default class EventDispatcher<
         }
     }
 
+    /** Execute `callback` once for each listener of each event. */
     protected forEachEventListener(
-        callback: (key: string, listener: (...args: any[]) => any) => void
+        callback: (eventName: string, listener: (...args: any[]) => any) => void,
     ): void {
-        for (const key of Object.keys(this._listeners)) {
-            const listenerArray = this._listeners[key]!;
+        for (const eventName of Object.keys(this._listeners)) {
+            const listenerArray = this._listeners[eventName]!;
             for (const listener of listenerArray) {
-                callback(key, listener);
+                callback(eventName, listener);
             }
         }
     }
 
+    /** Remove all listeners. */
     protected clearEventListeners() {
         this._listeners = {};
     }

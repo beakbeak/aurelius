@@ -45,7 +45,7 @@ var (
 	}
 )
 
-/* Baselines ******************************************************************/
+// Baselines ///////////////////////////////////////////////////////////////////
 
 type Baseline struct {
 	TrackInfo    map[string]interface{} // result of "/info" request
@@ -96,7 +96,7 @@ func writeBaselines(b BaselineMap) {
 	}
 }
 
-/* General utilities **********************************************************/
+// General utilities ///////////////////////////////////////////////////////////
 
 func simpleRequestWithStatus(
 	t *testing.T,
@@ -212,7 +212,7 @@ func combineQueryArgs(argTables [][]ArgTableEntry) []string {
 	return queryStrings
 }
 
-/* JSON utilities *************************************************************/
+// JSON utilities //////////////////////////////////////////////////////////////
 
 func jsonEqual(
 	t *testing.T,
@@ -258,7 +258,7 @@ func unmarshalJson(
 	}
 }
 
-/* Library utilities **********************************************************/
+// Library utilities ///////////////////////////////////////////////////////////
 
 func createDefaultLibrary(t *testing.T) *media.Library {
 	clearFavorites(t)
@@ -370,7 +370,7 @@ func getDirInfo(
 	return info
 }
 
-/* Tests **********************************************************************/
+// Tests ///////////////////////////////////////////////////////////////////////
 
 func TestTrackInfo(t *testing.T) {
 	ml := createDefaultLibrary(t)

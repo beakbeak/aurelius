@@ -11,8 +11,7 @@ export interface Playlist {
     random(): Promise<PlaylistItem | undefined>;
 }
 
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
-// The maximum is exclusive and the minimum is inclusive
+/** Return a random integer in the range `[min, max)`.*/
 function randomInt(
     min: number,
     max: number,
@@ -22,6 +21,7 @@ function randomInt(
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+/** A playlist constructed and stored by the client. */
 export class LocalPlaylist implements Playlist {
     private readonly _urls: string[];
 
@@ -50,6 +50,10 @@ export class LocalPlaylist implements Playlist {
     }
 }
 
+/**
+ * A playlist managed by the server. The client does not store the full contents
+ * of the playlist.
+ */
 export class RemotePlaylist implements Playlist {
     public readonly url: string;
 

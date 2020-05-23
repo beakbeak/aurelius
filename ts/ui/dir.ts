@@ -10,7 +10,6 @@ let trackList: HTMLElement;
 export default async function setupDirUi(
     inPlayer: Player,
     containerId: string,
-    url?: string,
 ) {
     const container = document.getElementById(containerId);
     if (container === null) {
@@ -42,6 +41,10 @@ export default async function setupDirUi(
     await loadDir();
 }
 
+/**
+ * Populate directory listing with the contents at the given URL and update
+ * history. If `url` is `undefined`, the window's current URL is used.
+ */
 export async function loadDir(url?: string): Promise<void> {
     if (url === undefined) { // first call
         window.history.replaceState({}, "");

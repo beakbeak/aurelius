@@ -1,3 +1,12 @@
+/**
+ * Set up temporary event listeners to handle a single touch- or mouse-based
+ * drag operation.
+ *
+ * @param onMove A function to be called when the mouse or touch position moves.
+ * @param onStop A function to be called when the drag operation stops.
+ * @param touchId The identifier of the touch that started the drag operation.
+ * If `undefined`, it is a mouse-based drag operation.
+ */
 export function onDrag(
     onMove: (x: number, y: number) => void,
     onStop: (x: number, y: number) => void,
