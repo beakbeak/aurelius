@@ -54,9 +54,9 @@ type Library struct {
 
 	playlistCache *textcache.TextCache
 
-	reDirPath      *regexp.Regexp
-	rePlaylistPath *regexp.Regexp
-	reTrackPath    *regexp.Regexp
+	reDirPath          *regexp.Regexp
+	reFileResourcePath *regexp.Regexp
+	rePlaylistPath     *regexp.Regexp
 }
 
 // NewLibrary creates a new Library object.
@@ -81,9 +81,9 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 
 		playlistCache: textcache.New(),
 
-		reDirPath:      regexp.MustCompile(`^` + quotedPrefix + `/((.*?)/)?$`),
-		rePlaylistPath: regexp.MustCompile(`^` + quotedPrefix + `/((?i).+?\.m3u)$`),
-		reTrackPath:    regexp.MustCompile(`^` + quotedPrefix + `/(.+?)/([^/]+)$`),
+		reDirPath:          regexp.MustCompile(`^` + quotedPrefix + `/((.*?)/)?$`),
+		reFileResourcePath: regexp.MustCompile(`^` + quotedPrefix + `/(.+?)/([^/]+)$`),
+		rePlaylistPath:     regexp.MustCompile(`^(?i).+?\.m3u$`),
 	}
 
 	logger(LogDebug).Printf(
@@ -104,20 +104,23 @@ func (ml *Library) ServeHTTP(
 	logger(LogDebug).Printf("media request: %v\n", req.URL.Path)
 
 	if matches := ml.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
+		libraryPath := matches[2]
+
 		logger(LogDebug).Println("dir request", matches)
-		ml.handleDirRequest(matches[2], w, req)
+		ml.handleDirRequest(libraryPath, w, req)
 		return
 	}
+	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
+		libraryPath := matches[1]
+		resource := matches[2]
 
-	if matches := ml.rePlaylistPath.FindStringSubmatch(req.URL.Path); matches != nil {
-		logger(LogDebug).Println("playlist request", matches)
-		ml.handlePlaylistRequest(matches[1], w, req)
-		return
-	}
-
-	if matches := ml.reTrackPath.FindStringSubmatch(req.URL.Path); matches != nil {
+		if ml.rePlaylistPath.FindStringSubmatch(libraryPath) != nil {
+			logger(LogDebug).Println("playlist request", matches)
+			ml.handlePlaylistRequest(libraryPath, resource, w, req)
+			return
+		}
 		logger(LogDebug).Println("track request", matches)
-		ml.handleTrackRequest(matches[1], matches[2], w, req)
+		ml.handleTrackRequest(libraryPath, resource, w, req)
 		return
 	}
 

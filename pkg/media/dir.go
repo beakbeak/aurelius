@@ -16,14 +16,14 @@ var (
 )
 
 func (ml *Library) handleDirRequest(
-	libraryDirPath string,
+	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
 	query := req.URL.Query()
 
 	if _, ok := query["info"]; ok {
-		ml.handleDirInfoRequest(libraryDirPath, w)
+		ml.handleDirInfoRequest(libraryPath, w)
 		return
 	}
 

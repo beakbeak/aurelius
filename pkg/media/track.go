@@ -13,13 +13,13 @@ import (
 const favoritesPath = "Favorites.m3u"
 
 func (ml *Library) handleTrackRequest(
-	urlPath string,
-	subRequest string,
+	libraryPath string,
+	resource string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	filePath := ml.toFileSystemPath(urlPath)
-	if info, err := os.Stat(filePath); err != nil || !info.Mode().IsRegular() {
+	fsPath := ml.toFileSystemPath(libraryPath)
+	if info, err := os.Stat(fsPath); err != nil || !info.Mode().IsRegular() {
 		http.NotFound(w, req)
 		return
 	}
@@ -28,33 +28,37 @@ func (ml *Library) handleTrackRequest(
 
 	switch req.Method {
 	case http.MethodGet:
-		switch subRequest {
+		switch resource {
 		case "stream":
-			ml.handleStreamRequest(filePath, w, req)
+			ml.handleTrackStreamRequest(fsPath, w, req)
 		case "info":
-			ml.handleInfoRequest(urlPath, filePath, w, req)
+			ml.handleTrackInfoRequest(libraryPath, fsPath, w, req)
 		default:
 			handled = false
 		}
+
 	case http.MethodPost:
-		switch subRequest {
+		switch resource {
 		case "favorite":
-			if err := ml.setFavorite(urlPath, true); err != nil {
+			if err := ml.setFavorite(libraryPath, true); err != nil {
 				logger(LogDebug).Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
 			}
+
 		case "unfavorite":
-			if err := ml.setFavorite(urlPath, false); err != nil {
+			if err := ml.setFavorite(libraryPath, false); err != nil {
 				logger(LogDebug).Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
 			}
+
 		default:
 			handled = false
 		}
+
 	default:
 		handled = false
 	}
@@ -64,15 +68,15 @@ func (ml *Library) handleTrackRequest(
 	}
 }
 
-func (ml *Library) handleInfoRequest(
+func (ml *Library) handleTrackInfoRequest(
 	urlPath string,
-	filePath string,
+	fsPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	src, err := newAudioSource(filePath)
+	src, err := newAudioSource(fsPath)
 	if err != nil {
-		logger(LogDebug).Printf("failed to open source '%v': %v\n", filePath, err)
+		logger(LogDebug).Printf("failed to open source '%v': %v\n", fsPath, err)
 		http.NotFound(w, req)
 		return
 	}
@@ -88,7 +92,7 @@ func (ml *Library) handleInfoRequest(
 	}
 
 	result := Result{
-		Name:            filepath.Base(filePath),
+		Name:            filepath.Base(fsPath),
 		Duration:        float64(src.Duration()) / float64(time.Second),
 		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
 		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),

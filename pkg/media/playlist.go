@@ -8,6 +8,7 @@ import (
 
 func (ml *Library) handlePlaylistRequest(
 	libraryPath string,
+	resource string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
@@ -18,16 +19,25 @@ func (ml *Library) handlePlaylistRequest(
 		logger(LogDebug).Printf("failed to load '%v': %v", fsPath, err)
 	}
 
-	query := req.URL.Query()
-	if posStr, ok := query["pos"]; ok {
+	switch resource {
+	case "info":
+		type Result struct {
+			Length int `json:"length"`
+		}
+
+		writeJson(w, Result{
+			Length: len(lines),
+		})
+
+	default: // element index
 		if len(lines) < 1 {
 			writeJson(w, nil)
 			return
 		}
 
-		pos64, err := strconv.ParseInt(posStr[0], 0, 0)
+		pos64, err := strconv.ParseInt(resource, 0, 0)
 		if err != nil {
-			logger(LogDebug).Printf("failed to parse playlist position '%v': %v\n", posStr, err)
+			logger(LogDebug).Printf("failed to parse playlist position '%v': %v\n", resource, err)
 			writeJson(w, nil)
 			return
 		}
@@ -46,14 +56,6 @@ func (ml *Library) handlePlaylistRequest(
 		writeJson(w, Result{
 			Pos:  pos,
 			Path: ml.toUrlPath(path.Join(path.Dir(libraryPath), lines[pos])),
-		})
-	} else {
-		type Result struct {
-			Length int `json:"length"`
-		}
-
-		writeJson(w, Result{
-			Length: len(lines),
 		})
 	}
 }

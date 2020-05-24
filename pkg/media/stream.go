@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func (ml *Library) handleStreamRequest(
-	path string,
+func (ml *Library) handleTrackStreamRequest(
+	fsPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
@@ -27,9 +27,9 @@ func (ml *Library) handleStreamRequest(
 	}
 
 	// set up source
-	src, err := newAudioSource(path)
+	src, err := newAudioSource(fsPath)
 	if err != nil {
-		rejectNotFound("failed to open '%v': %v\n", path, err)
+		rejectNotFound("failed to open '%v': %v\n", fsPath, err)
 		return
 	}
 	defer src.Destroy()

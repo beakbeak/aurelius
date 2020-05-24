@@ -315,7 +315,7 @@ func getPlaylistEntry(
 	path string,
 	pos int,
 ) PlaylistEntry {
-	url := fmt.Sprintf("%s?pos=%v", path, pos)
+	url := fmt.Sprintf("%s/%v", path, pos)
 	jsonBytes := simpleRequest(t, handler, "GET", url, "")
 
 	var entry PlaylistEntry
@@ -329,7 +329,7 @@ func getPlaylistEntryShouldFail(
 	path string,
 	pos int,
 ) {
-	url := fmt.Sprintf("%s?pos=%v", path, pos)
+	url := fmt.Sprintf("%s/%v", path, pos)
 	jsonBytes := simpleRequest(t, handler, "GET", url, "")
 
 	if !jsonEqual(t, jsonBytes, []byte("null")) {
@@ -342,12 +342,12 @@ func getPlaylistLength(
 	handler http.Handler,
 	libraryPath string,
 ) int {
-	jsonBytes := simpleRequest(t, handler, "GET", libraryPath, "")
+	jsonBytes := simpleRequest(t, handler, "GET", libraryPath+"/info", "")
 
-	var playlist struct{ Length int }
-	unmarshalJson(t, jsonBytes, &playlist)
+	var info struct{ Length int }
+	unmarshalJson(t, jsonBytes, &info)
 
-	return playlist.Length
+	return info.Length
 }
 
 type PathUrl struct {

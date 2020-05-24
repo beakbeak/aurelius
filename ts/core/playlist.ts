@@ -71,7 +71,7 @@ export class RemotePlaylist implements Playlist {
         interface Info {
             length: number;
         }
-        const info = await fetchJson<Info>(url);
+        const info = await fetchJson<Info>(`${url}/info`);
         return new RemotePlaylist(url, info.length);
     }
 
@@ -81,7 +81,7 @@ export class RemotePlaylist implements Playlist {
 
     public async at(pos: number): Promise<PlaylistItem | undefined> {
         return nullToUndefined(await fetchJson<PlaylistItem | null>(
-            `${this.url}?pos=${pos}`
+            `${this.url}/${pos}`
         ));
     }
 
@@ -90,7 +90,7 @@ export class RemotePlaylist implements Playlist {
             return Promise.resolve(undefined);
         }
         return nullToUndefined(await fetchJson<PlaylistItem | null>(
-            `${this.url}?pos=${randomInt(0, this._length)}`
+            `${this.url}/${randomInt(0, this._length)}`
         ));
     }
 }
