@@ -222,6 +222,58 @@
       "": "aeb74e36f99f08e1ed193d0e737f5f1bb269618cc7e3bbd824f25d4405f59400"
     }
   },
+  "test.m4a": {
+    "TrackInfo": {
+      "duration": 12.623,
+      "favorite": false,
+      "name": "test.m4a",
+      "replayGainAlbum": 0.9885530946569387,
+      "replayGainTrack": 0.9885530946569387,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "compatible_brands": "isomiso2",
+        "date": "2020",
+        "genre": "Test Data",
+        "handler_name": "SoundHandler",
+        "language": "und",
+        "major_brand": "M4A ",
+        "minor_version": "512",
+        "replaygain_track_gain": "-0.10 dB",
+        "replaygain_track_peak": "0.921441",
+        "title": "Aurelius Test Data",
+        "track": "1"
+      }
+    },
+    "StreamHashes": {
+      "": "b164446321f314b8b983d2ed62cd887d4428f8c12b3f7927592e6531d36a9599"
+    }
+  },
+  "test.mka": {
+    "TrackInfo": {
+      "duration": 12.602,
+      "favorite": false,
+      "name": "test.mka",
+      "replayGainAlbum": 0.9885530946569387,
+      "replayGainTrack": 0.9885530946569387,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "date_recorded": "2020",
+        "duration": "00:00:12.602000000",
+        "genre": "Test Data",
+        "replaygain_gain": "-0.10 dB",
+        "replaygain_peak": "0.921441",
+        "title": "Aurelius Test Data",
+        "track": "1"
+      }
+    },
+    "StreamHashes": {
+      "": "51f5d241d7398113cff35f42c553703ef8f8acbcad6bae62d1239a0025537fd1"
+    }
+  },
   "test.mp3": {
     "TrackInfo": {
       "duration": 12.669388,
@@ -235,7 +287,6 @@
         "comment": "Testing",
         "composer": "J. S. Bach",
         "date": "2020",
-        "encoder": "LAME3.100",
         "genre": "Test Data",
         "title": "Aurelius Test Data",
         "track": "1"

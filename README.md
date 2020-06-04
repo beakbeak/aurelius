@@ -73,7 +73,7 @@ Command-line arguments can also be passed to `docker run`.
 
 Supported metadata (non-exhaustive):
 
-- FLAC, Ogg Vorbis, MP3 tags applied with foobar2000
+- Tags applied with foobar2000 to most formats
 - FLAC tags applied with `metaflac --add-replay-gain`
 - Ogg Vorbis tags applied with vorbisgain
 - MP3 tags applied with
@@ -81,7 +81,7 @@ Supported metadata (non-exhaustive):
 
 Currently unsupported:
 
-- WAV, MKA, AAC tags applied with foobar2000
+- WAV tags applied with foobar2000
 - MP3 tags applied with unpatched mp3gain (RVA2 format)
 
 ## Development

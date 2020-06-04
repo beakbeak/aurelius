@@ -26,6 +26,9 @@ import "C"
 import (
 	"fmt"
 	"math"
+	"regexp"
+	"sb/aurelius/internal/maputil"
+	"strconv"
 	"time"
 	"unsafe"
 )
@@ -256,16 +259,25 @@ func (src *FileSource) DumpFormat() {
 	C.av_dump_format(src.formatCtx, 0, cPath, 0)
 }
 
-// ReplayGain returns the volume scale factor that should be applied based on
-// the audio stream's ReplayGain metadata and the supplied arguments.
-//
-// If preventClipping is true and peak volume information is available, the
-// returned value will be clamped such that the scaled peak volume does not
-// exceed the maximum representable value.
-func (src *sourceBase) ReplayGain(
+func volumeFromGain(gain float64) float64 {
+	return math.Pow(10, gain/20.)
+}
+
+func clampVolumeToPeak(
+	volume float64,
+	peak float64,
+) float64 {
+	invPeak := 1. / peak
+	if volume > invPeak {
+		volume = invPeak
+	}
+	return volume
+}
+
+func (src *sourceBase) replayGainFromSideData(
 	mode ReplayGainMode,
 	preventClipping bool,
-) float64 {
+) (float64, bool /*ok*/) {
 	var data *C.AVPacketSideData
 	for i := C.int(0); i < src.stream.nb_side_data; i++ {
 		address := uintptr(unsafe.Pointer(src.stream.side_data))
@@ -278,7 +290,7 @@ func (src *sourceBase) ReplayGain(
 		}
 	}
 	if data == nil {
-		return 1.
+		return 1., false
 	}
 
 	gainData := (*C.AVReplayGain)(unsafe.Pointer(data.data))
@@ -305,20 +317,90 @@ func (src *sourceBase) ReplayGain(
 	}
 
 	if !gainValid {
-		return 1.
+		return 1., false
 	}
 
 	gain /= 100000.
 	peak /= 100000.
 
-	volume := math.Pow(10, gain/20.)
+	volume := volumeFromGain(gain)
 	if preventClipping && peakValid {
-		invPeak := 1. / peak
-		if volume > invPeak {
-			volume = invPeak
+		volume = clampVolumeToPeak(volume, peak)
+	}
+	return volume, true
+}
+
+var reGain = regexp.MustCompile(`^([^ ]+) dB$`)
+
+func (src *sourceBase) replayGainFromTags(
+	mode ReplayGainMode,
+	preventClipping bool,
+) (float64, bool /*ok*/) {
+	var gainTags, peakTags []string
+
+	if mode == ReplayGainAlbum {
+		gainTags = []string{"replaygain_album_gain", "replaygain_track_gain", "replaygain_gain"}
+		peakTags = []string{"replaygain_album_peak", "replaygain_track_peak", "replaygain_peak"}
+	} else {
+		gainTags = []string{"replaygain_track_gain", "replaygain_album_gain", "replaygain_gain"}
+		peakTags = []string{"replaygain_track_peak", "replaygain_album_peak", "replaygain_peak"}
+	}
+
+	var gain, peak float64
+	var gainValid, peakValid bool
+
+	lowerCaseTags := maputil.LowerCaseKeys(src.tags)
+
+	for _, gainTag := range gainTags {
+		if gainString, ok := lowerCaseTags[gainTag]; ok {
+			if match := reGain.FindStringSubmatch(gainString); match != nil {
+				var err error
+				if gain, err = strconv.ParseFloat(match[1], 64); err == nil {
+					gainValid = true
+					break
+				}
+			}
 		}
 	}
-	return volume
+
+	if !gainValid {
+		return 1., false
+	}
+
+	for _, peakTag := range peakTags {
+		if peakString, ok := lowerCaseTags[peakTag]; ok {
+			var err error
+			if peak, err = strconv.ParseFloat(peakString, 64); err == nil {
+				peakValid = true
+				break
+			}
+		}
+	}
+
+	volume := volumeFromGain(gain)
+	if preventClipping && peakValid {
+		volume = clampVolumeToPeak(volume, peak)
+	}
+	return volume, true
+}
+
+// ReplayGain returns the volume scale factor that should be applied based on
+// the audio stream's ReplayGain metadata and the supplied arguments.
+//
+// If preventClipping is true and peak volume information is available, the
+// returned value will be clamped such that the scaled peak volume does not
+// exceed the maximum representable value.
+func (src *sourceBase) ReplayGain(
+	mode ReplayGainMode,
+	preventClipping bool,
+) float64 {
+	if volume, ok := src.replayGainFromSideData(mode, preventClipping); ok {
+		return volume
+	}
+	if volume, ok := src.replayGainFromTags(mode, preventClipping); ok {
+		return volume
+	}
+	return 1.
 }
 
 // Decode transfers an encoded packet from the input to the decoder. It must be

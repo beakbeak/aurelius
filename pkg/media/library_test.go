@@ -39,6 +39,8 @@ var (
 		"test.mp3",
 		"test.ogg",
 		"test.wav",
+		"test.mka",
+		"test.m4a",
 		"test.flac.1.txt",
 		"test.flac.2.txt",
 		"test.flac.3.txt",
@@ -258,6 +260,29 @@ func unmarshalJson(
 	}
 }
 
+func removeJsonElement(
+	obj interface{},
+	path ...string,
+) bool {
+	for index, pathElement := range path {
+		stringMap, ok := obj.(map[string]interface{})
+		if !ok {
+			return false
+		}
+
+		if index == (len(path) - 1) {
+			if _, ok = stringMap[pathElement]; ok {
+				delete(stringMap, pathElement)
+				return true
+			}
+			return false
+		}
+
+		obj = stringMap[pathElement]
+	}
+	return false
+}
+
 // Library utilities ///////////////////////////////////////////////////////////
 
 func createDefaultLibrary(t *testing.T) *media.Library {
@@ -393,6 +418,9 @@ func TestTrackInfo(t *testing.T) {
 			if err := json.Unmarshal(body, &trackInfo); err != nil {
 				t.Fatalf("failed to decode JSON: %v\n%s", err, indentJson(t, body))
 			}
+
+			// FFmpeg returns inconsistent values for "encoder" tag with .mka files
+			removeJsonElement(trackInfo, "tags", "encoder")
 
 			baseline := baselines[path]
 
