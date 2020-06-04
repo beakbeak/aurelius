@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sb/aurelius/internal/maputil"
 	"sb/aurelius/pkg/aurelib"
 	"sb/aurelius/pkg/fragment"
-	"strings"
 	"time"
 )
 
@@ -96,7 +96,7 @@ func (ml *Library) handleTrackInfoRequest(
 		Duration:        float64(src.Duration()) / float64(time.Second),
 		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
 		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
-		Tags:            lowerCaseKeys(src.Tags()),
+		Tags:            maputil.LowerCaseKeys(src.Tags()),
 	}
 
 	if favorite, err := ml.isFavorite(urlPath); err != nil {
@@ -161,23 +161,4 @@ func (ml *Library) setFavorite(
 			},
 		)
 	}
-}
-
-func filterKeys(
-	data map[string]string,
-	filter func(string) (string, bool),
-) map[string]string {
-	out := make(map[string]string, len(data))
-	for key, value := range data {
-		if outKey, ok := filter(key); ok {
-			out[outKey] = value
-		}
-	}
-	return out
-}
-
-func lowerCaseKeys(data map[string]string) map[string]string {
-	return filterKeys(data, func(s string) (string, bool) {
-		return strings.ToLower(s), true
-	})
 }
