@@ -36,7 +36,7 @@ func main() {
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = *mediaPath
-	mlConfig.HtmlPath = "html"
+	mlConfig.HtmlPath = filepath.Join("static", "html")
 
 	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
