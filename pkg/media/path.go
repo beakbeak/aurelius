@@ -71,8 +71,3 @@ func (ml *Library) toUrlPath(libraryPath string) string {
 	urlPath := path.Join(ml.config.Prefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
 }
-
-// toHtmlPath prepends the library's configured HTML path to its argument.
-func (ml *Library) toHtmlPath(path string) string {
-	return filepath.Join(ml.config.HtmlPath, path)
-}

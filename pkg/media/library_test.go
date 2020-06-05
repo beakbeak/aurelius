@@ -32,8 +32,6 @@ var (
 	favoritesLibraryPath = "/media/Favorites.m3u"
 	favoritesFilePath    = filepath.Join(testDataMediaPath, "Favorites.m3u")
 
-	htmlPath = filepath.Join("..", "..", "cmd", "aurelius")
-
 	testFiles = []string{
 		"test.flac",
 		"test.mp3",
@@ -102,13 +100,15 @@ func writeBaselines(b BaselineMap) {
 
 func simpleRequestWithStatus(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	method string,
 	path string,
 	requestBody string,
 ) ([]byte, int) {
 	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
+	if !ml.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody))) {
+		t.Fatal("ServeHTTP() returned false")
+	}
 	response := w.Result()
 	defer response.Body.Close()
 
@@ -121,12 +121,12 @@ func simpleRequestWithStatus(
 
 func simpleRequest(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	method string,
 	path string,
 	requestBody string,
 ) []byte {
-	responseBody, statusCode := simpleRequestWithStatus(t, handler, method, path, requestBody)
+	responseBody, statusCode := simpleRequestWithStatus(t, ml, method, path, requestBody)
 	if statusCode != http.StatusOK {
 		t.Fatalf("%s '%s' failed with code %v:\n%v", method, path, statusCode, string(responseBody))
 	}
@@ -135,12 +135,12 @@ func simpleRequest(
 
 func simpleRequestShouldFail(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	method string,
 	path string,
 	requestBody string,
 ) {
-	responseBody, statusCode := simpleRequestWithStatus(t, handler, method, path, requestBody)
+	responseBody, statusCode := simpleRequestWithStatus(t, ml, method, path, requestBody)
 	if statusCode == http.StatusOK {
 		t.Fatalf("%s '%s' succeeded but should have failed:\n%v", method, path, responseBody)
 	}
@@ -292,7 +292,6 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = testDataMediaPath
-	mlConfig.HtmlPath = htmlPath
 	mlConfig.ThrottleStreaming = false
 	mlConfig.DeterministicStreaming = true
 
@@ -318,10 +317,10 @@ func clearFavorites(t *testing.T) {
 
 func isFavorite(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	path string,
 ) bool {
-	jsonBytes := simpleRequest(t, handler, "GET", "/media/"+path+"/info", "")
+	jsonBytes := simpleRequest(t, ml, "GET", "/media/"+path+"/info", "")
 
 	var track struct{ Favorite bool }
 	unmarshalJson(t, jsonBytes, &track)
@@ -336,12 +335,12 @@ type PlaylistEntry struct {
 
 func getPlaylistEntry(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	path string,
 	pos int,
 ) PlaylistEntry {
 	url := fmt.Sprintf("%s/%v", path, pos)
-	jsonBytes := simpleRequest(t, handler, "GET", url, "")
+	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
 	var entry PlaylistEntry
 	unmarshalJson(t, jsonBytes, &entry)
@@ -350,12 +349,12 @@ func getPlaylistEntry(
 
 func getPlaylistEntryShouldFail(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	path string,
 	pos int,
 ) {
 	url := fmt.Sprintf("%s/%v", path, pos)
-	jsonBytes := simpleRequest(t, handler, "GET", url, "")
+	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
 	if !jsonEqual(t, jsonBytes, []byte("null")) {
 		t.Fatalf("expected %s to be null, got %v", url, string(jsonBytes))
@@ -364,10 +363,10 @@ func getPlaylistEntryShouldFail(
 
 func getPlaylistLength(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	libraryPath string,
 ) int {
-	jsonBytes := simpleRequest(t, handler, "GET", libraryPath+"/info", "")
+	jsonBytes := simpleRequest(t, ml, "GET", libraryPath+"/info", "")
 
 	var info struct{ Length int }
 	unmarshalJson(t, jsonBytes, &info)
@@ -385,10 +384,10 @@ type DirInfo struct {
 
 func getDirInfo(
 	t *testing.T,
-	handler http.Handler,
+	ml *media.Library,
 	path string,
 ) DirInfo {
-	jsonBytes := simpleRequest(t, handler, "GET", path+"/?info", "")
+	jsonBytes := simpleRequest(t, ml, "GET", path+"/?info", "")
 
 	var info DirInfo
 	unmarshalJson(t, jsonBytes, &info)

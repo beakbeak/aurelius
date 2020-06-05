@@ -17,7 +17,6 @@ import (
 // be created with NewLibraryConfig to provide default values.
 type LibraryConfig struct {
 	RootPath string // The path to the media files in the local filesystem.
-	HtmlPath string // The path to the bundled HTML files in the local filesystem.
 
 	// Prefix is the URL path prefix used for HTTP requests routed to the
 	// Library. (Default: "/media")
@@ -92,13 +91,17 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 	return &ml, nil
 }
 
+// ServeHTTP handles an HTTP request. It returns true if the request was
+// handled, and false if a directory was requested without a query string. In
+// this case, the caller should handle the request by serving HTML for the user
+// interface.
 func (ml *Library) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
-) {
+) bool {
 	if req.URL.Path == ml.config.Prefix {
 		http.Redirect(w, req, ml.config.Prefix+"/", http.StatusFound)
-		return
+		return true
 	}
 
 	logger(LogDebug).Printf("media request: %v\n", req.URL.Path)
@@ -107,8 +110,7 @@ func (ml *Library) ServeHTTP(
 		libraryPath := matches[2]
 
 		logger(LogDebug).Println("dir request", matches)
-		ml.handleDirRequest(libraryPath, w, req)
-		return
+		return ml.handleDirRequest(libraryPath, w, req)
 	}
 	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[1]
@@ -117,14 +119,15 @@ func (ml *Library) ServeHTTP(
 		if ml.rePlaylistPath.FindStringSubmatch(libraryPath) != nil {
 			logger(LogDebug).Println("playlist request", matches)
 			ml.handlePlaylistRequest(libraryPath, resource, w, req)
-			return
+			return true
 		}
 		logger(LogDebug).Println("track request", matches)
 		ml.handleTrackRequest(libraryPath, resource, w, req)
-		return
+		return true
 	}
 
 	http.NotFound(w, req)
+	return true
 }
 
 func writeJson(

@@ -23,20 +23,19 @@ func main() {
 	)
 	flag.Parse()
 
-	var assetsDir string
+	var staticDir string
 	{
 		executable, err := os.Executable()
 		if err != nil {
 			panic(err)
 		}
-		assetsDir = filepath.Dir(executable)
+		staticDir = filepath.Dir(executable)
 	}
 
 	media.SetLogLevel(media.LogLevel(*logLevel - 1))
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = *mediaPath
-	mlConfig.HtmlPath = filepath.Join("static", "html")
 
 	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
@@ -47,8 +46,12 @@ func main() {
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/media/", http.StatusFound)
 	})
-	router.PathPrefix(mlConfig.Prefix + "/").Handler(ml)
-	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
+	router.PathPrefix(mlConfig.Prefix + "/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !ml.ServeHTTP(w, req) {
+			http.ServeFile(w, req, filepath.Join(staticDir, "static", "html", "main.html"))
+		}
+	})
+	router.PathPrefix("/static/").Handler(fileOnlyServer{staticDir})
 
 	http.Handle("/", router)
 
@@ -62,6 +65,8 @@ func main() {
 	}
 }
 
+// A fileOnlyServer serves local files from the directory tree rooted at root.
+// Requests for directories are rejected.
 type fileOnlyServer struct {
 	root string
 }

@@ -19,15 +19,15 @@ func (ml *Library) handleDirRequest(
 	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
-) {
+) bool {
 	query := req.URL.Query()
 
 	if _, ok := query["info"]; ok {
 		ml.handleDirInfoRequest(libraryPath, w)
-		return
+		return true
 	}
 
-	http.ServeFile(w, req, ml.toHtmlPath("main.html"))
+	return false
 }
 
 func (ml *Library) handleDirInfoRequest(
