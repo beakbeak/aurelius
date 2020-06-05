@@ -56,18 +56,16 @@ Command-line arguments can also be passed to `docker run`.
 
     $ ./aurelius -help
     Usage of ./aurelius:
-      -address string
-            address at which to listen for connections; overrides port setting
-      -cert string
+    -cert string
             TLS certificate file
-      -key string
+    -key string
             TLS key file
-      -log int
+    -listen string
+            [address][:port] at which to listen for connections (default ":9090")
+    -log int
             log verbosity (0-3) (default 1)
-      -media string
+    -media string
             path to media library root (default ".")
-      -port int
-            port on which to listen for connections (default 9090)
 
 ### ReplayGain
 

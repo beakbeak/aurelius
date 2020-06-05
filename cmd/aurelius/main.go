@@ -15,18 +15,13 @@ import (
 func main() {
 	var (
 		address = flag.String(
-			"address", "", "address at which to listen for connections; overrides port setting")
-		port      = flag.Int("port", 9090, "port on which to listen for connections")
+			"listen", ":9090", "[address][:port] at which to listen for connections")
 		cert      = flag.String("cert", "", "TLS certificate file")
 		key       = flag.String("key", "", "TLS key file")
 		logLevel  = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
 		mediaPath = flag.String("media", ".", "path to media library root")
 	)
 	flag.Parse()
-
-	if len(*address) == 0 {
-		*address = fmt.Sprintf(":%v", *port)
-	}
 
 	var assetsDir string
 	{
