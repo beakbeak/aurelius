@@ -46,34 +46,50 @@ func (ml *Library) handleTrackStreamRequest(
 	config.SampleFormat = srcStreamInfo.SampleFormat()
 	config.SampleRate = srcStreamInfo.SampleRate
 
-	config.Codec = "pcm_s16le"
-	formatName := "wav"
-	mimeType := "audio/wav"
 	replayGainStr := "track"
 	preventClipping := true
 
 	query := req.URL.Query()
 
-	if codec, ok := query["codec"]; ok {
-		switch codec[0] {
-		case "mp3":
-			config.Codec = "libmp3lame"
-			formatName = "mp3"
-			mimeType = "audio/mp3"
-		case "vorbis":
-			config.Codec = "libvorbis"
-			formatName = "ogg"
-			mimeType = "audio/ogg"
-		case "flac":
-			config.Codec = "flac"
-			formatName = "flac"
-			mimeType = "audio/flac"
-		case "wav":
-			// already set up
-		default:
-			rejectBadRequest("unknown codec requested: %v\n", codec[0])
-			return
-		}
+	codec := "wav"
+	if codecArgs, ok := query["codec"]; ok {
+		codec = codecArgs[0]
+	}
+
+	var formatName, mimeType string
+
+	switch codec {
+	case "mp3":
+		config.Codec = "libmp3lame"
+		formatName = "mp3"
+		mimeType = "audio/mp3"
+
+	case "vorbis":
+		config.Codec = "libvorbis"
+		formatName = "ogg"
+		mimeType = "audio/ogg"
+
+	case "flac":
+		config.Codec = "flac"
+
+		// The FLAC container format seems to be handled poorly by browsers with
+		// respect to seeking and reporting which regions are buffered. This may
+		// be caused by streaming the data before final timing information has
+		// been written by FFmpeg.
+		//
+		// A FLAC stream inside an Ogg container doesn't seem to have this
+		// problem, so we use that instead.
+		formatName = "ogg"
+		mimeType = "audio/ogg"
+
+	case "wav":
+		config.Codec = "pcm_s16le"
+		formatName = "wav"
+		mimeType = "audio/wav"
+
+	default:
+		rejectBadRequest("unknown codec requested: %v\n", codec[0])
+		return
 	}
 
 	if qualityArgs, ok := query["quality"]; ok {
