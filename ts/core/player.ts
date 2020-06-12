@@ -22,7 +22,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
-    private _streamConfig: StreamConfig = { codec: "vorbis", quality: 8 };
+    private _streamConfig: StreamConfig = { codec: "flac" };
 
     private async _play(
         url: string,

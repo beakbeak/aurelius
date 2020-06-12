@@ -7,9 +7,4 @@ window.onload = () => {
 
     setupDirUi(player, "content");
     setupPlayerUi(player, "header");
-
-    // XXX hack alert
-    if (/([0-9]+\.){3}[0-9]+/.test(window.location.hostname)) {
-        player.setStreamConfig({ codec: "wav" });
-    }
 };
