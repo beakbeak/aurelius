@@ -7,11 +7,8 @@ let dirList: HTMLElement;
 let playlistList: HTMLElement;
 let trackList: HTMLElement;
 
-export default async function setupDirUi(
-    inPlayer: Player,
-    containerId: string,
-) {
-    const container = document.getElementById(containerId);
+export default async function setupDirUi(inPlayer: Player) {
+    const container = document.getElementById("content");
     if (container === null) {
         throw new Error("invalid container");
     }

@@ -14,15 +14,28 @@ export async function fetchTrackInfo(url: string): Promise<TrackInfo> {
     return fetchJson<TrackInfo>(`${url}/info`);
 }
 
+export enum StreamCodec {
+    Vorbis = "vorbis",
+    Flac = "flac",
+    Mp3 = "mp3",
+    Wav = "wav",
+}
+
+export enum ReplayGainMode {
+    Track = "track",
+    Album = "album",
+    Off = "off",
+}
+
 export interface StreamConfig {
-    codec?: "mp3" | "vorbis" | "flac" | "wav";
+    codec?: StreamCodec;
     quality?: number;
     kbitRate?: number;
     sampleRate?: number;
     sampleFormat?: string;
     channelLayout?: string;
-//    replayGain?: "track" | "album" | "off";
-//    preventClipping?: boolean;
+    replayGain?: ReplayGainMode;
+    preventClipping?: boolean;
 }
 
 function streamQueryString(

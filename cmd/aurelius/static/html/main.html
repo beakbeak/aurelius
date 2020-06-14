@@ -12,7 +12,7 @@
 	<script src="/static/js/main.js" type="module"></script>
 </head>
 <body>
-	<div id="header">
+	<header>
 		<div id="status">
 			<div id="status-left">aurelius</div>
 			<div id="status-right-spacer">
@@ -52,12 +52,66 @@
 				<div id="duration"></div>
 			</div>
 		</div>
-	</div>
+	</header>
 
-	<div id="content"></div>
+	<main id="content"></main>
 
-	<div id="footer">
-		<img src="/static/img/aurelius.png">
+	<footer>
+		<i id="settings-button" class="material-icons clickable">settings</i>
+	</footer>
+
+	<div id="modal-overlay"></div>
+
+	<div id="settings" class="modal">
+		<div class="section-header">Stream Encoding</div>
+		<div class="section-body">
+			<table>
+				<tr>
+					<td>Codec</td>
+					<td><select id="codec"></select></td>
+				</tr>
+				<tr id="target-metric-row">
+					<td>
+						<select id="target-metric-type">
+							<option value="quality">Quality</option>
+							<option value="bit-rate">Bit rate (kb/s)</option>
+						</select>
+					</td>
+					<td>
+						<div><input id="target-metric-value" type="number"></div>
+						<div id="mp3-quality-help" class="target-metric-help">
+							Range: 0 (best) to 9.999 (worst).
+						</div>
+						<div id="vorbis-quality-help" class="target-metric-help">
+							Range: -1 (worst) to 10 (best).
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<div class="section-header">ReplayGain</div>
+		<div class="section-body">
+			<table>
+				<tr>
+					<td>Mode</td>
+					<td>
+						<select id="replay-gain">
+							<option>auto</option>
+						</select>
+					</td>
+				</tr>
+				<tr id="prevent-clipping-row">
+					<td>Prevent clipping</td>
+					<td>
+						<input id="prevent-clipping" type="checkbox">
+						<label for="prevent-clipping">Enabled</label>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<button id="save" type="button">Save</button>
 	</div>
 </body>
 </html>

@@ -7,28 +7,17 @@ body {
 	background-attachment: fixed;
 	color: hsl(39, 100%, 93%);
 }
-#header {
+header, .modal {
 	background-color: hsl(39, 100%, 93%);
 	color: black;
 }
 
-body a {
-	text-decoration: none;
-	color: hsl(39, 100%, 93%);
-}
-body a:focus {
-	outline: medium dashed rgba(0,0,0,.54);
-}
-body a:hover {
-	box-shadow: 0 1px rgba(0,0,0,.54);
-}
+.material-icons { color: rgba(0, 0, 0, 0.54); }
+.inactive .material-icons { color: rgba(0, 0, 0, 0.26); }
 
-body .material-icons {
-	color: black;
+.hidden {
+	display: none;
 }
-
-#header .material-icons { color: rgba(0, 0, 0, 0.54); }
-#header .inactive .material-icons { color: rgba(0, 0, 0, 0.26); }
 
 .clickable {
 	cursor: pointer;
@@ -43,7 +32,8 @@ body .material-icons {
 	cursor: default;
 }
 
-#header {
+/* Player controls ************************************************************/
+header {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -91,7 +81,7 @@ body .material-icons {
 	height: 3rem;
 	color: rgba(0,0,0,.54);
 }
-#controls i {
+#controls .material-icons {
 	font-size: 3rem;
 }
 
@@ -146,33 +136,108 @@ body .material-icons {
 	transform: translateY(-50%);
 }
 
-#content {
+/* File listing ***************************************************************/
+main {
 	margin-top: 5rem;
 }
 
-.listing {
+main a {
+	text-decoration: none;
+	color: hsl(39, 100%, 93%);
+}
+main a:focus {
+	outline: medium dashed rgba(0,0,0,.54);
+}
+main a:hover {
+	box-shadow: 0 1px rgba(0,0,0,.54);
+}
+
+main .material-icons {
+	color: black;
+}
+
+main .listing {
 	list-style: none;
 	padding: 0;
 }
-.listing i {
+main .listing .material-icons {
 	margin-right: .25em;
 }
-.listing i, .listing a {
+main .listing .material-icons, .listing a {
 	vertical-align: middle;
 }
-.listing .aux-link {
+main .listing .aux-link {
 	margin-left: .5em;
 	font-style: italic;
 }
 
-#footer {
+/* Footer *********************************************************************/
+footer {
 	position: fixed;
 	z-index: -1;
 	right: 0;
 	bottom: 0;
-	height: 8rem;
 	margin: .5rem;
 }
-#footer img {
-	height: 100%;
+
+footer .material-icons {
+	font-size: 3rem;
+}
+
+/* Modal dialog ***************************************************************/
+#modal-overlay {
+	display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background-color: rgba(0, 0, 0, .5);
+	z-index: 99;
+}
+#modal-overlay.modal-is-visible {
+	display: block;
+}
+
+.modal {
+	display: none;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	padding: .75rem;
+	min-width: 15em;
+	box-shadow: 0px 0px .5rem black;
+	z-index: 100;
+}
+.modal.modal-is-visible {
+	display: block;
+}
+
+.modal button {
+	display: block;
+	padding: .5em;
+	margin: .5em;
+	width: calc(100% - 1em);
+	border: 1px solid;
+	border-radius: .25em;
+	background-color: rgba(0,0,0,.15);
+	border-color: rgba(0,0,0,.54);
+}
+.modal button:hover {
+	background-color: rgba(255,255,255,.5);
+}
+.modal button:active {
+	background-color: white;
+}
+
+.modal .section-header {
+	box-shadow: 0px 4px 2px -2px rgba(0,0,0,.25);
+	padding-bottom: .1em;
+}
+.modal .section-body {
+	margin: .5em 0 .5em 1.5em;
+}
+.modal td {
+	padding: .25em;
 }

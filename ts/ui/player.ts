@@ -20,39 +20,22 @@ let unfavoriteButton: HTMLElement;
 // [0..1]
 let _seekSliderPosition: number | undefined;
 
-function getElement(
-    ancestor: HTMLElement,
-    id: string,
-): HTMLElement {
-    const element = ancestor.querySelector(`#${id}`);
-    if (element === null) {
-        throw new Error(`missing ${id}`);
-    }
-    return element as HTMLElement;
-}
-
 export default function setupPlayerUi(
     inPlayer: Player,
-    containerId: string,
 ) {
-    const container = document.getElementById(containerId);
-    if (container === null) {
-        throw new Error("invalid container");
-    }
-
     player = inPlayer;
 
-    statusRight = getElement(container, "status-right");
-    playButton = getElement(container, "play-button");
-    pauseButton = getElement(container, "pause-button");
-    nextButton = getElement(container, "next-button");
-    prevButton = getElement(container, "prev-button");
-    progressBarEmpty = getElement(container, "progress-bar-empty");
-    progressBarFill = getElement(container, "progress-bar-fill");
-    seekSlider = getElement(container, "seek-slider");
-    durationText = getElement(container, "duration");
-    favoriteButton = getElement(container, "favorite-button");
-    unfavoriteButton = getElement(container, "unfavorite-button");
+    statusRight = document.getElementById("status-right")!;
+    playButton = document.getElementById("play-button")!;
+    pauseButton = document.getElementById("pause-button")!;
+    nextButton = document.getElementById("next-button")!;
+    prevButton = document.getElementById("prev-button")!;
+    progressBarEmpty = document.getElementById("progress-bar-empty")!;
+    progressBarFill = document.getElementById("progress-bar-fill")!;
+    seekSlider = document.getElementById("seek-slider")!;
+    durationText = document.getElementById("duration")!;
+    favoriteButton = document.getElementById("favorite-button")!;
+    unfavoriteButton = document.getElementById("unfavorite-button")!;
 
     playButton.onclick = () => {
         player.unpause();

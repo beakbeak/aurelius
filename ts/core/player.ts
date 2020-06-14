@@ -16,19 +16,24 @@ export interface PlayerEventMap {
 export type PlayerEvent = keyof PlayerEventMap;
 
 export class Player extends EventDispatcher<PlayerEventMap> {
-    public track?: Track;
-    public playlist?: Playlist;
-
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
-    private _streamConfig: StreamConfig = { codec: "flac" };
+
+    public track?: Track;
+    public playlist?: Playlist;
+
+    public constructor(
+        public streamConfig: StreamConfig = {},
+    ) {
+        super();
+    }
 
     private async _play(
         url: string,
         startTime?: number,
     ): Promise<void> {
-        const track = await Track.fetch(url, this._streamConfig, startTime, this.track);
+        const track = await Track.fetch(url, this.streamConfig, startTime, this.track);
         this.track = track;
 
         track.addEventListener("progress", () => {
@@ -193,9 +198,5 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         }
         await this.track.unfavorite();
         this.dispatchEvent("unfavorite");
-    }
-
-    public setStreamConfig(config: StreamConfig): void {
-        this._streamConfig = config;
     }
 }
