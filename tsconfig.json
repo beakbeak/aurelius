@@ -8,7 +8,7 @@
         "noImplicitThis": true,
         "noUnusedLocals": true,
         "rootDir": "ts",
-        "outDir": "cmd/aurelius/static/js"
+        "outDir": "cmd/aurelius/assets/static/js"
     },
     "include": [
         "ts/**/*.ts"

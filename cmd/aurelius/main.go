@@ -34,17 +34,17 @@ so use of HTTPS is recommended.`)
 	)
 	flag.Parse()
 
-	var exeDir string
+	var assetsDir string
 	{
 		executable, err := os.Executable()
 		if err != nil {
 			panic(err)
 		}
-		exeDir = filepath.Dir(executable)
+		assetsDir = filepath.Join(filepath.Dir(executable), "assets")
 	}
 
 	htmlPath := func(fileName string) string {
-		return filepath.Join(exeDir, "static", "html", fileName)
+		return filepath.Join(assetsDir, "html", fileName)
 	}
 
 	media.SetLogLevel(media.LogLevel(*logLevel - 1))
@@ -158,7 +158,7 @@ so use of HTTPS is recommended.`)
 		}
 	})
 
-	router.PathPrefix("/static/").Handler(fileOnlyServer{exeDir})
+	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
 
 	http.Handle("/", router)
 

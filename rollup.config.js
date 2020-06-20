@@ -10,7 +10,7 @@ function createConfig(input, args) {
     return {
         input: input,
         output: {
-            dir: "cmd/aurelius/static/js",
+            dir: "cmd/aurelius/assets/static/js",
             format: "iife",
         },
         plugins: args.configDebug === true ? [
