@@ -52,3 +52,16 @@ export function onDrag(
         document.addEventListener("mouseup", onMouseUp);
     }
 }
+
+/**
+ * Parses the query string and returns it as a map.
+ */
+export function parseQuery(): Partial<Record<string, string>> {
+    const out: Partial<Record<string, string>> = {};
+
+    for (const assignment of window.location.search.split(/[?&]/)) {
+        const [key, value] = assignment.split("=");
+        out[key] = value ?? "";
+    }
+    return out;
+}
