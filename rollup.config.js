@@ -6,9 +6,9 @@ const tsExclude = [
     "ts/testing.ts"
 ];
 
-export default args => {
+function createConfig(input, args) {
     return {
-        input: "ts/main.ts",
+        input: input,
         output: {
             dir: "cmd/aurelius/static/js",
             format: "iife",
@@ -23,4 +23,9 @@ export default args => {
             terser(),
         ]
     };
-};
+}
+
+export default args => [
+    "ts/main.ts",
+    "ts/login.ts",
+].map(input => createConfig(input, args));

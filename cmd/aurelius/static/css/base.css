@@ -1,0 +1,125 @@
+html {
+	min-height: 100%;
+}
+
+body {
+	background: linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
+	background-attachment: fixed;
+	color: hsl(39, 100%, 93%);
+}
+.ui {
+	background-color: hsl(39, 100%, 93%);
+	color: black;
+}
+
+.material-icons { color: rgba(0, 0, 0, 0.54); }
+.inactive .material-icons { color: rgba(0, 0, 0, 0.26); }
+
+.hidden {
+	display: none;
+}
+
+.clickable {
+	cursor: pointer;
+
+	-moz-user-select: -moz-none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+.clickable.inactive {
+	cursor: default;
+}
+
+/* File listing ***************************************************************/
+.listing {
+	list-style: none;
+	padding: 0;
+}
+.listing .material-icons {
+	color: black;
+	margin-right: .25em;
+}
+.listing .material-icons, .listing a {
+	vertical-align: middle;
+}
+
+.listing a {
+	text-decoration: none;
+	color: hsl(39, 100%, 93%);
+}
+.listing a:focus {
+	outline: medium dashed rgba(0,0,0,.54);
+}
+.listing a:hover {
+	box-shadow: 0 1px rgba(0,0,0,.54);
+}
+
+.listing .aux-link {
+	margin-left: .5em;
+	font-style: italic;
+}
+
+/* Modal dialog ***************************************************************/
+#modal-overlay {
+	display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background-color: rgba(0, 0, 0, .5);
+	z-index: 99;
+}
+#modal-overlay.modal-is-visible {
+	display: block;
+}
+
+.modal {
+	display: none;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 100;
+}
+.modal.modal-is-visible {
+	display: block;
+}
+
+.dialog {
+	padding: .75rem;
+	min-width: 15em;
+	box-shadow: 0px 0px 1.5rem rgba(0,0,0,.5);
+	border-radius: .25em;
+}
+
+/* UI elements ****************************************************************/
+.ui button {
+	display: block;
+	padding: .5em;
+	margin: .5em;
+	width: calc(100% - 1em);
+	border: 1px solid;
+	border-radius: .25em;
+	background-color: rgba(0,0,0,.15);
+	border-color: rgba(0,0,0,.54);
+}
+.ui button:hover {
+	background-color: rgba(255,255,255,.5);
+}
+.ui button:active {
+	background-color: white;
+}
+
+.ui .section-header {
+	box-shadow: 0px 4px 2px -2px rgba(0,0,0,.25);
+	padding-bottom: .1em;
+}
+.ui .section-body {
+	margin: .5em 0 .5em 1.5em;
+}
+.ui td {
+	padding: .25em;
+}

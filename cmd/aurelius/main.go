@@ -5,31 +5,46 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sb/aurelius/pkg/media"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 )
+
+const sessionName = "aurelius"
 
 func main() {
 	var (
 		address = flag.String(
 			"listen", ":9090", "[address][:port] at which to listen for connections")
-		cert      = flag.String("cert", "", "TLS certificate file")
-		key       = flag.String("key", "", "TLS key file")
-		logLevel  = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
-		mediaPath = flag.String("media", ".", "path to media library root")
+		cert       = flag.String("cert", "", "TLS certificate file")
+		key        = flag.String("key", "", "TLS key file")
+		logLevel   = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
+		mediaPath  = flag.String("media", ".", "path to media library root")
+		passphrase = flag.String(
+			"pass", "",
+			`passphrase used for login. If unspecified, access will not be restricted.
+
+WARNING: Passphrases from the client will be transmitted as plain text,
+so use of HTTPS is recommended.`)
 	)
 	flag.Parse()
 
-	var staticDir string
+	var exeDir string
 	{
 		executable, err := os.Executable()
 		if err != nil {
 			panic(err)
 		}
-		staticDir = filepath.Dir(executable)
+		exeDir = filepath.Dir(executable)
+	}
+
+	htmlPath := func(fileName string) string {
+		return filepath.Join(exeDir, "static", "html", fileName)
 	}
 
 	media.SetLogLevel(media.LogLevel(*logLevel - 1))
@@ -42,16 +57,108 @@ func main() {
 		log.Fatalf("failed to open media library: %v", err)
 	}
 
+	sessionStore := sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
+
+	isAuthorized := func(req *http.Request) bool {
+		if *passphrase == "" {
+			return true
+		}
+
+		session, err := sessionStore.Get(req, sessionName)
+		if err != nil {
+			return false
+		}
+		if valid, ok := session.Values["valid"]; ok {
+			if validBool, ok := valid.(bool); ok {
+				return validBool
+			}
+		}
+		return false
+	}
+
+	loginIfUnauthorized := func(w http.ResponseWriter, req *http.Request) bool {
+		if isAuthorized(req) {
+			return false
+		}
+		http.Redirect(w, req, "/login?from="+url.QueryEscape(req.URL.String()), http.StatusFound)
+		return true
+	}
+
+	trySaveSessionValues := func(w http.ResponseWriter, req *http.Request, values ...interface{}) bool {
+		session, _ := sessionStore.Get(req, sessionName)
+
+		for i := 0; i+1 < len(values); i += 2 {
+			session.Values[values[i]] = values[i+1]
+		}
+
+		if err = session.Save(req, w); err != nil {
+			log.Printf("session.Save failed: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return false
+		}
+		return true
+	}
+
 	router := mux.NewRouter()
+
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		http.Redirect(w, req, "/media/", http.StatusFound)
+		if loginIfUnauthorized(w, req) {
+			return
+		}
+		http.Redirect(w, req, mlConfig.Prefix+"/", http.StatusFound)
 	})
+
+	router.Path("/login").Methods("GET", "POST").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if *passphrase == "" {
+			http.NotFound(w, req)
+			return
+		}
+
+		if req.Method == "GET" {
+			http.ServeFile(w, req, htmlPath("login.html"))
+			return
+		}
+
+		if err := req.ParseForm(); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if req.PostForm.Get("passphrase") != *passphrase {
+			query := url.Values{}
+			query.Set("from", req.URL.Query().Get("from"))
+			query.Set("failed", "")
+
+			loginUrl := url.URL{Path: "/login", RawQuery: query.Encode()}
+
+			http.Redirect(w, req, loginUrl.String(), http.StatusFound)
+			return
+		}
+
+		if !trySaveSessionValues(w, req, "valid", true) {
+			return
+		}
+
+		fromUrl := req.URL.Query().Get("from")
+		if fromUrl == "" {
+			fromUrl = "/"
+		}
+		http.Redirect(w, req, fromUrl, http.StatusFound)
+	})
+
+	router.Path("/logout").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		trySaveSessionValues(w, req, "valid", false)
+	})
+
 	router.PathPrefix(mlConfig.Prefix + "/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if loginIfUnauthorized(w, req) {
+			return
+		}
 		if !ml.ServeHTTP(w, req) {
-			http.ServeFile(w, req, filepath.Join(staticDir, "static", "html", "main.html"))
+			http.ServeFile(w, req, htmlPath("main.html"))
 		}
 	})
-	router.PathPrefix("/static/").Handler(fileOnlyServer{staticDir})
+
+	router.PathPrefix("/static/").Handler(fileOnlyServer{exeDir})
 
 	http.Handle("/", router)
 

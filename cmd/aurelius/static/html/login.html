@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>aurelius</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="icon" type="image/png" href="/static/img/aurelius.svg">
+
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link href="/static/css/base.css" rel="stylesheet">
+	<link href="/static/css/login.css" rel="stylesheet">
+
+	<script src="/static/js/login.js"></script>
+</head>
+<body>
+	<main>
+		<form id="form" class="ui dialog" action="/login" method="POST">
+			<ul>
+				<li>
+					<label for="passphrase">
+						<i class="material-icons">lock</i>
+					</label>
+					<input type="password" id="passphrase" name="passphrase" placeholder="Password">
+				</li>
+			</ul>
+			<p class="error">
+				Login failed.
+			</p>
+			<button type="submit">Login</button>
+		</form>
+	</main>
+</body>

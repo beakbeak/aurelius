@@ -1,0 +1,56 @@
+main {
+	display: block;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -80%);
+	margin: 0;
+}
+
+main:before {
+	content: "";
+	background-image: url("/static/img/aurelius.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center center;
+	display: block;
+	width: 12rem;
+	height: 12rem;
+	margin: 1rem auto;
+}
+
+form:before {
+	content: "aurelius";
+	display: block;
+	text-align: center;
+	font-style: italic;
+}
+
+form ul {
+	list-style: none;
+	padding-left: 0;
+}
+
+form li {
+	display: flex;
+	padding-left: 1em;
+	padding-right: 1em;
+}
+
+form input {
+	flex: 1;
+}
+
+.failed #passphrase {
+	border: 2px solid rgb(220, 50, 50);
+	background-color: rgb(255, 200, 200);
+}
+
+.error {
+	display: none;
+	color: rgb(180, 0, 0);
+	text-align: center;
+}
+.failed .error {
+	display: block;
+}
