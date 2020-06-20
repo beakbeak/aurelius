@@ -8,6 +8,14 @@
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/aurelius",
             "args": ["-media", "${workspaceFolder}/test/media", "-log", "2"],
+        },
+        {
+            "name": "debug (passphrase)",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/aurelius",
+            "args": ["-media", "${workspaceFolder}/test/media", "-log", "2", "-pass", "blah"],
         }
     ]
 }
