@@ -58,6 +58,9 @@ header {
 	text-align: right;
 	white-space: nowrap;
 }
+#status-right:hover {
+	text-decoration: underline;
+}
 #favorite-button, #unfavorite-button {
 	margin-right: 1em;
 }
