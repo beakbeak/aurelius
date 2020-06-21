@@ -41,7 +41,7 @@ export default function setupPlayerUi(
         player.unpause();
     };
 
-    pauseButton.style.display = "none";
+    pauseButton.classList.add("hidden");
     pauseButton.onclick = () => {
         player.pause();
     };
@@ -57,7 +57,7 @@ export default function setupPlayerUi(
         player.favorite();
     };
 
-    unfavoriteButton.style.display = "none";
+    unfavoriteButton.classList.add("hidden");
     unfavoriteButton.onclick = () => {
         player.unfavorite();
     };
@@ -180,8 +180,8 @@ function startSeekSliderDrag(
 function updateStatus(): void {
     if (player.track === undefined) {
         statusRight.textContent = "";
-        favoriteButton.style.display = "";
-        unfavoriteButton.style.display = "none";
+        favoriteButton.classList.remove("hidden");
+        unfavoriteButton.classList.add("hidden");
         favoriteButton.classList.add("inactive");
         return;
     }
@@ -212,12 +212,12 @@ function updateStatus(): void {
     setStatusText(text);
 
     if (info.favorite) {
-        favoriteButton.style.display = "none";
-        unfavoriteButton.style.display = "";
+        favoriteButton.classList.add("hidden");
+        unfavoriteButton.classList.remove("hidden");
         unfavoriteButton.classList.remove("inactive");
     } else {
-        favoriteButton.style.display = "";
-        unfavoriteButton.style.display = "none";
+        favoriteButton.classList.remove("hidden");
+        unfavoriteButton.classList.add("hidden");
         favoriteButton.classList.remove("inactive");
     }
 }
@@ -293,16 +293,16 @@ function updateButtons(): void {
     const track = player.track;
 
     if (track === undefined || track.isPaused()) {
-        playButton.style.display = "";
-        pauseButton.style.display = "none";
+        playButton.classList.remove("hidden");
+        pauseButton.classList.add("hidden");
         if (track === undefined) {
             playButton.classList.add("inactive");
         } else {
             playButton.classList.remove("inactive");
         }
     } else {
-        playButton.style.display = "none";
-        pauseButton.style.display = "";
+        playButton.classList.add("hidden");
+        pauseButton.classList.remove("hidden");
     }
 
     if (player.hasNext()) {

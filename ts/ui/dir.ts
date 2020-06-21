@@ -17,8 +17,7 @@ export default async function setupDirUi(inPlayer: Player) {
 
     const createList = () => {
         const out = document.createElement("ul");
-        out.className = "listing";
-        out.style.display = "none";
+        out.classList.add("listing", "hidden");
         return out;
     };
 
@@ -83,11 +82,11 @@ function populateDirs(info: DirInfo): void {
         };
     }
 
-    dirList.style.display = "";
+    dirList.classList.remove("hidden");
 }
 
 function populatePlaylists(info: DirInfo): void {
-    playlistList.style.display = "none";
+    playlistList.classList.add("hidden");
 
     if (info.playlists.length === 0) {
         playlistList.innerHTML = "";
@@ -120,11 +119,11 @@ function populatePlaylists(info: DirInfo): void {
         };
     }
 
-    playlistList.style.display = "";
+    playlistList.classList.remove("hidden");
 }
 
 function populateTracks(info: DirInfo): void {
-    trackList.style.display = "none";
+    trackList.classList.add("hidden");
 
     if (info.tracks.length === 0) {
         trackList.innerHTML = "";
@@ -153,5 +152,5 @@ function populateTracks(info: DirInfo): void {
         };
     }
 
-    trackList.style.display = "";
+    trackList.classList.remove("hidden");
 }
