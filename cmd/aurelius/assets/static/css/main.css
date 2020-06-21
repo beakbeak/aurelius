@@ -1,8 +1,14 @@
 body {
 	background:
-		top / calc(960px + 2rem) no-repeat
-		fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%)),
-		fixed linear-gradient(hsl(39, 8%, 30%) 50%, hsl(39, 8%, 20%));
+		left top / calc((100% - (960px + 2rem)) / 2) fixed no-repeat linear-gradient(
+			to right,
+			rgba(0,0,0,.25) calc(100% - 150px),
+			rgba(0,0,0,.35) 100%),
+		right top / calc((100% - (960px + 2rem)) / 2) fixed no-repeat linear-gradient(
+			to left,
+			rgba(0,0,0,.25) calc(100% - 150px),
+			rgba(0,0,0,.35) 100%),
+		fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
 }
 
 main {
