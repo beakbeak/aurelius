@@ -12,7 +12,7 @@ let prevButton: HTMLElement;
 let progressBarEmpty: HTMLElement;
 let progressBarFill: HTMLElement;
 let seekSlider: HTMLElement;
-let statusRight: HTMLElement;
+let marquee: HTMLElement;
 let durationText: HTMLElement;
 let favoriteButton: HTMLElement;
 let unfavoriteButton: HTMLElement;
@@ -25,7 +25,7 @@ export default function setupPlayerUi(
 ) {
     player = inPlayer;
 
-    statusRight = document.getElementById("status-right")!;
+    marquee = document.getElementById("marquee")!;
     playButton = document.getElementById("play-button")!;
     pauseButton = document.getElementById("pause-button")!;
     nextButton = document.getElementById("next-button")!;
@@ -60,7 +60,7 @@ export default function setupPlayerUi(
         player.unfavorite();
     };
 
-    statusRight.onclick = () => {
+    marquee.onclick = () => {
         if (player.track !== undefined) {
             loadDir(`${stripLastPathElement(player.track.url)}/`);
         }
@@ -104,7 +104,7 @@ export default function setupPlayerUi(
 }
 
 function setStatusText(text: string): void {
-    const element = statusRight;
+    const element = marquee;
 
     element.textContent = text;
     if (element.clientWidth >= element.scrollWidth) {
@@ -177,7 +177,7 @@ function startSeekSliderDrag(
 
 function updateStatus(): void {
     if (player.track === undefined) {
-        statusRight.textContent = "";
+        marquee.textContent = "";
         favoriteButton.classList.remove("hidden");
         unfavoriteButton.classList.add("hidden");
         favoriteButton.classList.add("inactive");

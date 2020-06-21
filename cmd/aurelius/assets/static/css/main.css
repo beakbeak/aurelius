@@ -30,21 +30,20 @@ header {
 
 #status {
 	display: flex;
+	margin-left: 1em;
+	margin-right: 1em;
 }
-#status > div {
+#status > * {
 	height: 1em;
 	font-style: italic;
 }
-#status-left {
-	margin-left: 1em;
-	text-align: left;
-}
-#status-right-spacer {
+
+#marquee-spacer {
 	position: relative;
-	flex-grow: 1;
+	flex: 1;
 	margin: 0 .5em 0 .5em;
 }
-#status-right-container {
+#marquee-container {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -52,17 +51,14 @@ header {
 	height: 200%;
 	overflow: hidden;
 }
-#status-right {
+#marquee {
 	max-width: 100%;
 	max-height: 100%;
 	text-align: right;
 	white-space: nowrap;
 }
-#status-right:hover {
+#marquee:hover {
 	text-decoration: underline;
-}
-#favorite-button, #unfavorite-button {
-	margin-right: 1em;
 }
 
 #controls {
