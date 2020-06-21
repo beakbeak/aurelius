@@ -41,7 +41,6 @@ export default function setupPlayerUi(
         player.unpause();
     };
 
-    pauseButton.classList.add("hidden");
     pauseButton.onclick = () => {
         player.pause();
     };
@@ -57,7 +56,6 @@ export default function setupPlayerUi(
         player.favorite();
     };
 
-    unfavoriteButton.classList.add("hidden");
     unfavoriteButton.onclick = () => {
         player.unfavorite();
     };
