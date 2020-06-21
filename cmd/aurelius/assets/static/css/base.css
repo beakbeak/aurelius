@@ -3,8 +3,7 @@ html {
 }
 
 body {
-	background: linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
-	background-attachment: fixed;
+	background: fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
 	color: hsl(39, 100%, 93%);
 }
 .ui {

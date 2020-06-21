@@ -1,4 +1,14 @@
+body {
+	background:
+		top / calc(960px + 2rem) no-repeat
+		fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%)),
+		fixed linear-gradient(hsl(39, 8%, 30%) 50%, hsl(39, 8%, 20%));
+}
+
 main {
+	max-width: 960px;
+	margin-left: auto;
+	margin-right: auto;
 	margin-top: 5rem;
 }
 
