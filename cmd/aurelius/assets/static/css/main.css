@@ -18,8 +18,30 @@ main {
 	margin-bottom: 8rem;
 }
 
+.listing {
+	list-style: none;
+	padding: 0;
+}
+.listing .material-icons {
+	color: black;
+	margin-right: .25em;
+}
+.listing .material-icons, .listing a {
+	vertical-align: middle;
+}
+
+.listing a {
+	text-decoration: none;
+	color: hsl(39, 100%, 93%);
+}
+.listing a:focus {
+	outline: medium dashed rgba(0,0,0,.54);
+}
+.listing a:hover {
+	box-shadow: 0 1px rgba(0,0,0,.54);
+}
+
 .listing .playing > a {
-	font-style: italic;
 	text-decoration: underline;
 }
 .listing .playing > i.default {
@@ -27,6 +49,12 @@ main {
 }
 .listing .playing > i.if-playing {
 	display: inline-block;
+	color: hsl(39, 100%, 93%);
+}
+
+.listing .aux-link {
+	margin-left: .5em;
+	font-style: italic;
 }
 
 #play-controls {

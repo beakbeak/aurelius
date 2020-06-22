@@ -31,35 +31,6 @@ body {
 	cursor: default;
 }
 
-/* File listing ***************************************************************/
-.listing {
-	list-style: none;
-	padding: 0;
-}
-.listing .material-icons {
-	color: black;
-	margin-right: .25em;
-}
-.listing .material-icons, .listing a {
-	vertical-align: middle;
-}
-
-.listing a {
-	text-decoration: none;
-	color: hsl(39, 100%, 93%);
-}
-.listing a:focus {
-	outline: medium dashed rgba(0,0,0,.54);
-}
-.listing a:hover {
-	box-shadow: 0 1px rgba(0,0,0,.54);
-}
-
-.listing .aux-link {
-	margin-left: .5em;
-	font-style: italic;
-}
-
 /* Modal dialog ***************************************************************/
 #modal-overlay {
 	display: none;
