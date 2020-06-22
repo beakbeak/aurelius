@@ -34,9 +34,6 @@ main {
 	text-decoration: none;
 	color: hsl(39, 100%, 93%);
 }
-.listing a:focus {
-	outline: medium dashed rgba(0,0,0,.54);
-}
 .listing a:hover {
 	box-shadow: 0 1px rgba(0,0,0,.54);
 }
