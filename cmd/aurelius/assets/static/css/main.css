@@ -66,7 +66,7 @@ main {
 
 #marquee-spacer {
 	position: relative;
-	height: 1rem;
+	height: 1.1em;
 	margin: 0 .5rem 0 .5rem;
 }
 #marquee-container {
@@ -83,6 +83,7 @@ main {
 	white-space: nowrap;
 	text-align: center;
 	font-style: italic;
+	font-size: 1.1em;
 }
 #marquee:hover {
 	text-decoration: underline;
