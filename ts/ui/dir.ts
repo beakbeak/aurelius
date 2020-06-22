@@ -7,6 +7,8 @@ let dirList: HTMLElement;
 let playlistList: HTMLElement;
 let trackList: HTMLElement;
 
+let lastPlaying: HTMLElement | undefined;
+
 export default async function setupDirUi(inPlayer: Player) {
     const container = document.getElementById("content");
     if (container === null) {
@@ -30,11 +32,43 @@ export default async function setupDirUi(inPlayer: Player) {
     container.appendChild(playlistList);
     container.appendChild(trackList);
 
+    // highlight currently playing track
+    player.addEventListener("play", () => {
+        let playingLink = undefined;
+
+        const trackLinks = trackList.querySelectorAll("a");
+        for (let i = 0; i < trackLinks.length; ++i) {
+            const link = trackLinks[i] as HTMLAnchorElement;
+            if (isPlaying(link)) {
+                playingLink = link;
+                break;
+            }
+        }
+
+        setPlayingClass(playingLink);
+    });
+    player.addEventListener("ended", () => {
+        setPlayingClass(undefined);
+    })
+
     window.onpopstate = () => {
         loadDir();
     };
 
     await loadDir();
+}
+
+function isPlaying(element: HTMLAnchorElement): boolean {
+    if (player.track === undefined) {
+        return false;
+    }
+    return player.track.url.endsWith(element.pathname);
+}
+
+function setPlayingClass(element: HTMLAnchorElement | undefined): void {
+    lastPlaying?.classList.remove("playing");
+    lastPlaying = element?.parentElement ?? undefined;
+    lastPlaying?.classList.add("playing");
 }
 
 /**
@@ -134,7 +168,8 @@ function populateTracks(info: DirInfo): void {
     for (const track of info.tracks) {
         html +=
             `<li>
-                <i class="material-icons">music_note</i>
+                <i class="material-icons default">music_note</i>
+                <i class="material-icons if-playing hidden">play_arrow</i>
                 <a href="${track.url}">${track.name}</a>
             </li>`;
     }
@@ -145,6 +180,10 @@ function populateTracks(info: DirInfo): void {
     const links = trackList.getElementsByTagName("a");
     for (let i = 0; i < links.length; ++i) {
         const link = links[i];
+
+        if (isPlaying(link)) {
+            setPlayingClass(link);
+        }
 
         link.onclick = (e) => {
             e.preventDefault();

@@ -18,6 +18,17 @@ main {
 	margin-bottom: 8rem;
 }
 
+.listing .playing > a {
+	font-style: italic;
+	text-decoration: underline;
+}
+.listing .playing > i.default {
+	display: none;
+}
+.listing .playing > i.if-playing {
+	display: inline-block;
+}
+
 #play-controls {
 	position: fixed;
 	bottom: 0;
