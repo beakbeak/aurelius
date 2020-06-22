@@ -13,14 +13,33 @@
 	<script src="/static/js/main.js"></script>
 </head>
 <body>
-	<header class="ui">
-		<div id="status">
-			<span id="plug">aurelius</span>
-			<div id="marquee-spacer">
-				<div id="marquee-container">
-					<div id="marquee" class="clickable"></div>
-				</div>
+	<nav id="play-controls" class="ui">
+		<div id="marquee-spacer">
+			<div id="marquee-container">
+				<div id="marquee" class="clickable"></div>
 			</div>
+		</div>
+		<div class="control-group">
+			<div id="progress-bar-empty" class="clickable">
+				<span id="progress-bar-fill"></span>
+				<span id="seek-slider-area">
+					<span id="seek-slider" class="clickable"></span>
+				</span>
+			</div>
+		</div>
+		<div class="control-group">
+			<span id="prev-button" class="clickable">
+				<i class="material-icons">skip_previous</i>
+			</span>
+			<span id="play-button" class="clickable">
+				<i class="material-icons">play_arrow</i>
+			</span>
+			<span id="pause-button" class="clickable hidden">
+				<i class="material-icons">pause</i>
+			</span>
+			<span id="next-button" class="clickable">
+				<i class="material-icons">skip_next</i>
+			</span>
 			<span id="favorite-button" class="clickable">
 				<i class="material-icons">favorite_border</i>
 			</span>
@@ -28,34 +47,15 @@
 				<i class="material-icons">favorite</i>
 			</span>
 		</div>
-		<div id="controls">
-			<span id="play-button" class="clickable">
-				<i class="material-icons">play_arrow</i>
-			</span>
-			<span id="pause-button" class="clickable hidden">
-				<i class="material-icons">pause</i>
-			</span>
-			<span id="prev-button" class="clickable">
-				<i class="material-icons">skip_previous</i>
-			</span>
-			<span id="next-button" class="clickable">
-				<i class="material-icons">skip_next</i>
-			</span>
-			<div id="progress-bar-empty" class="clickable">
-				<span id="progress-bar-fill"></span>
-				<span id="seek-slider-area">
-					<span id="seek-slider" class="clickable"></span>
-				</span>
-			</div>
-			<span id="duration"></span>
-		</div>
-	</header>
+		<span id="plug">aurelius</span>
+		<span id="duration"></span>
+	</nav>
 
 	<main id="content"></main>
 
-	<footer>
+	<aside id="menu">
 		<i id="settings-button" class="material-icons clickable">settings</i>
-	</footer>
+	</aside>
 
 	<div id="modal-overlay"></div>
 
