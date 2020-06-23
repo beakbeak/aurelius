@@ -157,6 +157,8 @@ main {
 	right: 0;
 	top: 0;
 	margin: .5rem;
+	display: flex;
+	flex-direction: column;
 }
 #menu .material-icons {
 	font-size: 3rem;
@@ -171,6 +173,7 @@ main {
 	#menu {
 		top: inherit;
 		bottom: 0;
+		flex-direction: column-reverse;
 	}
 	
 	main {
