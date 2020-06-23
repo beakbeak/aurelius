@@ -5,7 +5,9 @@ html {
 body {
 	background: fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
 	color: hsl(39, 100%, 93%);
+	font-family: serif;
 }
+
 .ui {
 	background-color: hsl(39, 100%, 93%);
 	color: black;
