@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sb/aurelius/pkg/media"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
@@ -183,9 +184,16 @@ func (srv fileOnlyServer) ServeHTTP(
 	req *http.Request,
 ) {
 	path := filepath.Join(srv.root, req.URL.Path)
-	if info, err := os.Stat(path); err == nil && !info.IsDir() {
-		http.ServeFile(w, req, path)
+
+	if info, err := os.Stat(path); err != nil || info.IsDir() {
+		http.NotFound(w, req)
 		return
 	}
-	http.NotFound(w, req)
+
+	if strings.ToLower(filepath.Ext(path)) == ".svgz" {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Content-Encoding", "gzip")
+	}
+
+	http.ServeFile(w, req, path)
 }

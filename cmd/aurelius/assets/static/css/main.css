@@ -165,7 +165,7 @@ main {
 				to left,
 				rgba(0,0,0,.25) calc(100% - 150px),
 				rgba(0,0,0,.35) 100%),
-			fixed url("/static/img/bg.svg"),
+			fixed url("/static/img/bg.svgz"),
 			fixed linear-gradient(
 				hsl(39, 8%, 43%) 50%,
 				hsl(39, 8%, 30%));
