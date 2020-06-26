@@ -42,15 +42,23 @@ function streamQueryString(
     config: StreamConfig,
     startTime = 0,
 ): string {
-    const keys = Object.keys(config) as (keyof StreamConfig)[];
     let query = "";
-    let i = 0;
-    for (; i < keys.length; ++i) {
-        query += `${i === 0 ? "?" : "&"}${keys[i]}=${config[keys[i]]}`;
+    let argCount = 0;
+
+    const addArgument = (key: string, value: string): void => {
+        query += `${argCount === 0 ? "?" : "&"}${key}=${value}`;
+        ++argCount;
+    };
+
+    const keys = Object.keys(config) as (keyof StreamConfig)[];
+    for (let i = 0; i < keys.length; ++i) {
+        addArgument(keys[i], `${config[keys[i]]}`);
     }
+
     if (startTime > 0) {
-        query += `${i === 0 ? "?" : "&"}startTime=${startTime}s`;
+        addArgument("startTime", `${startTime}s`);
     }
+
     return query;
 }
 
@@ -64,8 +72,7 @@ export class Track {
         public readonly startTime: number,
         private readonly _audio: HTMLAudioElement,
         private readonly _playablePromise: Promise<void>,
-    ) {
-    }
+    ) {}
 
     public destroy(): void {
         for (const listener of this._listeners) {

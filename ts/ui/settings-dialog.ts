@@ -78,6 +78,16 @@ function ensureElements() {
     settingsElements.push(new PreventClippingElement());
 }
 
+function createOption(
+    value: string,
+    text = value,
+): HTMLOptionElement {
+    const option = document.createElement("option");
+    option.value = value;
+    option.innerText = text;
+    return option;
+}
+
 function populateSelectWithEnumValues<EnumType>(
     select: HTMLSelectElement,
     enumObject: EnumType,
@@ -86,9 +96,7 @@ function populateSelectWithEnumValues<EnumType>(
         const key = keyString as keyof EnumType;
         const valueString = enumObject[key] as unknown as string;
 
-        const option = document.createElement("option");
-        option.value = valueString;
-        option.innerText = valueString;
+        const option = createOption(valueString);
         select.appendChild(option);
     }
 }
@@ -133,6 +141,7 @@ class ReplayGainElement implements SettingsElement {
     private readonly _preventClippingRow = document.getElementById("prevent-clipping-row")!;
 
     public constructor() {
+        this.element.appendChild(createOption("auto"));
         populateSelectWithEnumValues(this.element, ReplayGainMode);
 
         this.element.oninput = () => { this._onUpdate(); };
@@ -146,12 +155,8 @@ class ReplayGainElement implements SettingsElement {
         }
     }
 
-    public value(): ReplayGainMode | undefined {
-        const value = this.element.value;
-        if (value !== "auto") {
-            return value as ReplayGainMode;
-        }
-        return undefined;
+    public value(): ReplayGainMode | "auto" {
+        return this.element.value as (ReplayGainMode | "auto");
     }
 
     public fromSettings(settings: Settings): void {
@@ -162,10 +167,7 @@ class ReplayGainElement implements SettingsElement {
     }
 
     public toSettings(settings: Settings): void {
-        const value = this.value();
-        if (value !== undefined) {
-            settings.streamConfig.replayGain = value;
-        }
+        settings.streamConfig.replayGain = this.value();
     }
 }
 

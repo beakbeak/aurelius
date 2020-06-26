@@ -1,10 +1,11 @@
-import { StreamConfig, StreamCodec } from "../core/track";
+import { StreamCodec } from "../core/track";
 import { copyJson } from "../core/json";
+import { PlayerStreamConfig } from "../core/player";
 
 const SettingsStorageKey = "settings";
 
 export interface Settings {
-    streamConfig: StreamConfig;
+    streamConfig: PlayerStreamConfig;
 }
 
 export function newSettings(): Settings {

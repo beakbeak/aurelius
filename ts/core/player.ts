@@ -1,7 +1,8 @@
-import { Track, StreamConfig } from "./track";
+import { Track, StreamConfig, ReplayGainMode } from "./track";
 import { Playlist, LocalPlaylist, RemotePlaylist } from "./playlist";
 import { PlayHistory } from "./history";
 import EventDispatcher from "./eventdispatcher";
+import { copyJson } from "./json";
 
 export interface PlayerEventMap {
     play: () => void;
@@ -15,6 +16,10 @@ export interface PlayerEventMap {
 }
 export type PlayerEvent = keyof PlayerEventMap;
 
+export type PlayerStreamConfig = StreamConfig | (Omit<StreamConfig, "replayGain"> & {
+    replayGain: "auto";
+});
+
 export class Player extends EventDispatcher<PlayerEventMap> {
     private _history = new PlayHistory();
     private _playlistPos = -1;
@@ -24,7 +29,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     public playlist?: Playlist;
 
     public constructor(
-        public streamConfig: StreamConfig = {},
+        public streamConfig: PlayerStreamConfig = {},
     ) {
         super();
     }
@@ -33,7 +38,15 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         url: string,
         startTime?: number,
     ): Promise<void> {
-        const track = await Track.fetch(url, this.streamConfig, startTime, this.track);
+        let streamConfig: StreamConfig;
+        if (this.streamConfig.replayGain === "auto") {
+            streamConfig = copyJson(this.streamConfig);
+            streamConfig.replayGain = this._random ? ReplayGainMode.Track : ReplayGainMode.Album;
+        } else {
+            streamConfig = this.streamConfig;
+        }
+
+        const track = await Track.fetch(url, streamConfig, startTime, this.track);
         this.track = track;
 
         track.addEventListener("progress", () => {
