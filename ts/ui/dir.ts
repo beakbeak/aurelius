@@ -1,5 +1,6 @@
 import { Player } from "../core/player";
 import { DirInfo, fetchDirInfo } from "../core/dir";
+import { ReplayGainMode } from "../core/track";
 
 let player: Player;
 
@@ -187,7 +188,7 @@ function populateTracks(info: DirInfo): void {
 
         link.onclick = (e) => {
             e.preventDefault();
-            player.playList(trackUrls, { startPos: i });
+            player.playList(trackUrls, { startPos: i, replayGainHint: ReplayGainMode.Album });
         };
     }
 

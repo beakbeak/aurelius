@@ -24,6 +24,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
+    private _replayGainHint = ReplayGainMode.Track;
 
     public track?: Track;
     public playlist?: Playlist;
@@ -41,7 +42,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         let streamConfig: StreamConfig;
         if (this.streamConfig.replayGain === "auto") {
             streamConfig = copyJson(this.streamConfig);
-            streamConfig.replayGain = this._random ? ReplayGainMode.Track : ReplayGainMode.Album;
+            streamConfig.replayGain = this._replayGainHint;
         } else {
             streamConfig = this.streamConfig;
         }
@@ -94,11 +95,13 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         configOverride?: {
             random?: boolean,
             startPos?: number,
+            replayGainHint?: ReplayGainMode,
         }
     ): Promise<boolean> {
         const config = {
             random: false,
             startPos: 0,
+            replayGainHint: ReplayGainMode.Track,
             ...configOverride
         };
 
@@ -113,6 +116,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         this._playlistPos = config.startPos - 1;
         this._history = new PlayHistory();
         this._random = config.random;
+        this._replayGainHint = config.replayGainHint;
 
         return this.next();
     }
