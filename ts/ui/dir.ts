@@ -33,23 +33,11 @@ export default async function setupDirUi(inPlayer: Player) {
     container.appendChild(playlistList);
     container.appendChild(trackList);
 
-    // highlight currently playing track
     player.addEventListener("play", () => {
-        let playingLink = undefined;
-
-        const trackLinks = trackList.querySelectorAll("a");
-        for (let i = 0; i < trackLinks.length; ++i) {
-            const link = trackLinks[i] as HTMLAnchorElement;
-            if (isPlaying(link)) {
-                playingLink = link;
-                break;
-            }
-        }
-
-        setPlayingClass(playingLink);
+        highlightPlayingTrack();
     });
     player.addEventListener("ended", () => {
-        setPlayingClass(undefined);
+        unhighlightPlayingTrack();
     })
 
     window.onpopstate = () => {
@@ -57,6 +45,25 @@ export default async function setupDirUi(inPlayer: Player) {
     };
 
     await loadDir();
+}
+
+function highlightPlayingTrack(): void {
+    let playingLink = undefined;
+
+    const trackLinks = trackList.querySelectorAll("a");
+    for (let i = 0; i < trackLinks.length; ++i) {
+        const link = trackLinks[i] as HTMLAnchorElement;
+        if (isPlaying(link)) {
+            playingLink = link;
+            break;
+        }
+    }
+
+    setPlayingClass(playingLink);
+}
+
+function unhighlightPlayingTrack(): void {
+    setPlayingClass(undefined);
 }
 
 function isPlaying(element: HTMLAnchorElement): boolean {
