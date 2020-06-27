@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
+	"github.com/vharitonsky/iniflags"
 )
 
 const sessionName = "aurelius"
@@ -27,7 +28,7 @@ func main() {
 		logLevel   = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
 		mediaPath  = flag.String("media", ".", "path to media library root")
 		noThrottle = flag.Bool(
-			"no-throttle", false, "don't limit streaming throughput to playback speed")
+			"noThrottle", false, "don't limit streaming throughput to playback speed")
 		passphrase = flag.String(
 			"pass", "",
 			`passphrase used for login. If unspecified, access will not be restricted.
@@ -35,7 +36,7 @@ func main() {
 WARNING: Passphrases from the client will be transmitted as plain text,
 so use of HTTPS is recommended.`)
 	)
-	flag.Parse()
+	iniflags.Parse()
 
 	var assetsDir string
 	{
