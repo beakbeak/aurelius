@@ -58,9 +58,9 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         });
         track.addEventListener("ended", async () => {
             if (!await this.next()) {
-                this.pause();
                 if (this.track !== undefined) {
-                    this.track.rewind();
+                    this.track.destroy();
+                    delete this.track;
                 }
                 this.dispatchEvent("ended");
             }
