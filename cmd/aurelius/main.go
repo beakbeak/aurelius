@@ -26,6 +26,8 @@ func main() {
 		key        = flag.String("key", "", "TLS key file")
 		logLevel   = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
 		mediaPath  = flag.String("media", ".", "path to media library root")
+		noThrottle = flag.Bool(
+			"no-throttle", false, "don't limit streaming throughput to playback speed")
 		passphrase = flag.String(
 			"pass", "",
 			`passphrase used for login. If unspecified, access will not be restricted.
@@ -52,6 +54,7 @@ so use of HTTPS is recommended.`)
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = *mediaPath
+	mlConfig.ThrottleStreaming = !*noThrottle
 
 	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
