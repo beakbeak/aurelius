@@ -56,16 +56,27 @@ Command-line arguments can also be passed to `docker run`.
 
     $ ./aurelius -help
     Usage of ./aurelius:
-    -cert string
-            TLS certificate file
-    -key string
-            TLS key file
-    -listen string
-            [address][:port] at which to listen for connections (default ":9090")
-    -log int
-            log verbosity (0-3) (default 1)
-    -media string
-            path to media library root (default ".")
+        -cert string
+                TLS certificate file.
+        -config string
+                Path to ini file containing values for command-line flags in 'flagName = value' format. 
+        -dumpflags
+                Print values for all command-line flags to stdout in a format compatible with -config, then exit.
+        -key string
+                TLS key file.
+        -listen string
+                [address][:port] at which to listen for connections. (default ":9090")
+        -log int
+                log verbosity (0-3) (default 1)
+        -media string
+                Path to media library root. (default ".")
+        -noThrottle
+                Don't limit streaming throughput to playback speed.
+        -pass string
+                Passphrase used for login. If unspecified, access will not be restricted.
+            
+                WARNING: Passphrases from the client will be transmitted as plain text,
+                so use of HTTPS is recommended.
 
 ### ReplayGain
 

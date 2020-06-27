@@ -22,20 +22,31 @@ const sessionName = "aurelius"
 func main() {
 	var (
 		address = flag.String(
-			"listen", ":9090", "[address][:port] at which to listen for connections")
-		cert       = flag.String("cert", "", "TLS certificate file")
-		key        = flag.String("key", "", "TLS key file")
+			"listen", ":9090", "[address][:port] at which to listen for connections.")
+		cert       = flag.String("cert", "", "TLS certificate file.")
+		key        = flag.String("key", "", "TLS key file.")
 		logLevel   = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
-		mediaPath  = flag.String("media", ".", "path to media library root")
+		mediaPath  = flag.String("media", ".", "Path to media library root.")
 		noThrottle = flag.Bool(
-			"noThrottle", false, "don't limit streaming throughput to playback speed")
+			"noThrottle", false, "Don't limit streaming throughput to playback speed.")
 		passphrase = flag.String(
 			"pass", "",
-			`passphrase used for login. If unspecified, access will not be restricted.
+			`Passphrase used for login. If unspecified, access will not be restricted.
 
 WARNING: Passphrases from the client will be transmitted as plain text,
 so use of HTTPS is recommended.`)
 	)
+
+	// Reword usage strings of flags from iniflags package
+	if configFlag := flag.Lookup("config"); configFlag != nil {
+		configFlag.Usage =
+			"Path to ini file containing values for command-line flags in 'flagName = value' format. "
+	}
+	if dumpflagsFlag := flag.Lookup("dumpflags"); dumpflagsFlag != nil {
+		dumpflagsFlag.Usage =
+			"Print values for all command-line flags to stdout in a format compatible with -config, then exit."
+	}
+
 	iniflags.Parse()
 
 	var assetsDir string
