@@ -104,12 +104,9 @@ func (ml *Library) ServeHTTP(
 		return true
 	}
 
-	logger(LogDebug).Printf("media request: %v\n", req.URL.Path)
-
 	if matches := ml.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[2]
 
-		logger(LogDebug).Println("dir request", matches)
 		return ml.handleDirRequest(libraryPath, w, req)
 	}
 	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
@@ -117,11 +114,9 @@ func (ml *Library) ServeHTTP(
 		resource := matches[2]
 
 		if ml.rePlaylistPath.FindStringSubmatch(libraryPath) != nil {
-			logger(LogDebug).Println("playlist request", matches)
 			ml.handlePlaylistRequest(libraryPath, resource, w, req)
 			return true
 		}
-		logger(LogDebug).Println("track request", matches)
 		ml.handleTrackRequest(libraryPath, resource, w, req)
 		return true
 	}

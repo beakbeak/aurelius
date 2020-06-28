@@ -34,10 +34,6 @@ func (ml *Library) handleTrackStreamRequest(
 	}
 	defer src.Destroy()
 
-	if fileSrc, ok := src.(*aurelib.FileSource); ok && logLevel >= LogDebug {
-		fileSrc.DumpFormat()
-	}
-
 	srcStreamInfo := src.StreamInfo()
 
 	// set up sink
