@@ -59,15 +59,13 @@ Command-line arguments can also be passed to `docker run`.
         -cert string
                 TLS certificate file.
         -config string
-                Path to ini file containing values for command-line flags in 'flagName = value' format. 
+                Path to ini file containing values for command-line flags in 'flagName = value' format.
         -dumpflags
                 Print values for all command-line flags to stdout in a format compatible with -config, then exit.
         -key string
                 TLS key file.
         -listen string
                 [address][:port] at which to listen for connections. (default ":9090")
-        -log int
-                log verbosity (0-3) (default 1)
         -media string
                 Path to media library root. (default ".")
         -noThrottle

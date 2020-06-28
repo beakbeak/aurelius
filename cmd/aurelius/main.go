@@ -20,10 +20,10 @@ const sessionName = "aurelius"
 
 func main() {
 	var (
-		address = flag.String(
+		listen = flag.String(
 			"listen", ":9090", "[address][:port] at which to listen for connections.")
-		cert       = flag.String("cert", "", "TLS certificate file.")
-		key        = flag.String("key", "", "TLS key file.")
+		tlsCert    = flag.String("cert", "", "TLS certificate file.")
+		tlsKey     = flag.String("key", "", "TLS key file.")
 		mediaPath  = flag.String("media", ".", "Path to media library root.")
 		noThrottle = flag.Bool(
 			"noThrottle", false, "Don't limit streaming throughput to playback speed.")
@@ -38,7 +38,7 @@ so use of HTTPS is recommended.`)
 	// Reword usage strings of flags from iniflags package
 	if configFlag := flag.Lookup("config"); configFlag != nil {
 		configFlag.Usage =
-			"Path to ini file containing values for command-line flags in 'flagName = value' format. "
+			"Path to ini file containing values for command-line flags in 'flagName = value' format."
 	}
 	if dumpflagsFlag := flag.Lookup("dumpflags"); dumpflagsFlag != nil {
 		dumpflagsFlag.Usage =
@@ -176,13 +176,13 @@ so use of HTTPS is recommended.`)
 
 	http.Handle("/", router)
 
-	log.Printf("listening on %s\n", *address)
-	if len(*cert) > 0 || len(*key) > 0 {
+	log.Printf("listening on %s\n", *listen)
+	if len(*tlsCert) > 0 || len(*tlsKey) > 0 {
 		log.Printf("using HTTPS")
-		log.Fatal(http.ListenAndServeTLS(*address, *cert, *key, nil))
+		log.Fatal(http.ListenAndServeTLS(*listen, *tlsCert, *tlsKey, nil))
 	} else {
 		log.Printf("TLS certificate and key not provided; using HTTP")
-		log.Fatal(http.ListenAndServe(*address, nil))
+		log.Fatal(http.ListenAndServe(*listen, nil))
 	}
 }
 
