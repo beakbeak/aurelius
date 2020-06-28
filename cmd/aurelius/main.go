@@ -122,6 +122,8 @@ so use of HTTPS is recommended.`)
 		http.Redirect(w, req, mlConfig.Prefix+"/", http.StatusFound)
 	})
 
+	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
+
 	router.Path("/login").Methods("GET", "POST").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if *passphrase == "" {
 			http.NotFound(w, req)
@@ -163,16 +165,17 @@ so use of HTTPS is recommended.`)
 		trySaveSessionValues(w, req, "valid", false)
 	})
 
-	router.PathPrefix(mlConfig.Prefix + "/").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	forwardToMediaLibrary := func(w http.ResponseWriter, req *http.Request) {
 		if loginIfUnauthorized(w, req) {
 			return
 		}
 		if !ml.ServeHTTP(w, req) {
 			http.ServeFile(w, req, htmlPath("main.html"))
 		}
-	})
+	}
 
-	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
+	router.Path(mlConfig.Prefix).HandlerFunc(forwardToMediaLibrary)
+	router.PathPrefix(mlConfig.Prefix + "/").HandlerFunc(forwardToMediaLibrary)
 
 	http.Handle("/", router)
 

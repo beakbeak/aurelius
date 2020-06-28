@@ -29,7 +29,7 @@ var (
 	testDataMediaPath = filepath.Join(testDataPath, "media")
 	baselineJsonPath  = filepath.Join(testDataPath, "baseline.json")
 
-	favoritesLibraryPath = "/media/Favorites.m3u"
+	favoritesLibraryPath = "/media/tree/Favorites.m3u"
 	favoritesFilePath    = filepath.Join(testDataMediaPath, "Favorites.m3u")
 
 	testFiles = []string{
@@ -329,7 +329,7 @@ func isFavorite(
 	ml *media.Library,
 	path string,
 ) bool {
-	jsonBytes := simpleRequest(t, ml, "GET", "/media/"+path+"/info", "")
+	jsonBytes := simpleRequest(t, ml, "GET", "/media/tree/"+path+"/info", "")
 
 	var track struct{ Favorite bool }
 	unmarshalJson(t, jsonBytes, &track)
@@ -408,7 +408,7 @@ func getDirInfo(
 func TestTrackInfo(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "GET", "/media/nonexistent.mp3/info", "")
+	simpleRequestShouldFail(t, ml, "GET", "/media/tree/nonexistent.mp3/info", "")
 
 	baselines := readBaselines()
 
@@ -420,7 +420,7 @@ func TestTrackInfo(t *testing.T) {
 				t.Parallel()
 			}
 
-			body := simpleRequest(t, ml, "GET", "/media/"+path+"/info", "")
+			body := simpleRequest(t, ml, "GET", "/media/tree/"+path+"/info", "")
 
 			var trackInfo map[string]interface{}
 			if err := json.Unmarshal(body, &trackInfo); err != nil {
@@ -452,24 +452,24 @@ func TestTrackInfo(t *testing.T) {
 func TestFavorite(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "POST", "/media/nonexistent.mp3/favorite", "")
-	simpleRequestShouldFail(t, ml, "POST", "/media/nonexistent.mp3/unfavorite", "")
+	simpleRequestShouldFail(t, ml, "POST", "/media/tree/nonexistent.mp3/favorite", "")
+	simpleRequestShouldFail(t, ml, "POST", "/media/tree/nonexistent.mp3/unfavorite", "")
 
 	path := testFiles[0]
 
-	simpleRequest(t, ml, "POST", "/media/"+path+"/unfavorite", "")
+	simpleRequest(t, ml, "POST", "/media/tree/"+path+"/unfavorite", "")
 
 	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
 
-	simpleRequest(t, ml, "POST", "/media/"+path+"/favorite", "")
+	simpleRequest(t, ml, "POST", "/media/tree/"+path+"/favorite", "")
 
 	if !isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
 	}
 
-	simpleRequest(t, ml, "POST", "/media/"+path+"/unfavorite", "")
+	simpleRequest(t, ml, "POST", "/media/tree/"+path+"/unfavorite", "")
 
 	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
@@ -483,7 +483,7 @@ func TestFavoritesLength(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		for _, path := range testFiles {
-			simpleRequest(t, ml, "POST", "/media/"+path+"/favorite", "")
+			simpleRequest(t, ml, "POST", "/media/tree/"+path+"/favorite", "")
 		}
 	}
 
@@ -565,7 +565,7 @@ func TestWithSymlinks(t *testing.T) {
 
 	playlistName := "temp-playlist.m3u"
 	playlistFilePath := filepath.Join(testDataMediaPath, playlistName)
-	playlistLibraryPath := "/media/" + playlistName
+	playlistLibraryPath := "/media/tree/" + playlistName
 
 	writeStringToFile(t, playlistFilePath, strings.Join(playlist, "\n"))
 	defer (func() {
@@ -632,7 +632,7 @@ func TestWithSymlinks(t *testing.T) {
 			}
 		}
 
-		testDir("/media")
+		testDir("/media/tree")
 	})
 }
 
@@ -719,7 +719,7 @@ func TestStream(t *testing.T) {
 						t.Parallel()
 					}
 
-					uri := "/media/" + path + "/stream" + query
+					uri := "/media/tree/" + path + "/stream" + query
 					body, statusCode := simpleRequestWithStatus(t, ml, "GET", uri, "")
 
 					baselineHash := baselineHashes[query]

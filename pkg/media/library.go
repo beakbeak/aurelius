@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sb/aurelius/pkg/textcache"
@@ -53,6 +54,7 @@ type Library struct {
 
 	playlistCache *textcache.TextCache
 
+	reRootPath         *regexp.Regexp
 	reDirPath          *regexp.Regexp
 	reFileResourcePath *regexp.Regexp
 	rePlaylistPath     *regexp.Regexp
@@ -75,13 +77,16 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 	}
 
 	quotedPrefix := regexp.QuoteMeta(config.Prefix)
+	quotedTreePrefix := regexp.QuoteMeta(path.Join(config.Prefix, treePrefix))
+
 	ml := Library{
 		config: *config,
 
 		playlistCache: textcache.New(),
 
-		reDirPath:          regexp.MustCompile(`^` + quotedPrefix + `/((.*?)/)?$`),
-		reFileResourcePath: regexp.MustCompile(`^` + quotedPrefix + `/(.+?)/([^/]+)$`),
+		reRootPath:         regexp.MustCompile(`^(` + quotedPrefix + `/?|` + quotedTreePrefix + `)$`),
+		reDirPath:          regexp.MustCompile(`^` + quotedTreePrefix + `/((.*?)/)?$`),
+		reFileResourcePath: regexp.MustCompile(`^` + quotedTreePrefix + `/(.+?)/([^/]+)$`),
 		rePlaylistPath:     regexp.MustCompile(`^(?i).+?\.m3u$`),
 	}
 
@@ -99,8 +104,8 @@ func (ml *Library) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
 ) bool {
-	if req.URL.Path == ml.config.Prefix {
-		http.Redirect(w, req, ml.config.Prefix+"/", http.StatusFound)
+	if ml.reRootPath.MatchString(req.URL.Path) {
+		http.Redirect(w, req, ml.toUrlPath("")+"/", http.StatusFound)
 		return true
 	}
 

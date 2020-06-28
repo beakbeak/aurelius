@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const treePrefix = "tree"
+
 // toFileSystemPath converts a URL-style path relative to the root of the media
 // library to a path in the local file system.
 func (ml *Library) toFileSystemPath(libraryPath string) string {
@@ -68,6 +70,6 @@ func (ml *Library) toLibraryPathWithContext(fsPath, context string) (string, err
 // toUrlPath prepends the library's routing prefix to libraryPath and applies
 // URL encoding to the result.
 func (ml *Library) toUrlPath(libraryPath string) string {
-	urlPath := path.Join(ml.config.Prefix, libraryPath)
+	urlPath := path.Join(ml.config.Prefix, treePrefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
 }

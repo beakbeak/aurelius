@@ -42,12 +42,12 @@ function makeCommonTests(
 }
 
 async function makeLocalPlaylist(libraryPath = ""): Promise<LocalPlaylist> {
-    const dir = await fetchDirInfo(`${host}/media/${libraryPath}`);
+    const dir = await fetchDirInfo(`${host}/media/tree/${libraryPath}`);
     return new LocalPlaylist(dir.tracks.map(pathUrl => pathUrl.url));
 }
 
 async function makeRemotePlaylist(libraryPath = "test.m3u"): Promise<RemotePlaylist> {
-    return RemotePlaylist.fetch(`${host}/media/${libraryPath}`);
+    return RemotePlaylist.fetch(`${host}/media/tree/${libraryPath}`);
 }
 
 makeCommonTests("LocalPlaylist", makeLocalPlaylist);
