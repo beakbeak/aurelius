@@ -85,7 +85,7 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		rePlaylistPath:     regexp.MustCompile(`^(?i).+?\.m3u$`),
 	}
 
-	logger(LogDebug).Printf(
+	log.Printf(
 		"media library opened: prefix='%v' root='%v'", config.Prefix, config.RootPath)
 
 	return &ml, nil
@@ -131,7 +131,7 @@ func writeJson(
 ) {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
-		logger(LogDebug).Printf("failed to marshal JSON: %v\n", err)
+		log.Printf("failed to marshal JSON: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -140,6 +140,6 @@ func writeJson(
 	w.Header().Set("Cache-Control", "no-cache, no-store")
 
 	if _, err := w.Write(dataJson); err != nil {
-		logger(LogDebug).Printf("failed to write response: %v\n", err)
+		log.Printf("failed to write response: %v\n", err)
 	}
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,7 +24,6 @@ func main() {
 			"listen", ":9090", "[address][:port] at which to listen for connections.")
 		cert       = flag.String("cert", "", "TLS certificate file.")
 		key        = flag.String("key", "", "TLS key file.")
-		logLevel   = flag.Int("log", 1, fmt.Sprintf("log verbosity (0-%v)", media.LogLevelCount))
 		mediaPath  = flag.String("media", ".", "Path to media library root.")
 		noThrottle = flag.Bool(
 			"noThrottle", false, "Don't limit streaming throughput to playback speed.")
@@ -62,7 +60,7 @@ so use of HTTPS is recommended.`)
 		return filepath.Join(assetsDir, "html", fileName)
 	}
 
-	media.SetLogLevel(media.LogLevel(*logLevel - 1))
+	media.SetLogger(log.New(log.Writer(), "", log.LstdFlags))
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = *mediaPath

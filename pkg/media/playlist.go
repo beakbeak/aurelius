@@ -16,7 +16,7 @@ func (ml *Library) handlePlaylistRequest(
 	lines, err := ml.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
-		logger(LogDebug).Printf("failed to load '%v': %v", fsPath, err)
+		log.Printf("failed to load '%v': %v", fsPath, err)
 	}
 
 	switch resource {
@@ -37,7 +37,7 @@ func (ml *Library) handlePlaylistRequest(
 
 		pos64, err := strconv.ParseInt(resource, 0, 0)
 		if err != nil {
-			logger(LogDebug).Printf("failed to parse playlist position '%v': %v\n", resource, err)
+			log.Printf("failed to parse playlist position '%v': %v\n", resource, err)
 			writeJson(w, nil)
 			return
 		}

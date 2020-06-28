@@ -39,7 +39,7 @@ func (ml *Library) handleDirInfoRequest(
 	infos, err := ioutil.ReadDir(fsDirPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		logger(LogDebug).Printf("ReadDir failed: %v\n", err)
+		log.Printf("ReadDir failed: %v\n", err)
 		return
 	}
 
@@ -85,13 +85,13 @@ func (ml *Library) handleDirInfoRequest(
 			linkPath := filepath.Join(fsDirPath, info.Name())
 			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
-				logger(LogDebug).Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
+				log.Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
 				continue
 			}
 
 			linkedInfo, err := os.Stat(linkedPath)
 			if err != nil {
-				logger(LogDebug).Printf("stat '%v' failed: %v\n", linkedPath, err)
+				log.Printf("stat '%v' failed: %v\n", linkedPath, err)
 				continue
 			}
 			mode = linkedInfo.Mode()

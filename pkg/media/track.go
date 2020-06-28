@@ -41,7 +41,7 @@ func (ml *Library) handleTrackRequest(
 		switch resource {
 		case "favorite":
 			if err := ml.setFavorite(libraryPath, true); err != nil {
-				logger(LogDebug).Printf("Favorite failed: %v\n", err)
+				log.Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
@@ -49,7 +49,7 @@ func (ml *Library) handleTrackRequest(
 
 		case "unfavorite":
 			if err := ml.setFavorite(libraryPath, false); err != nil {
-				logger(LogDebug).Printf("Unfavorite failed: %v\n", err)
+				log.Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
@@ -76,7 +76,7 @@ func (ml *Library) handleTrackInfoRequest(
 ) {
 	src, err := newAudioSource(fsPath)
 	if err != nil {
-		logger(LogDebug).Printf("failed to open source '%v': %v\n", fsPath, err)
+		log.Printf("failed to open source '%v': %v\n", fsPath, err)
 		http.NotFound(w, req)
 		return
 	}
@@ -100,7 +100,7 @@ func (ml *Library) handleTrackInfoRequest(
 	}
 
 	if favorite, err := ml.isFavorite(urlPath); err != nil {
-		logger(LogDebug).Printf("isFavorite failed: %v", err)
+		log.Printf("isFavorite failed: %v", err)
 	} else {
 		result.Favorite = favorite
 	}

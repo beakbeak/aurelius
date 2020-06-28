@@ -7,7 +7,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/aurelius",
-            "args": ["-media", "${workspaceFolder}/test/media", "-log", "2"],
+            "args": ["-media", "${workspaceFolder}/test/media"],
         },
         {
             "name": "debug (passphrase)",
@@ -15,7 +15,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/aurelius",
-            "args": ["-media", "${workspaceFolder}/test/media", "-log", "2", "-pass", "blah"],
+            "args": ["-media", "${workspaceFolder}/test/media", "-pass", "blah"],
         }
     ]
 }
