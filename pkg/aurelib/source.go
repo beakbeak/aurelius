@@ -252,7 +252,7 @@ func (src *sourceBase) init() error {
 	return nil
 }
 
-// DumpFormat prints information about the audio format to standard output.
+// DumpFormat logs information about the audio format with level LogInfo.
 func (src *FileSource) DumpFormat() {
 	cPath := C.CString(src.Path)
 	defer C.free(unsafe.Pointer(cPath))

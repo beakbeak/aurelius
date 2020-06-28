@@ -31,6 +31,8 @@ func init() {
 	if len(loggers) != int(LogLevelCount) {
 		panic("missing Logger")
 	}
+
+	aurelib.SetLogger(aurelibLogger{})
 }
 
 // SetLogLevel controls the verbosity of console logging. (Default: LogNone)
@@ -40,10 +42,6 @@ func SetLogLevel(level LogLevel) {
 	}
 	if level >= LogLevelCount {
 		level = LogLevelCount - 1
-	}
-
-	if level >= LogDebug {
-		aurelib.SetLogLevel(aurelib.LogInfo)
 	}
 
 	logLevel = level
@@ -61,4 +59,16 @@ func SetLogLevel(level LogLevel) {
 
 func logger(level LogLevel) *log.Logger {
 	return loggers[level]
+}
+
+type aurelibLogger struct{}
+
+func (aurelibLogger) Log(
+	level aurelib.LogLevel,
+	message string,
+) {
+	if level > aurelib.LogInfo {
+		return
+	}
+	logger(LogDebug).Print(message)
 }

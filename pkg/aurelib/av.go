@@ -19,11 +19,34 @@ package aurelib
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 
+#define LOG_BUFFER_SIZE 2048
+
+extern void logMessage(int level, char const* buffer);
+
 static void
 avRegisterAll() {
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 7, 100)
-    av_register_all();
+	av_register_all();
 #endif
+}
+
+static void
+logCallback(
+	void*		ptr,
+	int			level,
+	char const*	format,
+	va_list		format_args)
+{
+	char buffer[LOG_BUFFER_SIZE];
+	int print_prefix = 1;
+
+	av_log_format_line(ptr, level, format, format_args, buffer, LOG_BUFFER_SIZE, &print_prefix);
+	logMessage(level, buffer);
+}
+
+static void
+setLogCallback() {
+	av_log_set_callback(logCallback);
 }
 */
 import "C"
@@ -32,77 +55,9 @@ import (
 	"time"
 )
 
-// A LogLevel represents the verbosity of FFmpeg's console logging. It
-// corresponds to FFmpeg's AV_LOG_* constants.
-type LogLevel int
-
-// The following comments have been extracted from the FFmpeg documentation for
-// the noted AV_LOG_* constants.
-const (
-	// "Print no output." (AV_LOG_QUIET)
-	LogQuiet LogLevel = iota
-
-	// "Something went really wrong and we will crash now." (AV_LOG_PANIC)
-	LogPanic
-
-	// "Something went wrong and recovery is not possible. For example, no
-	// header was found for a format which depends on headers or an illegal
-	// combination of parameters is used." (AV_LOG_FATAL)
-	LogFatal
-
-	// "Something went wrong and cannot losslessly be recovered. However, not
-	// all future data is affected." (AV_LOG_ERROR)
-	LogError
-
-	// "Something somehow does not look correct. This may or may not lead to
-	// problems. An example would be the use of '-vstrict -2'." (AV_LOG_WARNING)
-	LogWarning
-
-	// "Standard information." (AV_LOG_INFO)
-	LogInfo
-
-	// "Detailed information." (AV_LOG_VERBOSE)
-	LogVerbose
-
-	// "Stuff which is only useful for libav* developers." (AV_LOG_DEBUG)
-	LogDebug
-
-	// "Extremely verbose debugging, useful for libav* development."
-	// (AV_LOG_TRACE)
-	LogTrace
-)
-
 func init() {
 	C.avRegisterAll()
-	SetLogLevel(LogPanic)
-}
-
-// SetLogLevel controls the verbosity of FFmpeg's console logging. (Default: LogPanic)
-func SetLogLevel(level LogLevel) {
-	var avLevel C.int
-
-	switch level {
-	case LogQuiet:
-		avLevel = C.AV_LOG_QUIET
-	case LogPanic:
-		avLevel = C.AV_LOG_PANIC
-	case LogFatal:
-		avLevel = C.AV_LOG_FATAL
-	case LogError:
-		avLevel = C.AV_LOG_ERROR
-	case LogWarning:
-		avLevel = C.AV_LOG_WARNING
-	case LogInfo:
-		avLevel = C.AV_LOG_INFO
-	case LogVerbose:
-		avLevel = C.AV_LOG_VERBOSE
-	case LogDebug:
-		avLevel = C.AV_LOG_DEBUG
-	case LogTrace:
-		avLevel = C.AV_LOG_TRACE
-	}
-
-	C.av_log_set_level(avLevel)
+	C.setLogCallback()
 }
 
 func avErr2Str(code C.int) string {
