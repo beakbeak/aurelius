@@ -12,7 +12,7 @@ func (ml *Library) handlePlaylistRequest(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	fsPath := ml.toFileSystemPath(libraryPath)
+	fsPath := ml.libraryToFsPath(libraryPath)
 	lines, err := ml.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
@@ -55,7 +55,7 @@ func (ml *Library) handlePlaylistRequest(
 
 		writeJson(w, Result{
 			Pos:  pos,
-			Path: ml.toUrlPath(path.Join(path.Dir(libraryPath), lines[pos])),
+			Path: ml.libraryToUrlPath(path.Join(path.Dir(libraryPath), lines[pos])),
 		})
 	}
 }

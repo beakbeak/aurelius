@@ -105,7 +105,7 @@ func (ml *Library) ServeHTTP(
 	req *http.Request,
 ) bool {
 	if ml.reRootPath.MatchString(req.URL.Path) {
-		http.Redirect(w, req, ml.toUrlPath("")+"/", http.StatusFound)
+		http.Redirect(w, req, ml.libraryToUrlPath("")+"/", http.StatusFound)
 		return true
 	}
 

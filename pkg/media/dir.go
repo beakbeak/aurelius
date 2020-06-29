@@ -34,7 +34,7 @@ func (ml *Library) handleDirInfoRequest(
 	libraryDirPath string,
 	w http.ResponseWriter,
 ) {
-	fsDirPath := ml.toFileSystemPath(libraryDirPath)
+	fsDirPath := ml.libraryToFsPath(libraryDirPath)
 
 	infos, err := ioutil.ReadDir(fsDirPath)
 	if err != nil {
@@ -51,18 +51,18 @@ func (ml *Library) handleDirInfoRequest(
 	makeRelativePathUrl := func(name string) PathUrl {
 		return PathUrl{
 			Name: name,
-			Url:  ml.toUrlPath(path.Join(libraryDirPath, name)),
+			Url:  ml.libraryToUrlPath(path.Join(libraryDirPath, name)),
 		}
 	}
 
 	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
-		libraryPath, err := ml.toLibraryPathWithContext(fsPath, fsDirPath)
+		libraryPath, err := ml.fsToLibraryPathWithContext(fsPath, fsDirPath)
 		if err != nil {
 			return PathUrl{}, err
 		}
 		return PathUrl{
 			Name: name,
-			Url:  ml.toUrlPath(libraryPath),
+			Url:  ml.libraryToUrlPath(libraryPath),
 		}, nil
 	}
 

@@ -11,15 +11,15 @@ import (
 
 const treePrefix = "tree"
 
-// toFileSystemPath converts a URL-style path relative to the root of the media
+// libraryToFsPath converts a URL-style path relative to the root of the media
 // library to a path in the local file system.
-func (ml *Library) toFileSystemPath(libraryPath string) string {
+func (ml *Library) libraryToFsPath(libraryPath string) string {
 	return filepath.Join(ml.config.RootPath, libraryPath)
 }
 
-// toLibraryPath converts a path in the local file system to a URL-style path
+// fsToLibraryPath converts a path in the local file system to a URL-style path
 // relative to the root of the media library.
-func (ml *Library) toLibraryPath(fsPath string) (string, error) {
+func (ml *Library) fsToLibraryPath(fsPath string) (string, error) {
 	libraryPath, err := filepath.Rel(ml.config.RootPath, fsPath)
 	if err != nil {
 		return "", err
@@ -33,13 +33,13 @@ func (ml *Library) toLibraryPath(fsPath string) (string, error) {
 	return libraryPath, nil
 }
 
-// toLibraryPathWithContext converts a path in the local file system to a
+// fsToLibraryPathWithContext converts a path in the local file system to a
 // URL-style path relative to the root of the media library.
 //
-// It uses context as a basis for resolving symbolic links: it attempts to
-// resolve symbolic links below context and preserve symbolic links above
-// context.
-func (ml *Library) toLibraryPathWithContext(fsPath, context string) (string, error) {
+// The context parameter is an ancestor directory of fsPath. The function uses
+// context as a basis for resolving symbolic links: it attempts to resolve
+// symbolic links below context and preserve symbolic links above context.
+func (ml *Library) fsToLibraryPathWithContext(fsPath, context string) (string, error) {
 	realFsPath, err := filepath.EvalSymlinks(fsPath)
 	if err != nil {
 		return "", err
@@ -56,20 +56,20 @@ func (ml *Library) toLibraryPathWithContext(fsPath, context string) (string, err
 	}
 	fsPathInContext = filepath.Join(context, fsPathInContext)
 
-	libraryPathInContext, err := ml.toLibraryPath(fsPathInContext)
+	libraryPathInContext, err := ml.fsToLibraryPath(fsPathInContext)
 	if err == nil {
 		// contextualized path may be invalid if resolved path is at a
 		// different level of indirection than context
-		if _, err := os.Stat(ml.toFileSystemPath(libraryPathInContext)); err == nil {
+		if _, err := os.Stat(ml.libraryToFsPath(libraryPathInContext)); err == nil {
 			return libraryPathInContext, nil
 		}
 	}
-	return ml.toLibraryPath(fsPath)
+	return ml.fsToLibraryPath(fsPath)
 }
 
-// toUrlPath prepends the library's routing prefix to libraryPath and applies
+// libraryToUrlPath prepends the library's routing prefix to libraryPath and applies
 // URL encoding to the result.
-func (ml *Library) toUrlPath(libraryPath string) string {
+func (ml *Library) libraryToUrlPath(libraryPath string) string {
 	urlPath := path.Join(ml.config.Prefix, treePrefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
 }
