@@ -16,7 +16,7 @@
 	<nav id="play-controls" class="ui">
 		<div id="marquee-spacer">
 			<div id="marquee-container">
-				<div id="marquee" class="clickable"></div>
+				<div id="marquee" class="clickable" title="Jump to directory containing this track"></div>
 			</div>
 		</div>
 		<div class="control-group">
@@ -28,22 +28,22 @@
 			</div>
 		</div>
 		<div class="control-group">
-			<span id="prev-button" class="clickable">
+			<span id="prev-button" class="clickable" title="Previous track">
 				<i class="material-icons">skip_previous</i>
 			</span>
-			<span id="play-button" class="clickable">
+			<span id="play-button" class="clickable" title="Play">
 				<i class="material-icons">play_arrow</i>
 			</span>
-			<span id="pause-button" class="clickable hidden">
+			<span id="pause-button" class="clickable hidden" title="Pause">
 				<i class="material-icons">pause</i>
 			</span>
-			<span id="next-button" class="clickable">
+			<span id="next-button" class="clickable" title="Next track">
 				<i class="material-icons">skip_next</i>
 			</span>
-			<span id="favorite-button" class="clickable">
+			<span id="favorite-button" class="clickable" title="Add to favorites">
 				<i class="material-icons">favorite_border</i>
 			</span>
-			<span id="unfavorite-button" class="clickable hidden">
+			<span id="unfavorite-button" class="clickable hidden" title="Remove from favorites">
 				<i class="material-icons">favorite</i>
 			</span>
 		</div>
@@ -54,7 +54,7 @@
 	<main id="content"></main>
 
 	<aside id="menu">
-		<i id="settings-button" class="material-icons clickable">settings</i>
+		<i id="settings-button" class="material-icons clickable" title="Settings">settings</i>
 	</aside>
 
 	<div id="modal-overlay"></div>
