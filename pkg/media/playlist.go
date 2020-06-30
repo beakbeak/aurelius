@@ -13,6 +13,29 @@ func (ml *Library) handlePlaylistRequest(
 	req *http.Request,
 ) {
 	fsPath := ml.libraryToFsPath(libraryPath)
+	libraryDir := path.Dir(libraryPath)
+
+	ml.handlePlaylistRequestImpl(fsPath, libraryDir, resource, w, req)
+}
+
+func (ml *Library) handleFavoritesRequest(
+	resource string,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
+	fsPath := ml.storageToFsPath(favoritesPath)
+	libraryDir := "/"
+
+	ml.handlePlaylistRequestImpl(fsPath, libraryDir, resource, w, req)
+}
+
+func (ml *Library) handlePlaylistRequestImpl(
+	fsPath string,
+	libraryDir string,
+	resource string,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
 	lines, err := ml.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
@@ -55,7 +78,7 @@ func (ml *Library) handlePlaylistRequest(
 
 		writeJson(w, Result{
 			Pos:  pos,
-			Path: ml.libraryToUrlPath(path.Join(path.Dir(libraryPath), lines[pos])),
+			Path: ml.libraryToUrlPath(path.Join(libraryDir, lines[pos])),
 		})
 	}
 }

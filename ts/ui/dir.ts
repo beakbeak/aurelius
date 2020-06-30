@@ -4,6 +4,7 @@ import { ReplayGainMode } from "../core/track";
 
 let player: Player;
 
+let specialList: HTMLElement;
 let dirList: HTMLElement;
 let playlistList: HTMLElement;
 let trackList: HTMLElement;
@@ -24,14 +25,18 @@ export default async function setupDirUi(inPlayer: Player) {
         return out;
     };
 
+    specialList = createList();
     dirList = createList();
     playlistList = createList();
     trackList = createList();
 
     container.innerHTML = "";
+    container.appendChild(specialList);
     container.appendChild(dirList);
     container.appendChild(playlistList);
     container.appendChild(trackList);
+
+    populateSpecial();
 
     player.addEventListener("play", () => {
         highlightPlayingTrack();
@@ -45,6 +50,23 @@ export default async function setupDirUi(inPlayer: Player) {
     };
 
     await loadDir();
+}
+
+function populateSpecial(): void {
+    specialList.innerHTML =
+        `<li>
+            <i class="material-icons">favorite_border</i>
+            <a href="#">Favorites</a>
+        </li>`
+
+    const favoritesLink = specialList.querySelector("a")!;
+
+    favoritesLink.onclick = (e) => {
+        e.preventDefault();
+        player.playList("/media/favorites", { random: true });
+    };
+
+    specialList.classList.remove("hidden");
 }
 
 function highlightPlayingTrack(): void {

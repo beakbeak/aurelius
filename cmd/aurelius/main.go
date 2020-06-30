@@ -22,9 +22,13 @@ func main() {
 	var (
 		listen = flag.String(
 			"listen", ":9090", "[address][:port] at which to listen for connections.")
-		tlsCert    = flag.String("cert", "", "TLS certificate file.")
-		tlsKey     = flag.String("key", "", "TLS key file.")
-		mediaPath  = flag.String("media", ".", "Path to media library root.")
+		tlsCert     = flag.String("cert", "", "TLS certificate file.")
+		tlsKey      = flag.String("key", "", "TLS key file.")
+		mediaPath   = flag.String("media", ".", "Path to media library root.")
+		storagePath = flag.String(
+			"storage", ".",
+			`Path to directory where persistent data (favorites, etc.) will be stored.
+It will be created if it doesn't exist.`)
 		noThrottle = flag.Bool(
 			"noThrottle", false, "Don't limit streaming throughput to playback speed.")
 		passphrase = flag.String(
@@ -64,6 +68,7 @@ so use of HTTPS is recommended.`)
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = *mediaPath
+	mlConfig.StoragePath = *storagePath
 	mlConfig.ThrottleStreaming = !*noThrottle
 
 	ml, err := media.NewLibrary(mlConfig)

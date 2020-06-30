@@ -10,6 +10,7 @@ import (
 )
 
 const treePrefix = "tree"
+const favoritesPath = "favorites.m3u"
 
 // libraryToFsPath converts a URL-style path relative to the root of the media
 // library to a path in the local file system.
@@ -72,4 +73,10 @@ func (ml *Library) fsToLibraryPathWithContext(fsPath, context string) (string, e
 func (ml *Library) libraryToUrlPath(libraryPath string) string {
 	urlPath := path.Join(ml.config.Prefix, treePrefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
+}
+
+// storageToFsPath converts a path relative to the library's configured storage path to an absolute
+// path.
+func (ml *Library) storageToFsPath(storagePath string) string {
+	return filepath.Join(ml.config.StoragePath, storagePath)
 }

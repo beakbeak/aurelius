@@ -25,12 +25,10 @@ var (
 	// tests to update baseline.json
 	updateBaselines = os.Getenv("UPDATE_BASELINES") == "1"
 
-	testDataPath      = filepath.Join("..", "..", "test")
-	testDataMediaPath = filepath.Join(testDataPath, "media")
-	baselineJsonPath  = filepath.Join(testDataPath, "baseline.json")
-
-	favoritesLibraryPath = "/media/tree/Favorites.m3u"
-	favoritesFilePath    = filepath.Join(testDataMediaPath, "Favorites.m3u")
+	testDataRoot     = filepath.Join("..", "..", "test")
+	testMediaPath    = filepath.Join(testDataRoot, "media")
+	testStoragePath  = filepath.Join(testDataRoot, "storage")
+	baselineJsonPath = filepath.Join(testDataRoot, "baseline.json")
 
 	testFiles = []string{
 		"test.flac",
@@ -295,12 +293,13 @@ func (t *testLogger) Printf(format string, v ...interface{}) {
 }
 
 func createDefaultLibrary(t *testing.T) *media.Library {
-	clearFavorites(t)
+	clearStorage(t)
 
 	media.SetLogger((*testLogger)(t))
 
 	mlConfig := media.NewLibraryConfig()
-	mlConfig.RootPath = testDataMediaPath
+	mlConfig.RootPath = testMediaPath
+	mlConfig.StoragePath = testStoragePath
 	mlConfig.ThrottleStreaming = false
 	mlConfig.DeterministicStreaming = true
 
@@ -311,16 +310,16 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	return ml
 }
 
-func clearFavorites(t *testing.T) {
-	switch _, err := os.Stat(favoritesFilePath); {
+func clearStorage(t *testing.T) {
+	switch _, err := os.Stat(testStoragePath); {
 	case os.IsNotExist(err):
 		return
 	case err != nil:
-		t.Fatalf("\"%s\" exists but Stat() failed: %v", favoritesFilePath, err)
+		t.Fatalf("\"%s\" exists but Stat() failed: %v", testStoragePath, err)
 	}
 
-	if err := os.Remove(favoritesFilePath); err != nil {
-		t.Fatalf("Remove(\"%s\") failed: %v", favoritesFilePath, err)
+	if err := os.RemoveAll(testStoragePath); err != nil {
+		t.Fatalf("RemoveAll(\"%s\") failed: %v", testStoragePath, err)
 	}
 }
 
@@ -479,7 +478,7 @@ func TestFavorite(t *testing.T) {
 func TestFavoritesLength(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "GET", favoritesLibraryPath, "")
+	simpleRequestShouldFail(t, ml, "GET", "/media/favorites/info", "")
 
 	for i := 0; i < 2; i++ {
 		for _, path := range testFiles {
@@ -487,7 +486,7 @@ func TestFavoritesLength(t *testing.T) {
 		}
 	}
 
-	length := getPlaylistLength(t, ml, favoritesLibraryPath)
+	length := getPlaylistLength(t, ml, "/media/favorites")
 	expectedLength := len(testFiles)
 	if length != expectedLength {
 		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
@@ -496,7 +495,7 @@ func TestFavoritesLength(t *testing.T) {
 
 func TestWithSymlinks(t *testing.T) {
 	for _, baseName := range []string{"dir1", "dir2"} {
-		dir := filepath.Join(testDataMediaPath, baseName)
+		dir := filepath.Join(testMediaPath, baseName)
 		if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
 			t.Fatalf("RemoveAll(\"%s\") failed: %v", dir, err)
 		}
@@ -515,7 +514,7 @@ func TestWithSymlinks(t *testing.T) {
 	useSymlinks := true
 	{
 		linkTarget := filepath.Join("..", "dir1")
-		linkName := filepath.Join(testDataMediaPath, "dir2", "dir1link")
+		linkName := filepath.Join(testMediaPath, "dir2", "dir1link")
 
 		if err := os.Symlink(linkTarget, linkName); err != nil {
 			t.Logf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
@@ -550,7 +549,7 @@ func TestWithSymlinks(t *testing.T) {
 
 		linkTarget := filepath.Join("..", "test.flac")
 		for _, baseName := range baseNames {
-			linkName := filepath.Join(testDataMediaPath, "dir1", baseName)
+			linkName := filepath.Join(testMediaPath, "dir1", baseName)
 			if err := os.Symlink(linkTarget, linkName); err != nil {
 				t.Fatalf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
 			}
@@ -564,7 +563,7 @@ func TestWithSymlinks(t *testing.T) {
 	}
 
 	playlistName := "temp-playlist.m3u"
-	playlistFilePath := filepath.Join(testDataMediaPath, playlistName)
+	playlistFilePath := filepath.Join(testMediaPath, playlistName)
 	playlistLibraryPath := "/media/tree/" + playlistName
 
 	writeStringToFile(t, playlistFilePath, strings.Join(playlist, "\n"))

@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const favoritesPath = "Favorites.m3u"
-
 func (ml *Library) handleTrackRequest(
 	libraryPath string,
 	resource string,
@@ -116,7 +114,7 @@ func newAudioSource(path string) (aurelib.Source, error) {
 }
 
 func (ml *Library) isFavorite(path string) (bool, error) {
-	favorites, err := ml.playlistCache.Get(ml.libraryToFsPath(favoritesPath))
+	favorites, err := ml.playlistCache.Get(ml.storageToFsPath(favoritesPath))
 	switch {
 	case os.IsNotExist(err):
 		return false, nil
@@ -138,7 +136,7 @@ func (ml *Library) setFavorite(
 ) error {
 	if favorite {
 		return ml.playlistCache.CreateOrModify(
-			ml.libraryToFsPath(favoritesPath),
+			ml.storageToFsPath(favoritesPath),
 			func(favorites []string) ([]string, error) {
 				for _, line := range favorites {
 					if line == path {
@@ -150,7 +148,7 @@ func (ml *Library) setFavorite(
 		)
 	} else {
 		return ml.playlistCache.CreateOrModify(
-			ml.libraryToFsPath(favoritesPath),
+			ml.storageToFsPath(favoritesPath),
 			func(favorites []string) ([]string, error) {
 				for index, line := range favorites {
 					if line == path {

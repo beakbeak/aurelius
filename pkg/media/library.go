@@ -16,8 +16,15 @@ import (
 
 // LibraryConfig contains configuration parameters used by NewLibrary. It should
 // be created with NewLibraryConfig to provide default values.
+//
+// Members without default values listed are required to be set by the user
+// before passing to NewLibrary.
 type LibraryConfig struct {
 	RootPath string // The path to the media files in the local filesystem.
+
+	// StoragePath is a directory in the local filesystem where persistent data
+	// will be stored. If it does not exist, it will be created.
+	StoragePath string
 
 	// Prefix is the URL path prefix used for HTTP requests routed to the
 	// Library. (Default: "/media")
@@ -58,6 +65,7 @@ type Library struct {
 	reDirPath          *regexp.Regexp
 	reFileResourcePath *regexp.Regexp
 	rePlaylistPath     *regexp.Regexp
+	reFavoritesPath    *regexp.Regexp
 }
 
 // NewLibrary creates a new Library object.
@@ -67,6 +75,10 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 	if config.RootPath == "" {
 		return nil, fmt.Errorf("RootPath is empty")
 	}
+	if config.StoragePath == "" {
+		return nil, fmt.Errorf("StoragePath is empty")
+	}
+
 	if config.RootPath, err = filepath.EvalSymlinks(config.RootPath); err != nil {
 		return nil, err
 	}
@@ -74,6 +86,10 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		return nil, err
 	} else if !info.Mode().IsDir() {
 		return nil, fmt.Errorf("not a directory: %v", config.RootPath)
+	}
+
+	if err := os.MkdirAll(config.StoragePath, os.ModePerm); err != nil {
+		return nil, fmt.Errorf("failed to create StoragePath: %v", err)
 	}
 
 	quotedPrefix := regexp.QuoteMeta(config.Prefix)
@@ -88,6 +104,7 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		reDirPath:          regexp.MustCompile(`^` + quotedTreePrefix + `/((.*?)/)?$`),
 		reFileResourcePath: regexp.MustCompile(`^` + quotedTreePrefix + `/(.+?)/([^/]+)$`),
 		rePlaylistPath:     regexp.MustCompile(`^(?i).+?\.m3u$`),
+		reFavoritesPath:    regexp.MustCompile(`^` + quotedPrefix + `/favorites/([^/]+)$`),
 	}
 
 	log.Printf(
@@ -123,6 +140,12 @@ func (ml *Library) ServeHTTP(
 			return true
 		}
 		ml.handleTrackRequest(libraryPath, resource, w, req)
+		return true
+	}
+	if matches := ml.reFavoritesPath.FindStringSubmatch(req.URL.Path); matches != nil {
+		resource := matches[1]
+
+		ml.handleFavoritesRequest(resource, w, req)
 		return true
 	}
 
