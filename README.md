@@ -75,6 +75,9 @@ Command-line arguments can also be passed to `docker run`.
             
                 WARNING: Passphrases from the client will be transmitted as plain text,
                 so use of HTTPS is recommended.
+        -storage string
+                Path to directory where persistent data (favorites, etc.) will be stored.
+                It will be created if it doesn't exist. (default ".")
 
 ### ReplayGain
 
