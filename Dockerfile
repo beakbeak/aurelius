@@ -9,11 +9,11 @@ RUN apk update && apk add --no-cache \
     ffmpeg-libs
 
 # 82 is the standard uid/gid for "www-data" in Alpine
-ARG uid=82
-ARG gid=82
+ARG UID=82
+ARG GID=82
 
-RUN addgroup -g $gid -S www-data \
-    && adduser -u $uid -D -S -G www-data www-data
+RUN addgroup -g $GID -S www-data \
+    && adduser -u $UID -D -S -G www-data www-data
 
 # Build stage ##################################################################
 
