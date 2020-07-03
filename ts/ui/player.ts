@@ -12,7 +12,7 @@ let prevButton: HTMLElement;
 let progressBarEmpty: HTMLElement;
 let progressBarFill: HTMLElement;
 let seekSlider: HTMLElement;
-let marquee: HTMLElement;
+let marquee: HTMLAnchorElement;
 let durationText: HTMLElement;
 let favoriteButton: HTMLElement;
 let unfavoriteButton: HTMLElement;
@@ -25,7 +25,7 @@ export default function setupPlayerUi(
 ) {
     player = inPlayer;
 
-    marquee = document.getElementById("marquee")!;
+    marquee = document.getElementById("marquee") as HTMLAnchorElement;
     playButton = document.getElementById("play-button")!;
     pauseButton = document.getElementById("pause-button")!;
     nextButton = document.getElementById("next-button")!;
@@ -60,9 +60,10 @@ export default function setupPlayerUi(
         player.unfavorite();
     };
 
-    marquee.onclick = () => {
-        if (player.track !== undefined) {
-            loadDir(`${stripLastPathElement(player.track.url)}/`);
+    marquee.onclick = (e) => {
+        e.preventDefault();
+        if (marquee.href) {
+            loadDir(marquee.href);
         }
     }
 
@@ -103,16 +104,19 @@ export default function setupPlayerUi(
     player.addEventListener("unpause", updateAll);
 }
 
-function setStatusText(text: string): void {
-    const element = marquee;
+function setMarquee(
+    text: string,
+    url: string,
+): void {
+    marquee.textContent = text;
+    marquee.href = url;
 
-    element.textContent = text;
-    if (element.clientWidth >= element.scrollWidth) {
-        element.style.animation = "";
+    if (marquee.clientWidth >= marquee.scrollWidth) {
+        marquee.style.animation = "";
         return;
     }
 
-    const scrollLength = element.scrollWidth - element.clientWidth;
+    const scrollLength = marquee.scrollWidth - marquee.clientWidth;
     const scrollTime = scrollLength / 50 /* px/second */;
     const waitTime = 2 /* seconds */;
     const totalTime = 2 * (scrollTime + waitTime);
@@ -132,8 +136,8 @@ function setStatusText(text: string): void {
                 transform: translateX(0px);
             }
         }`;
-    element.appendChild(style);
-    element.style.animation = `marquee ${totalTime}s infinite linear`;
+    marquee.appendChild(style);
+    marquee.style.animation = `marquee ${totalTime}s infinite linear`;
 }
 
 function startSeekSliderDrag(
@@ -176,7 +180,8 @@ function startSeekSliderDrag(
 }
 
 function updateStatus(): void {
-    if (player.track === undefined) {
+    const track = player.track;
+    if (track === undefined) {
         marquee.textContent = "";
         favoriteButton.classList.remove("hidden");
         unfavoriteButton.classList.add("hidden");
@@ -184,7 +189,7 @@ function updateStatus(): void {
         return;
     }
 
-    const info = player.track.info;
+    const info = track.info;
     let text = "";
 
     if (info.tags["artist"] !== undefined) {
@@ -200,14 +205,14 @@ function updateStatus(): void {
     }
 
     if (info.tags["album"] !== undefined) {
-        let track = "";
+        let trackName = "";
         if (info.tags["track"] !== undefined) {
-            track = ` #${info.tags["track"]}`;
+            trackName = ` #${info.tags["track"]}`;
         }
-        text = `${text} [${info.tags["album"]}${track}]`;
+        text = `${text} [${info.tags["album"]}${trackName}]`;
     }
 
-    setStatusText(text);
+    setMarquee(text, `${stripLastPathElement(track.url)}/`);
 
     if (info.favorite) {
         favoriteButton.classList.add("hidden");
