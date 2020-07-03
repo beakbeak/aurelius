@@ -115,3 +115,7 @@ Run TypeScript tests:
 Generate a TypeScript code coverage report in `coverage/lcov-report/index.html`:
 
     npm run coverage
+
+## Licensing
+
+Aurelius is licensed under the Apache License Version 2.0. See LICENSE.txt and NOTICE.txt for details.
