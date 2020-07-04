@@ -157,7 +157,7 @@ main {
 #about-dialog:before {
 	content: "";
 	background:
-		center center / contain url("/static/img/aurelius.svg") no-repeat,
+		center center / contain url("/static/img/aurelius.svgz") no-repeat,
 		linear-gradient(
 			hsl(39, 8%, 43%) 50%,
 			hsl(39, 8%, 30%));
