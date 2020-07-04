@@ -128,7 +128,7 @@ main {
 	background-color: hsl(39, 16%, 69%);
 }
 
-#plug {
+#about-button {
 	position: absolute;
 	bottom: .5rem;
 	left: .5rem;
@@ -152,6 +152,18 @@ main {
 }
 #menu .material-icons {
 	font-size: 3rem;
+}
+
+#about-dialog:before {
+	content: "";
+	background-image: url("/static/img/aurelius.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center center;
+	display: block;
+	width: 12rem;
+	height: 12rem;
+	margin: 1rem auto;
 }
 
 @media (min-width: 960px) {

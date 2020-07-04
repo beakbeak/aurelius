@@ -33,8 +33,14 @@ body {
 	-ms-user-select: none;
 	user-select: none;
 }
+.clickable:hover{
+	text-decoration: underline;
+}
 .clickable.inactive {
 	cursor: default;
+}
+.clickable.inactive:hover{
+	text-decoration: none;
 }
 
 /* Modal dialog ***************************************************************/

@@ -1,8 +1,7 @@
 import { Settings, getSettings, saveSettings, newSettings } from "./settings";
 import { StreamCodec, ReplayGainMode } from "../core/track";
-
-const ClassModalIsVisible = "modal-is-visible";
-const ClassHidden = "hidden";
+import { hideModalDialog, showModalDialog } from "./modal";
+import { Class } from "./class";
 
 interface SettingsElement {
     fromSettings(settings: Settings): void;
@@ -10,7 +9,6 @@ interface SettingsElement {
 }
 
 let settingsDialog: HTMLElement;
-let modalOverlay: HTMLElement;
 let saveButton: HTMLButtonElement;
 
 const settingsElements: SettingsElement[] = [];
@@ -19,26 +17,14 @@ export function showSettingsDialog(
     onApply: (settings: Settings) => void,
 ): void {
     populateElements(getSettings());
-    showDialog();
+    showModalDialog(settingsDialog);
 
     saveButton.onclick = () => {
-        hideDialog();
+        hideModalDialog();
 
         const settings = gatherSettings();
         saveSettings(settings);
         onApply(settings);
-    }
-}
-
-function showDialog(): void {
-    for (const element of [settingsDialog, modalOverlay]) {
-        element.classList.add(ClassModalIsVisible);
-    }
-}
-
-function hideDialog(): void {
-    for (const element of [settingsDialog, modalOverlay]) {
-        element.classList.remove(ClassModalIsVisible);
     }
 }
 
@@ -64,11 +50,8 @@ function ensureElements() {
         return;
     }
 
-    settingsDialog = document.getElementById("settings")!;
-    modalOverlay = document.getElementById("modal-overlay")!;
+    settingsDialog = document.getElementById("settings-dialog")!;
     saveButton = document.getElementById("save") as HTMLButtonElement;
-
-    modalOverlay.onclick = hideDialog;
 
     const codecElement = new CodecElement();
 
@@ -114,9 +97,9 @@ class CodecElement implements SettingsElement {
     private _onUpdate(): void {
         const codec = this.value();
         if (codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3) {
-            this._targetMetricRow.classList.remove(ClassHidden);
+            this._targetMetricRow.classList.remove(Class.Hidden);
         } else {
-            this._targetMetricRow.classList.add(ClassHidden);
+            this._targetMetricRow.classList.add(Class.Hidden);
         }
     }
 
@@ -149,9 +132,9 @@ class ReplayGainElement implements SettingsElement {
 
     private _onUpdate(): void {
         if (this.value() === ReplayGainMode.Off) {
-            this._preventClippingRow.classList.add(ClassHidden);
+            this._preventClippingRow.classList.add(Class.Hidden);
         } else {
-            this._preventClippingRow.classList.remove(ClassHidden);
+            this._preventClippingRow.classList.remove(Class.Hidden);
         }
     }
 
@@ -242,7 +225,7 @@ class TargetMetricElement implements SettingsElement {
         for (let i = 0; i < helpElements.length; ++i) {
             const element = helpElements[i];
             if (element instanceof HTMLElement) {
-                element.classList.add(ClassHidden);
+                element.classList.add(Class.Hidden);
             }
         }
 
@@ -251,7 +234,7 @@ class TargetMetricElement implements SettingsElement {
         const helpElement = document.getElementById(`${codec}-${metricType}-help`);
 
         if (helpElement !== null) {
-            helpElement.classList.remove(ClassHidden);
+            helpElement.classList.remove(Class.Hidden);
         }
     }
 

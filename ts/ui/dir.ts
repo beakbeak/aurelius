@@ -1,6 +1,7 @@
 import { Player } from "../core/player";
 import { DirInfo, fetchDirInfo } from "../core/dir";
 import { ReplayGainMode } from "../core/track";
+import { Class } from "./class";
 
 let player: Player;
 
@@ -21,7 +22,7 @@ export default async function setupDirUi(inPlayer: Player) {
 
     const createList = () => {
         const out = document.createElement("ul");
-        out.classList.add("listing", "hidden");
+        out.classList.add(Class.Listing, Class.Hidden);
         return out;
     };
 
@@ -66,7 +67,7 @@ function populateSpecial(): void {
         player.playList("/media/favorites", { random: true });
     };
 
-    specialList.classList.remove("hidden");
+    specialList.classList.remove(Class.Hidden);
 }
 
 function highlightPlayingTrack(): void {
@@ -96,9 +97,9 @@ function isPlaying(element: HTMLAnchorElement): boolean {
 }
 
 function setPlayingClass(element: HTMLAnchorElement | undefined): void {
-    lastPlaying?.classList.remove("playing");
+    lastPlaying?.classList.remove(Class.Playing);
     lastPlaying = element?.parentElement ?? undefined;
-    lastPlaying?.classList.add("playing");
+    lastPlaying?.classList.add(Class.Playing);
 }
 
 /**
@@ -146,11 +147,11 @@ function populateDirs(info: DirInfo): void {
         };
     }
 
-    dirList.classList.remove("hidden");
+    dirList.classList.remove(Class.Hidden);
 }
 
 function populatePlaylists(info: DirInfo): void {
-    playlistList.classList.add("hidden");
+    playlistList.classList.add(Class.Hidden);
 
     if (info.playlists.length === 0) {
         playlistList.innerHTML = "";
@@ -183,11 +184,11 @@ function populatePlaylists(info: DirInfo): void {
         };
     }
 
-    playlistList.classList.remove("hidden");
+    playlistList.classList.remove(Class.Hidden);
 }
 
 function populateTracks(info: DirInfo): void {
-    trackList.classList.add("hidden");
+    trackList.classList.add(Class.Hidden);
 
     if (info.tracks.length === 0) {
         trackList.innerHTML = "";
@@ -221,5 +222,5 @@ function populateTracks(info: DirInfo): void {
         };
     }
 
-    trackList.classList.remove("hidden");
+    trackList.classList.remove(Class.Hidden);
 }

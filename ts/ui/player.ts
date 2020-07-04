@@ -2,6 +2,8 @@ import { Player } from "../core/player";
 import { stripLastPathElement } from "../core/url";
 import { loadDir } from "./dir";
 import { onDrag } from "./dom";
+import { Class } from "./class";
+import { showModalDialog } from "./modal";
 
 let player: Player;
 
@@ -16,6 +18,8 @@ let marquee: HTMLAnchorElement;
 let durationText: HTMLElement;
 let favoriteButton: HTMLElement;
 let unfavoriteButton: HTMLElement;
+let aboutButton: HTMLElement;
+let aboutDialog: HTMLElement;
 
 // [0..1]
 let _seekSliderPosition: number | undefined;
@@ -36,6 +40,8 @@ export default function setupPlayerUi(
     durationText = document.getElementById("duration")!;
     favoriteButton = document.getElementById("favorite-button")!;
     unfavoriteButton = document.getElementById("unfavorite-button")!;
+    aboutButton = document.getElementById("about-button")!;
+    aboutDialog = document.getElementById("about-dialog")!;
 
     playButton.onclick = () => {
         player.unpause();
@@ -55,9 +61,12 @@ export default function setupPlayerUi(
     favoriteButton.onclick = () => {
         player.favorite();
     };
-
     unfavoriteButton.onclick = () => {
         player.unfavorite();
+    };
+
+    aboutButton.onclick = () => {
+        showModalDialog(aboutDialog);
     };
 
     marquee.onclick = (e) => {
@@ -183,9 +192,9 @@ function updateStatus(): void {
     const track = player.track;
     if (track === undefined) {
         marquee.textContent = "";
-        favoriteButton.classList.remove("hidden");
-        unfavoriteButton.classList.add("hidden");
-        favoriteButton.classList.add("inactive");
+        favoriteButton.classList.remove(Class.Hidden);
+        unfavoriteButton.classList.add(Class.Hidden);
+        favoriteButton.classList.add(Class.Inactive);
         return;
     }
 
@@ -215,13 +224,13 @@ function updateStatus(): void {
     setMarquee(text, `${stripLastPathElement(track.url)}/`);
 
     if (info.favorite) {
-        favoriteButton.classList.add("hidden");
-        unfavoriteButton.classList.remove("hidden");
-        unfavoriteButton.classList.remove("inactive");
+        favoriteButton.classList.add(Class.Hidden);
+        unfavoriteButton.classList.remove(Class.Hidden);
+        unfavoriteButton.classList.remove(Class.Inactive);
     } else {
-        favoriteButton.classList.remove("hidden");
-        unfavoriteButton.classList.add("hidden");
-        favoriteButton.classList.remove("inactive");
+        favoriteButton.classList.remove(Class.Hidden);
+        unfavoriteButton.classList.add(Class.Hidden);
+        favoriteButton.classList.remove(Class.Inactive);
     }
 }
 
@@ -241,12 +250,12 @@ function updateTime(): void {
     if (track === undefined) {
         durationText.textContent = "";
         seekSlider.style.left = "0";
-        seekSlider.classList.add("inactive");
-        progressBarEmpty.classList.add("inactive");
+        seekSlider.classList.add(Class.Inactive);
+        progressBarEmpty.classList.add(Class.Inactive);
         return;
     }
-    seekSlider.classList.remove("inactive");
-    progressBarEmpty.classList.remove("inactive");
+    seekSlider.classList.remove(Class.Inactive);
+    progressBarEmpty.classList.remove(Class.Inactive);
 
     const duration = track.info.duration;
     const currentTime = _seekSliderPosition !== undefined
@@ -296,28 +305,28 @@ function updateButtons(): void {
     const track = player.track;
 
     if (track === undefined || track.isPaused()) {
-        playButton.classList.remove("hidden");
-        pauseButton.classList.add("hidden");
+        playButton.classList.remove(Class.Hidden);
+        pauseButton.classList.add(Class.Hidden);
         if (track === undefined) {
-            playButton.classList.add("inactive");
+            playButton.classList.add(Class.Inactive);
         } else {
-            playButton.classList.remove("inactive");
+            playButton.classList.remove(Class.Inactive);
         }
     } else {
-        playButton.classList.add("hidden");
-        pauseButton.classList.remove("hidden");
+        playButton.classList.add(Class.Hidden);
+        pauseButton.classList.remove(Class.Hidden);
     }
 
     if (player.hasNext()) {
-        nextButton.classList.remove("inactive");
+        nextButton.classList.remove(Class.Inactive);
     } else {
-        nextButton.classList.add("inactive");
+        nextButton.classList.add(Class.Inactive);
     }
 
     if (player.hasPrevious()) {
-        prevButton.classList.remove("inactive");
+        prevButton.classList.remove(Class.Inactive);
     } else {
-        prevButton.classList.add("inactive");
+        prevButton.classList.add(Class.Inactive);
     }
 }
 
