@@ -11,8 +11,10 @@ function ensureElements() {
     }
     elementsEnsured = true;
 
-    modalOverlay = document.getElementById("modal-overlay")!;
+    modalOverlay = document.createElement("div");
+    modalOverlay.classList.add(Class.ModalOverlay);
     modalOverlay.onclick = hideModalDialog;
+    document.body.appendChild(modalOverlay);
 }
 
 export function showModalDialog(dialog: HTMLElement): void {

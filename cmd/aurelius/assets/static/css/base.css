@@ -45,7 +45,7 @@ body {
 }
 
 /* Modal dialog ***************************************************************/
-#modal-overlay {
+.modal-overlay {
 	display: none;
 	position: fixed;
 	top: 0;
@@ -55,7 +55,7 @@ body {
 	background-color: rgba(0, 0, 0, .5);
 	z-index: 99;
 }
-#modal-overlay.modal-is-visible {
+.modal-overlay.modal-is-visible {
 	display: block;
 }
 
