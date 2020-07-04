@@ -9,10 +9,7 @@ main {
 
 main:before {
 	content: "";
-	background-image: url("/static/img/aurelius.svg");
-	background-size: contain;
-	background-repeat: no-repeat;
-	background-position: center center;
+	background: center center / contain url("/static/img/aurelius.svg") no-repeat;
 	display: block;
 	width: 12rem;
 	height: 12rem;
