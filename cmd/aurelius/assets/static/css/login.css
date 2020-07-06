@@ -1,13 +1,7 @@
-main {
-	display: block;
-	position: fixed;
-	top: 50%;
-	left: 50%;
+#content {
 	transform: translate(-50%, -80%);
-	margin: 0;
 }
-
-main:before {
+#content:before {
 	content: "";
 	background: center center / contain url("/static/img/aurelius.svgz") no-repeat;
 	display: block;
@@ -16,38 +10,10 @@ main:before {
 	margin: 1rem auto;
 }
 
-form:before {
+#login-form:before {
 	content: "aurelius";
 	display: block;
 	text-align: center;
 	font-style: italic;
 }
 
-form ul {
-	list-style: none;
-	padding-left: 0;
-}
-
-form li {
-	display: flex;
-	padding-left: 1rem;
-	padding-right: 1rem;
-}
-
-form input {
-	flex: 1;
-}
-
-.failed #passphrase {
-	border: 2px solid rgb(220, 50, 50);
-	background-color: rgb(255, 200, 200);
-}
-
-.error {
-	display: none;
-	color: rgb(180, 0, 0);
-	text-align: center;
-}
-.failed .error {
-	display: block;
-}

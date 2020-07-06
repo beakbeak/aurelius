@@ -2,6 +2,7 @@ import { Player } from "../core/player";
 import { DirInfo, fetchDirInfo } from "../core/dir";
 import { ReplayGainMode } from "../core/track";
 import { Class } from "./class";
+import { closestAncestorWithClass } from "./dom";
 
 let player: Player;
 
@@ -22,7 +23,7 @@ export default async function setupDirUi(inPlayer: Player) {
 
     const createList = () => {
         const out = document.createElement("ul");
-        out.classList.add(Class.Listing, Class.Hidden);
+        out.classList.add(Class.Dir, Class.Hidden);
         return out;
     };
 
@@ -55,9 +56,9 @@ export default async function setupDirUi(inPlayer: Player) {
 
 function populateSpecial(): void {
     specialList.innerHTML =
-        `<li>
-            <i class="material-icons">favorite_border</i>
-            <a href="#">Favorites</a>
+        `<li class="${Class.DirEntry}">
+            <i class="${Class.DirIcon} ${Class.MaterialIcons}">favorite_border</i>
+            <a class="${Class.DirLink}" href="#">Favorites</a>
         </li>`
 
     const favoritesLink = specialList.querySelector("a")!;
@@ -97,9 +98,9 @@ function isPlaying(element: HTMLAnchorElement): boolean {
 }
 
 function setPlayingClass(element: HTMLAnchorElement | undefined): void {
-    lastPlaying?.classList.remove(Class.Playing);
-    lastPlaying = element?.parentElement ?? undefined;
-    lastPlaying?.classList.add(Class.Playing);
+    lastPlaying?.classList.remove(Class.DirEntry_Playing);
+    lastPlaying = element !== undefined ? closestAncestorWithClass(element, Class.DirEntry) : undefined;
+    lastPlaying?.classList.add(Class.DirEntry_Playing);
 }
 
 /**
@@ -122,16 +123,16 @@ export async function loadDir(url?: string): Promise<void> {
 
 function populateDirs(info: DirInfo): void {
     let html =
-        `<li>
-            <i class="material-icons">arrow_back</i>
-            <a href="..">Parent directory</a>
+        `<li class="${Class.DirEntry}">
+            <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
+            <a class="${Class.DirLink}" href="..">Parent directory</a>
         </li>`;
 
     for (const dir of info.dirs) {
         html +=
-            `<li>
-                <i class="material-icons">folder_open</i>
-                <a href="${dir.url}/">${dir.name}/</a>
+            `<li class="${Class.DirEntry}">
+                <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
+                <a class="${Class.DirLink}" href="${dir.url}/">${dir.name}/</a>
             </li>`;
     }
 
@@ -161,10 +162,10 @@ function populatePlaylists(info: DirInfo): void {
     let html = ``;
     for (const playlist of info.playlists) {
         html +=
-            `<li>
-                <i class="material-icons">playlist_play</i>
-                <a href="${playlist.url}">${playlist.name}</a>
-                <a href="${playlist.url}" class="aux-link">random</a>
+            `<li class="${Class.DirEntry}">
+                <i class="${Class.DirIcon} ${Class.MaterialIcons}">playlist_play</i>
+                <a class="${Class.DirLink}" href="${playlist.url}">${playlist.name}</a>
+                <a class="${Class.DirLink} ${Class.DirLink_Aux}" href="${playlist.url}">random</a>
             </li>`;
     }
     playlistList.innerHTML = html;
@@ -198,10 +199,10 @@ function populateTracks(info: DirInfo): void {
     let html = ``;
     for (const track of info.tracks) {
         html +=
-            `<li>
-                <i class="material-icons default">music_note</i>
-                <i class="material-icons if-playing hidden">play_arrow</i>
-                <a href="${track.url}">${track.name}</a>
+            `<li class="${Class.DirEntry}">
+                <i class="${Class.DirIcon} ${Class.MaterialIcons}">music_note</i>
+                <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}">play_arrow</i>
+                <a class="${Class.DirLink}" href="${track.url}">${track.name}</a>
             </li>`;
     }
     trackList.innerHTML = html;

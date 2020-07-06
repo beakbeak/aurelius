@@ -8,45 +8,25 @@ body {
 	font-family: serif;
 }
 
-.ui {
-	background-color: hsl(39, 100%, 93%);
-	color: black;
-}
-
 * {
 	scrollbar-color: hsl(39, 8%, 43%) hsl(39, 8%, 30%);
 }
 
-.material-icons { color: rgba(0, 0, 0, 0.54); }
-.inactive .material-icons { color: rgba(0, 0, 0, 0.26); }
-
 .hidden {
-	display: none;
+	display: none !important;
 }
 
-.clickable {
-	cursor: pointer;
-
+.material-icons {
 	-moz-user-select: -moz-none;
 	-khtml-user-select: none;
 	-webkit-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
 }
-.clickable.inactive {
-	cursor: default;
-}
-
-.clickable:hover {
-	text-decoration: underline;
-}
-.clickable.inactive:hover, .clickable i:hover {
-	text-decoration: none;
-}
 
 /* Modal dialog ***************************************************************/
 .modal-overlay {
-	display: none;
+	display: block;
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -55,20 +35,14 @@ body {
 	background-color: rgba(0, 0, 0, .5);
 	z-index: 99;
 }
-.modal-overlay.modal-is-visible {
-	display: block;
-}
 
 .modal {
-	display: none;
+	display: block;
 	position: fixed;
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
 	z-index: 100;
-}
-.modal.modal-is-visible {
-	display: block;
 }
 
 .dialog {
@@ -79,7 +53,16 @@ body {
 }
 
 /* UI elements ****************************************************************/
-.ui button {
+.ui {
+	background-color: hsl(39, 100%, 93%);
+	color: black;
+}
+
+.ui__table {
+	border-spacing: .5em;
+}
+
+.ui__button {
 	display: block;
 	padding: .5em;
 	margin: .5em;
@@ -89,20 +72,232 @@ body {
 	background-color: rgba(0,0,0,.15);
 	border-color: rgba(0,0,0,.54);
 }
-.ui button:hover {
+.ui__button:hover {
 	background-color: rgba(255,255,255,.5);
 }
-.ui button:active {
+.ui__button:active {
 	background-color: white;
 }
 
-.ui .section-header {
+.ui__section-header {
 	box-shadow: 0px 4px 2px -2px rgba(0,0,0,.25);
 	padding-bottom: .1em;
 }
-.ui .section-body {
+.ui__section-body {
 	margin: .5em 0 .5em 1.5em;
 }
-.ui td {
-	padding: .25em;
+
+.ui__entry-group {
+	margin: 1em 0 1em 0;
+}
+.ui__entry-label {
+	display: flex;
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
+.ui__entry-input {
+	flex: 1;
+}
+.ui__entry-input--error {
+	border: 2px solid rgb(220, 50, 50);
+	background-color: rgb(255, 200, 200);
+}
+
+.ui__error {
+	color: rgb(180, 0, 0);
+	text-align: center;
+}
+
+/* Playback controls **********************************************************/
+.controls {
+	background-color: hsl(39, 100%, 93%);
+	color: black;
+}
+
+/* Button */
+.controls__button {
+	cursor: pointer;
+	color: rgba(0, 0, 0, 0.54);
+	font-size: 4rem;
+}
+.controls__button--medium {
+	font-size: 3rem;
+}
+.controls--disabled .controls__button,
+.controls__button--disabled {
+	cursor: default;
+	color: rgba(0, 0, 0, 0.26);
+}
+
+/* Progress/seek bar */
+.controls__progress-trough {
+	cursor: pointer;
+	flex: 1;
+	position: relative;
+	height: .5rem;
+	box-shadow: inset 0 0 3px black;
+	margin: 0 .5rem;
+}
+.controls--disabled .controls__progress-trough {
+	cursor: default;
+	color: hsl(39, 16%, 69%);
+}
+
+.controls__progress-fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 0;
+	height: 100%;
+	background-color: rgba(0,0,0,.27);
+}
+
+.controls__slider-range {
+	position: absolute;
+	left: 0;
+	width: calc(100% - 3rem);
+	height: 100%;
+}
+.controls__slider {
+	cursor: pointer;
+	position: absolute;
+	width: 3rem;
+	height: 200%;
+	top: -50%;
+	background-color: hsl(39, 8%, 43%);
+}
+.controls--disabled .controls__slider {
+	cursor: default;
+	background-color: hsl(39, 16%, 69%);
+}
+
+/* Link */
+.controls__link {
+	cursor: pointer;
+	font-style: italic;
+	text-decoration: none;
+	color: inherit;
+}
+.controls__link:hover {
+	text-decoration: underline;
+}
+
+/* Marquee */
+.controls__marquee-spacer {
+	position: relative;
+	height: 1.1em;
+	margin: 0 .5rem 0 .5rem;
+}
+.controls__marquee-container {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 200%;
+	overflow: hidden;
+}
+.controls__marquee {
+	display: block;
+	max-width: 100%;
+	max-height: 100%;
+	white-space: nowrap;
+	text-align: center;
+	font-size: 1.1em;
+}
+
+/* Positioning */
+.main__controls {
+	position: fixed;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100%;
+	max-width: 1200px;
+	box-shadow: 0px 0px 1rem rgba(0,0,0,.5);
+}
+
+.controls__group {
+	display: flex;
+	height: 3rem;
+	align-items: center;
+	justify-content: center;
+	color: rgba(0,0,0,.54);
+}
+.controls__group--shift-up {
+	position: relative;
+	bottom: .5em;
+}
+
+.controls__bottom-left {
+	position: absolute;
+	bottom: .5rem;
+	left: .5rem;
+}
+.controls__bottom-right {
+	position: absolute;
+	bottom: .5rem;
+	right: .5rem;
+}
+
+/* Directory listing **********************************************************/
+.dir {
+	list-style: none;
+	padding: 0;
+}
+
+.dir__entry > * {
+	vertical-align: middle;
+}
+
+.dir__link {
+	text-decoration: none;
+	color: hsl(39, 100%, 93%);
+}
+.dir__link:hover {
+	box-shadow: 0 1px rgba(0,0,0,.54);
+}
+
+.dir__icon {
+	color: black;
+	font-size: 24px;
+	margin-right: .25em;
+}
+.dir__icon--playing {
+	display: none;
+	color: hsl(39, 100%, 93%);
+}
+
+.dir__link--aux {
+	margin-left: .5em;
+	font-style: italic;
+}
+
+.dir__entry--playing .dir__link {
+	text-decoration: underline;
+}
+.dir__entry--playing .dir__icon {
+	display: none;
+}
+.dir__entry--playing .dir__icon--playing {
+	display: inline-block;
+}
+
+/* Side menu ******************************************************************/
+
+.top-right__menu {
+	position: fixed;
+	z-index: 1;
+	right: 0;
+	top: 0;
+	margin: .5rem;
+	display: flex;
+	flex-direction: column;
+}
+
+/* .menu {} */
+
+.menu__button {
+	cursor: pointer;
+	font-size: 3rem;
+	color: rgba(0,0,0,.54);
 }

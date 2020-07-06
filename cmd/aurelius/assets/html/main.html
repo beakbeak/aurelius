@@ -13,54 +13,56 @@
 	<script src="/static/js/main.js"></script>
 </head>
 <body>
-	<nav id="play-controls" class="ui">
-		<div id="marquee-spacer">
-			<div id="marquee-container">
-				<a id="marquee" title="Jump to directory containing this track"></a>
+	<nav id="controls" class="controls main__controls">
+		<div class="controls__marquee-spacer">
+			<div class="controls__marquee-container">
+				<a id="marquee" class="controls__marquee controls__link" title="Jump to directory containing this track"></a>
 			</div>
 		</div>
-		<div class="control-group">
-			<div id="progress-bar-empty" class="clickable">
-				<span id="progress-bar-fill"></span>
-				<span id="seek-slider-area">
-					<span id="seek-slider" class="clickable"></span>
+		<div id="progress-controls" class="controls__group">
+			<div id="progress-bar-empty" class="controls__progress-trough">
+				<span id="progress-bar-fill" class="controls__progress-fill"></span>
+				<span id="seek-slider-area" class="controls__slider-range">
+					<span id="seek-slider" class="controls__slider"></span>
 				</span>
 			</div>
 		</div>
-		<div class="control-group">
-			<span id="prev-button" class="clickable" title="Previous track">
-				<i class="material-icons">skip_previous</i>
-			</span>
-			<span id="play-button" class="clickable" title="Play">
-				<i class="material-icons">play_arrow</i>
-			</span>
-			<span id="pause-button" class="clickable hidden" title="Pause">
-				<i class="material-icons">pause</i>
-			</span>
-			<span id="next-button" class="clickable" title="Next track">
-				<i class="material-icons">skip_next</i>
-			</span>
-			<span id="favorite-button" class="clickable" title="Add to favorites">
-				<i class="material-icons">favorite_border</i>
-			</span>
-			<span id="unfavorite-button" class="clickable hidden" title="Remove from favorites">
-				<i class="material-icons">favorite</i>
-			</span>
+		<div class="controls__group controls__group--shift-up">
+			<i id="prev-button" class="controls__button material-icons" title="Previous track">
+				skip_previous
+			</i>
+			<i id="play-button" class="controls__button material-icons" title="Play">
+				play_arrow
+			</i>
+			<i id="pause-button" class="controls__button hidden material-icons" title="Pause">
+				pause
+			</i>
+			<i id="next-button" class="controls__button material-icons" title="Next track">
+				skip_next
+			</i>
+			<i id="favorite-button" class="controls__button controls__button--medium material-icons" title="Add to favorites">
+				favorite_border
+			</i>
+			<i id="unfavorite-button" class="controls__button controls__button--medium hidden material-icons" title="Remove from favorites">
+				favorite
+			</i>
 		</div>
-		<span id="about-button" class="clickable">aurelius</span>
-		<span id="duration"></span>
+		<span id="about-button" class="controls__link controls__bottom-left">aurelius</span>
+		<span id="duration" class="controls__bottom-right"></span>
 	</nav>
 
 	<main id="content"></main>
 
-	<aside id="menu">
-		<i id="settings-button" class="material-icons clickable" title="Settings">settings</i>
+	<aside class="menu top-right__menu">
+		<i id="settings-button" class="menu__button material-icons" title="Settings">
+			settings
+		</i>
 	</aside>
 
-	<div id="settings-dialog" class="ui modal dialog">
-		<div class="section-header">Stream Encoding</div>
-		<div class="section-body">
-			<table>
+	<div id="settings-dialog" class="ui modal dialog hidden">
+		<div class="ui__section-header">Stream Encoding</div>
+		<div class="ui__section-body">
+			<table class="ui__table">
 				<tr>
 					<td>Codec</td>
 					<td><select id="codec"></select></td>
@@ -85,9 +87,9 @@
 			</table>
 		</div>
 
-		<div class="section-header">ReplayGain</div>
-		<div class="section-body">
-			<table>
+		<div class="ui__section-header">ReplayGain</div>
+		<div class="ui__section-body">
+			<table class="ui__table">
 				<tr>
 					<td>Mode</td>
 					<td><select id="replay-gain"></select></td>
@@ -95,27 +97,29 @@
 				<tr id="prevent-clipping-row">
 					<td>Prevent clipping</td>
 					<td>
-						<input id="prevent-clipping" type="checkbox">
-						<label for="prevent-clipping">Enabled</label>
+						<label>
+							<input id="prevent-clipping" type="checkbox">
+							Enabled
+						</label>
 					</td>
 				</tr>
 			</table>
 		</div>
 
-		<button id="save" type="button">Save</button>
+		<button id="save" class="ui__button" type="button">Save</button>
 	</div>
 
-	<div id="about-dialog" class="ui modal dialog">
-		<div class="section-header">About</div>
-		<div class="section-body">
+	<div id="about-dialog" class="ui modal dialog hidden">
+		<div class="ui__section-header">About</div>
+		<div class="ui__section-body">
 			<p>
 				Aurelius is © Philip Lafleur.
 				<br>Licensed under the Apache License Version 2.0.
 				<br><a href="https://github.com/beakbeak/aurelius">https://github.com/beakbeak/aurelius</a>
 			</p>
 		</div>
-		<div class="section-header">Attributions</div>
-		<div class="section-body">
+		<div class="ui__section-header">Attributions</div>
+		<div class="ui__section-body">
 			<p>
 				Background image by Steve Schoger.
 				<br>Licensed under Creative Commons <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.

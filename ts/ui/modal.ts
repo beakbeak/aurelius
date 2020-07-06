@@ -1,7 +1,7 @@
 import { Class } from "./class";
 
 let elementsEnsured = false;
-let modalOverlay: HTMLElement;
+let overlay: HTMLElement;
 
 let currentDialog: HTMLElement | undefined;
 
@@ -11,10 +11,10 @@ function ensureElements() {
     }
     elementsEnsured = true;
 
-    modalOverlay = document.createElement("div");
-    modalOverlay.classList.add(Class.ModalOverlay);
-    modalOverlay.onclick = hideModalDialog;
-    document.body.appendChild(modalOverlay);
+    overlay = document.createElement("div");
+    overlay.classList.add(Class.ModalOverlay, Class.Hidden);
+    overlay.onclick = hideModalDialog;
+    document.body.appendChild(overlay);
 }
 
 export function showModalDialog(dialog: HTMLElement): void {
@@ -25,9 +25,8 @@ export function showModalDialog(dialog: HTMLElement): void {
     }
     currentDialog = dialog;
 
-    for (const element of [dialog, modalOverlay]) {
-        element.classList.add(Class.ModalIsVisible);
-    }
+    dialog.classList.remove(Class.Hidden);
+    overlay.classList.remove(Class.Hidden);
 }
 
 export function hideModalDialog(): void {
@@ -35,8 +34,8 @@ export function hideModalDialog(): void {
         return;
     }
 
-    for (const element of [currentDialog, modalOverlay]) {
-        element.classList.remove(Class.ModalIsVisible);
-    }
+    currentDialog.classList.add(Class.Hidden);
+    overlay.classList.add(Class.Hidden);
+
     currentDialog = undefined;
 }

@@ -1,25 +1,26 @@
 import { Player } from "../core/player";
 import { stripLastPathElement } from "../core/url";
 import { loadDir } from "./dir";
-import { onDrag } from "./dom";
+import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
 
 let player: Player;
 
-let playButton: HTMLElement;
-let pauseButton: HTMLElement;
+let aboutButton: HTMLElement;
+let aboutDialog: HTMLElement;
+let durationText: HTMLElement;
+let favoriteButton: HTMLElement;
+let marquee: HTMLAnchorElement;
 let nextButton: HTMLElement;
+let pauseButton: HTMLElement;
+let playButton: HTMLElement;
 let prevButton: HTMLElement;
 let progressBarEmpty: HTMLElement;
 let progressBarFill: HTMLElement;
+let progressControls: HTMLElement;
 let seekSlider: HTMLElement;
-let marquee: HTMLAnchorElement;
-let durationText: HTMLElement;
-let favoriteButton: HTMLElement;
 let unfavoriteButton: HTMLElement;
-let aboutButton: HTMLElement;
-let aboutDialog: HTMLElement;
 
 // [0..1]
 let _seekSliderPosition: number | undefined;
@@ -29,19 +30,20 @@ export default function setupPlayerUi(
 ) {
     player = inPlayer;
 
+    aboutButton = document.getElementById("about-button")!;
+    aboutDialog = document.getElementById("about-dialog")!;
+    durationText = document.getElementById("duration")!;
+    favoriteButton = document.getElementById("favorite-button")!;
     marquee = document.getElementById("marquee") as HTMLAnchorElement;
-    playButton = document.getElementById("play-button")!;
-    pauseButton = document.getElementById("pause-button")!;
     nextButton = document.getElementById("next-button")!;
+    pauseButton = document.getElementById("pause-button")!;
+    playButton = document.getElementById("play-button")!;
     prevButton = document.getElementById("prev-button")!;
     progressBarEmpty = document.getElementById("progress-bar-empty")!;
     progressBarFill = document.getElementById("progress-bar-fill")!;
+    progressControls = document.getElementById("progress-controls")!;
     seekSlider = document.getElementById("seek-slider")!;
-    durationText = document.getElementById("duration")!;
-    favoriteButton = document.getElementById("favorite-button")!;
     unfavoriteButton = document.getElementById("unfavorite-button")!;
-    aboutButton = document.getElementById("about-button")!;
-    aboutDialog = document.getElementById("about-dialog")!;
 
     playButton.onclick = () => {
         player.unpause();
@@ -101,10 +103,10 @@ export default function setupPlayerUi(
         updateBuffer();
     });
     player.addEventListener("favorite", () => {
-        updateStatus();
+        updateButtons();
     });
     player.addEventListener("unfavorite", () => {
-        updateStatus();
+        updateButtons();
     });
 
     player.addEventListener("play", updateAll);
@@ -192,9 +194,6 @@ function updateStatus(): void {
     const track = player.track;
     if (track === undefined) {
         marquee.textContent = "";
-        favoriteButton.classList.remove(Class.Hidden);
-        unfavoriteButton.classList.add(Class.Hidden);
-        favoriteButton.classList.add(Class.Inactive);
         return;
     }
 
@@ -222,16 +221,6 @@ function updateStatus(): void {
     }
 
     setMarquee(text, `${stripLastPathElement(track.url)}/`);
-
-    if (info.favorite) {
-        favoriteButton.classList.add(Class.Hidden);
-        unfavoriteButton.classList.remove(Class.Hidden);
-        unfavoriteButton.classList.remove(Class.Inactive);
-    } else {
-        favoriteButton.classList.remove(Class.Hidden);
-        unfavoriteButton.classList.add(Class.Hidden);
-        favoriteButton.classList.remove(Class.Inactive);
-    }
 }
 
 function secondsToString(totalSeconds: number): string {
@@ -250,12 +239,8 @@ function updateTime(): void {
     if (track === undefined) {
         durationText.textContent = "";
         seekSlider.style.left = "0";
-        seekSlider.classList.add(Class.Inactive);
-        progressBarEmpty.classList.add(Class.Inactive);
         return;
     }
-    seekSlider.classList.remove(Class.Inactive);
-    progressBarEmpty.classList.remove(Class.Inactive);
 
     const duration = track.info.duration;
     const currentTime = _seekSliderPosition !== undefined
@@ -304,30 +289,40 @@ function updateBuffer(): void {
 function updateButtons(): void {
     const track = player.track;
 
-    if (track === undefined || track.isPaused()) {
+    if (track === undefined) {
+        progressControls.classList.add(Class.Controls_Disabled);
+        playButton.classList.add(Class.ControlsButton_Disabled);
+        favoriteButton.classList.add(Class.ControlsButton_Disabled);
+
         playButton.classList.remove(Class.Hidden);
         pauseButton.classList.add(Class.Hidden);
-        if (track === undefined) {
-            playButton.classList.add(Class.Inactive);
+
+        favoriteButton.classList.remove(Class.Hidden);
+        unfavoriteButton.classList.add(Class.Hidden);
+    } else {
+        progressControls.classList.remove(Class.Controls_Disabled);
+        playButton.classList.remove(Class.ControlsButton_Disabled);
+        favoriteButton.classList.remove(Class.ControlsButton_Disabled);
+
+        if (track.isPaused()) {
+            playButton.classList.remove(Class.Hidden);
+            pauseButton.classList.add(Class.Hidden);
         } else {
-            playButton.classList.remove(Class.Inactive);
+            playButton.classList.add(Class.Hidden);
+            pauseButton.classList.remove(Class.Hidden);
         }
-    } else {
-        playButton.classList.add(Class.Hidden);
-        pauseButton.classList.remove(Class.Hidden);
+
+        if (track.info.favorite) {
+            favoriteButton.classList.add(Class.Hidden);
+            unfavoriteButton.classList.remove(Class.Hidden);
+        } else {
+            favoriteButton.classList.remove(Class.Hidden);
+            unfavoriteButton.classList.add(Class.Hidden);
+        }
     }
 
-    if (player.hasNext()) {
-        nextButton.classList.remove(Class.Inactive);
-    } else {
-        nextButton.classList.add(Class.Inactive);
-    }
-
-    if (player.hasPrevious()) {
-        prevButton.classList.remove(Class.Inactive);
-    } else {
-        prevButton.classList.add(Class.Inactive);
-    }
+    toggleClass(nextButton, Class.ControlsButton_Disabled, !player.hasNext());
+    toggleClass(prevButton, Class.ControlsButton_Disabled, !player.hasPrevious());
 }
 
 function updateAll(): void {

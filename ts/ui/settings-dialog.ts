@@ -2,6 +2,7 @@ import { Settings, getSettings, saveSettings, newSettings } from "./settings";
 import { StreamCodec, ReplayGainMode } from "../core/track";
 import { hideModalDialog, showModalDialog } from "./modal";
 import { Class } from "./class";
+import { toggleClass } from "./dom";
 
 interface SettingsElement {
     fromSettings(settings: Settings): void;
@@ -96,11 +97,9 @@ class CodecElement implements SettingsElement {
 
     private _onUpdate(): void {
         const codec = this.value();
-        if (codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3) {
-            this._targetMetricRow.classList.remove(Class.Hidden);
-        } else {
-            this._targetMetricRow.classList.add(Class.Hidden);
-        }
+        toggleClass(
+            this._targetMetricRow, Class.Hidden,
+            !(codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3));
     }
 
     public value(): StreamCodec {
@@ -131,11 +130,7 @@ class ReplayGainElement implements SettingsElement {
     }
 
     private _onUpdate(): void {
-        if (this.value() === ReplayGainMode.Off) {
-            this._preventClippingRow.classList.add(Class.Hidden);
-        } else {
-            this._preventClippingRow.classList.remove(Class.Hidden);
-        }
+        toggleClass(this._preventClippingRow, Class.Hidden, this.value() === ReplayGainMode.Off);
     }
 
     public value(): ReplayGainMode | "auto" {

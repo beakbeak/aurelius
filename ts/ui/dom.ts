@@ -52,3 +52,33 @@ export function onDrag(
         document.addEventListener("mouseup", onMouseUp);
     }
 }
+
+/**
+ * If `addClass` is `true`, add `class` to the element's class list. If `false`,
+ * remove it.
+ */
+export function toggleClass(
+    element: Element,
+    className: string,
+    addClass: boolean,
+): void {
+   if (addClass) {
+       element.classList.add(className);
+   } else {
+       element.classList.remove(className);
+   }
+}
+
+/**
+ * Return the closest ancestor with the given class, or `undefined` if none exists.
+ */
+export function closestAncestorWithClass(
+    element: HTMLElement,
+    className: string,
+): HTMLElement | undefined {
+    let ancestor = element.parentElement;
+    while (ancestor !== null && !ancestor.classList.contains(className)) {
+        ancestor = ancestor.parentElement;
+    }
+    return ancestor !== null ? ancestor : undefined;
+}
