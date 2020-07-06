@@ -1,4 +1,14 @@
-#content {
+.main__controls {
+	position: fixed;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100%;
+	max-width: 1200px;
+	box-shadow: 0px 0px 1rem rgba(0,0,0,.5);
+}
+
+.main__dir {
 	max-width: 960px;
 	margin-left: auto;
 	margin-right: auto;
@@ -68,25 +78,25 @@
 		margin-right: 0;
 	}
 
-	#controls {
+	.main__controls {
 		left: calc(50% + (100vw - 100%) / 2);
 	}
 }
 
 @media (min-width: 1200px) {
-	#controls {
+	.main__controls {
 		bottom: inherit;
 		top: 0;
+	}
+	
+	.main__dir {
+		margin-bottom: inherit;
+		margin-top: 8rem;
 	}
 	
 	.top-right__menu {
 		top: inherit;
 		bottom: 0;
 		flex-direction: column-reverse;
-	}
-	
-	#content {
-		margin-bottom: inherit;
-		margin-top: 8rem;
 	}
 }

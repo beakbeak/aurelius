@@ -14,7 +14,7 @@ let trackList: HTMLElement;
 let lastPlaying: HTMLElement | undefined;
 
 export default async function setupDirUi(inPlayer: Player) {
-    const container = document.getElementById("content");
+    const container = document.querySelector(`.${Class.MainDir}`);
     if (container === null) {
         throw new Error("invalid container");
     }
@@ -23,7 +23,7 @@ export default async function setupDirUi(inPlayer: Player) {
 
     const createList = () => {
         const out = document.createElement("ul");
-        out.classList.add(Class.Dir, Class.Hidden);
+        out.classList.add(Class.DirListing, Class.Hidden);
         return out;
     };
 

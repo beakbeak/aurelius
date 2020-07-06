@@ -206,22 +206,11 @@ body {
 }
 
 /* Positioning */
-.main__controls {
-	position: fixed;
-	bottom: 0;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 100%;
-	max-width: 1200px;
-	box-shadow: 0px 0px 1rem rgba(0,0,0,.5);
-}
-
 .controls__group {
 	display: flex;
 	height: 3rem;
 	align-items: center;
 	justify-content: center;
-	color: rgba(0,0,0,.54);
 }
 .controls__group--shift-up {
 	position: relative;
@@ -240,7 +229,10 @@ body {
 }
 
 /* Directory listing **********************************************************/
-.dir {
+
+/* .dir {} */
+
+.dir__listing {
 	list-style: none;
 	padding: 0;
 }
