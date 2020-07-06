@@ -13,7 +13,7 @@
 	<script src="/static/js/main.js"></script>
 </head>
 <body>
-	<nav id="controls" class="controls main__controls">
+	<nav class="controls main__controls">
 		<div class="controls__marquee-spacer">
 			<div class="controls__marquee-container">
 				<a id="marquee" class="controls__marquee controls__link" title="Jump to directory containing this track"></a>
@@ -22,7 +22,7 @@
 		<div id="progress-controls" class="controls__group">
 			<div id="progress-bar-empty" class="controls__progress-trough">
 				<span id="progress-bar-fill" class="controls__progress-fill"></span>
-				<span id="seek-slider-area" class="controls__slider-range">
+				<span class="controls__slider-range">
 					<span id="seek-slider" class="controls__slider"></span>
 				</span>
 			</div>
@@ -65,21 +65,21 @@
 			<table class="ui__table">
 				<tr>
 					<td>Codec</td>
-					<td><select id="codec"></select></td>
+					<td><select id="settings-codec"></select></td>
 				</tr>
-				<tr id="target-metric-row">
+				<tr id="settings-target-metric-row">
 					<td>
-						<select id="target-metric-type">
+						<select id="settings-target-metric-type">
 							<option value="quality">Quality</option>
 							<option value="bit-rate">Bit rate (kb/s)</option>
 						</select>
 					</td>
 					<td>
-						<div><input id="target-metric-value" type="number"></div>
-						<div id="mp3-quality-help" class="target-metric-help">
+						<div><input id="settings-target-metric-value" type="number"></div>
+						<div id="settings-mp3-quality-help" class="settings-target-metric-help">
 							Range: 0 (best) to 9.999 (worst).
 						</div>
-						<div id="vorbis-quality-help" class="target-metric-help">
+						<div id="settings-vorbis-quality-help" class="settings-target-metric-help">
 							Range: -1 (worst) to 10 (best).
 						</div>
 					</td>
@@ -92,13 +92,13 @@
 			<table class="ui__table">
 				<tr>
 					<td>Mode</td>
-					<td><select id="replay-gain"></select></td>
+					<td><select id="settings-replay-gain"></select></td>
 				</tr>
-				<tr id="prevent-clipping-row">
+				<tr id="settings-prevent-clipping-row">
 					<td>Prevent clipping</td>
 					<td>
 						<label>
-							<input id="prevent-clipping" type="checkbox">
+							<input id="settings-prevent-clipping" type="checkbox">
 							Enabled
 						</label>
 					</td>
@@ -106,7 +106,7 @@
 			</table>
 		</div>
 
-		<button id="save" class="ui__button" type="button">Save</button>
+		<button id="settings-save" class="ui__button" type="button">Save</button>
 	</div>
 
 	<div id="about-dialog" class="ui modal dialog hidden">

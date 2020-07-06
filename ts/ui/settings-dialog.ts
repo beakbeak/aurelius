@@ -52,7 +52,7 @@ function ensureElements() {
     }
 
     settingsDialog = document.getElementById("settings-dialog")!;
-    saveButton = document.getElementById("save") as HTMLButtonElement;
+    saveButton = document.getElementById("settings-save") as HTMLButtonElement;
 
     const codecElement = new CodecElement();
 
@@ -86,8 +86,8 @@ function populateSelectWithEnumValues<EnumType>(
 }
 
 class CodecElement implements SettingsElement {
-    public readonly element = document.getElementById("codec") as HTMLSelectElement;
-    private readonly _targetMetricRow = document.getElementById("target-metric-row")!;
+    public readonly element = document.getElementById("settings-codec") as HTMLSelectElement;
+    private readonly _targetMetricRow = document.getElementById("settings-target-metric-row")!;
 
     public constructor() {
         populateSelectWithEnumValues(this.element, StreamCodec);
@@ -119,8 +119,8 @@ class CodecElement implements SettingsElement {
 }
 
 class ReplayGainElement implements SettingsElement {
-    public readonly element = document.getElementById("replay-gain") as HTMLSelectElement;
-    private readonly _preventClippingRow = document.getElementById("prevent-clipping-row")!;
+    public readonly element = document.getElementById("settings-replay-gain") as HTMLSelectElement;
+    private readonly _preventClippingRow = document.getElementById("settings-prevent-clipping-row")!;
 
     public constructor() {
         this.element.appendChild(createOption("auto"));
@@ -150,7 +150,7 @@ class ReplayGainElement implements SettingsElement {
 }
 
 class PreventClippingElement implements SettingsElement {
-    public readonly element = document.getElementById("prevent-clipping") as HTMLInputElement;
+    public readonly element = document.getElementById("settings-prevent-clipping") as HTMLInputElement;
 
     public value(): boolean {
         return this.element.checked.valueOf();
@@ -170,8 +170,8 @@ enum TargetMetricType {
 }
 
 class TargetMetricElement implements SettingsElement {
-    public readonly typeElement = document.getElementById("target-metric-type") as HTMLSelectElement;
-    public readonly valueElement = document.getElementById("target-metric-value") as HTMLInputElement;
+    public readonly typeElement = document.getElementById("settings-target-metric-type") as HTMLSelectElement;
+    public readonly valueElement = document.getElementById("settings-target-metric-value") as HTMLInputElement;
 
     public constructor(
         private readonly _codecElement: CodecElement,
@@ -216,7 +216,7 @@ class TargetMetricElement implements SettingsElement {
     }
 
     private _updateHelp(): void {
-        const helpElements = settingsDialog.querySelectorAll(".target-metric-help");
+        const helpElements = settingsDialog.querySelectorAll(".settings-target-metric-help");
         for (let i = 0; i < helpElements.length; ++i) {
             const element = helpElements[i];
             if (element instanceof HTMLElement) {
@@ -226,7 +226,7 @@ class TargetMetricElement implements SettingsElement {
 
         const codec = this._codecElement.value();
         const metricType = this.typeElement.value;
-        const helpElement = document.getElementById(`${codec}-${metricType}-help`);
+        const helpElement = document.getElementById(`settings-${codec}-${metricType}-help`);
 
         if (helpElement !== null) {
             helpElement.classList.remove(Class.Hidden);
