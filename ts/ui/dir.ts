@@ -108,13 +108,13 @@ function setPlayingClass(element: HTMLAnchorElement | undefined): void {
  * history. If `url` is `undefined`, the window's current URL is used.
  */
 export async function loadDir(url?: string): Promise<void> {
+    const info = await fetchDirInfo(url ?? window.location.href);
+
     if (url === undefined) { // first call
         window.history.replaceState({}, "");
     } else {
         window.history.pushState({}, "", url);
     }
-
-    const info = await fetchDirInfo(url ?? window.location.href);
 
     populateDirs(info);
     populatePlaylists(info);
