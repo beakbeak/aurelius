@@ -1,15 +1,12 @@
 html {
 	min-height: 100%;
+	scrollbar-color: hsl(39, 8%, 43%) hsl(39, 8%, 30%);
 }
 
 body {
 	background: fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
 	color: hsl(39, 100%, 93%);
 	font-family: serif;
-}
-
-* {
-	scrollbar-color: hsl(39, 8%, 43%) hsl(39, 8%, 30%);
 }
 
 .hidden {
@@ -56,6 +53,7 @@ body {
 .ui {
 	background-color: hsl(39, 100%, 93%);
 	color: black;
+	scrollbar-color: initial;
 }
 
 .ui__table {
@@ -85,6 +83,10 @@ body {
 }
 .ui__section-body {
 	margin: .5em 0 .5em 1.5em;
+}
+.ui__section-body--scroll {
+	max-height: 8em;
+	overflow-y: scroll;
 }
 
 .ui__entry-group {
