@@ -50,12 +50,27 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         const track = await Track.fetch(url, streamConfig, startTime, this.track);
         this.track = track;
 
+        let wasPaused = false;
+
+        track.addEventListener("pause", () => {
+            wasPaused = true;
+            this.dispatchEvent("pause");
+        });
+        track.addEventListener("play", () => {
+            // Don't dispatch "unpause" in response to initial "play" event
+            if (wasPaused) {
+                this.dispatchEvent("unpause");
+            }
+            wasPaused = false;
+        });
+
         track.addEventListener("progress", () => {
             this.dispatchEvent("progress");
         });
         track.addEventListener("timeupdate", () => {
             this.dispatchEvent("timeupdate");
         });
+
         track.addEventListener("ended", async () => {
             if (!await this.next()) {
                 if (this.track !== undefined) {
