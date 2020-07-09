@@ -34,21 +34,7 @@ This produces a package as `/path/to/aurelius/aurelius.zip`.
 
 ### Manual source build
 
-Requirements:
-
-- npm
-- Go
-- FFmpeg
-- pkg-config
-- GCC/Clang
-
-Building natively on Windows is possible by installing the C dependencies with
-[MSYS2](https://www.msys2.org/), but using Docker instead is recommended.
-
-    npm install
-    npm run build
-    cd cmd/aurelius
-    go build
+See [Building without a container](#building-without-a-container).
 
 ## Using the command line
 
@@ -115,6 +101,24 @@ Run TypeScript tests:
 Generate a TypeScript code coverage report in `coverage/lcov-report/index.html`:
 
     npm run coverage
+
+### Building without a container
+
+Requirements:
+
+- npm
+- Go
+- FFmpeg
+- pkg-config
+- GCC/Clang
+
+Building natively on Windows is possible by installing the C dependencies with
+[MSYS2](https://www.msys2.org/), but using Docker instead is recommended.
+
+    npm install
+    npm run build
+    cd cmd/aurelius
+    go build
 
 ## Licensing
 
