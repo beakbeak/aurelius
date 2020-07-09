@@ -118,4 +118,5 @@ Generate a TypeScript code coverage report in `coverage/lcov-report/index.html`:
 
 ## Licensing
 
-Aurelius is licensed under the Apache License Version 2.0. See LICENSE.txt and NOTICE.txt for details.
+Aurelius is licensed under the Apache License Version 2.0. See
+[LICENSE.txt](LICENSE.txt) and [NOTICE.txt](NOTICE.txt) for details.
