@@ -1,5 +1,7 @@
 # Aurelius
 
+![Aurelius](img/aurelius.svg)
+
 Aurelius is a web-based streaming music player with a focus on simplicity.
 Stream your personal music collection to your workstation or mobile device using
 only a web browser.
