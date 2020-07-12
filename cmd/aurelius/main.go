@@ -175,7 +175,10 @@ so use of HTTPS is recommended.`)
 		if loginIfUnauthorized(w, req) {
 			return
 		}
-		if !ml.ServeHTTP(w, req) {
+
+		userName := "" // single-user mode
+
+		if !ml.ServeHTTP(w, req, userName) {
 			http.ServeFile(w, req, htmlPath("main.html"))
 		}
 	}

@@ -15,11 +15,11 @@ func (ml *Library) handleTrackRequest(
 	libraryPath string,
 	resource string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) {
 	fsPath := ml.libraryToFsPath(libraryPath)
 	if info, err := os.Stat(fsPath); err != nil || !info.Mode().IsRegular() {
-		http.NotFound(w, req)
+		http.NotFound(w, req.Request)
 		return
 	}
 
@@ -39,7 +39,7 @@ func (ml *Library) handleTrackRequest(
 	case http.MethodPost:
 		switch resource {
 		case "favorite":
-			if err := ml.setFavorite(libraryPath, true); err != nil {
+			if err := ml.setFavorite(req.userName, libraryPath, true); err != nil {
 				log.Printf("Favorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
@@ -47,7 +47,7 @@ func (ml *Library) handleTrackRequest(
 			}
 
 		case "unfavorite":
-			if err := ml.setFavorite(libraryPath, false); err != nil {
+			if err := ml.setFavorite(req.userName, libraryPath, false); err != nil {
 				log.Printf("Unfavorite failed: %v\n", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
@@ -63,7 +63,7 @@ func (ml *Library) handleTrackRequest(
 	}
 
 	if !handled {
-		http.NotFound(w, req)
+		http.NotFound(w, req.Request)
 	}
 }
 
@@ -71,12 +71,12 @@ func (ml *Library) handleTrackInfoRequest(
 	urlPath string,
 	fsPath string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) {
 	src, err := newAudioSource(fsPath)
 	if err != nil {
 		log.Printf("failed to open source '%v': %v\n", fsPath, err)
-		http.NotFound(w, req)
+		http.NotFound(w, req.Request)
 		return
 	}
 	defer src.Destroy()
@@ -98,7 +98,7 @@ func (ml *Library) handleTrackInfoRequest(
 		Tags:            maputil.LowerCaseKeys(src.Tags()),
 	}
 
-	if favorite, err := ml.isFavorite(urlPath); err != nil {
+	if favorite, err := ml.isFavorite(req.userName, urlPath); err != nil {
 		log.Printf("isFavorite failed: %v", err)
 	} else {
 		result.Favorite = favorite
@@ -114,8 +114,11 @@ func newAudioSource(path string) (aurelib.Source, error) {
 	return aurelib.NewFileSource(path)
 }
 
-func (ml *Library) isFavorite(path string) (bool, error) {
-	favorites, err := ml.playlistCache.Get(ml.storageToFsPath(favoritesPath))
+func (ml *Library) isFavorite(
+	userName string,
+	path string,
+) (bool, error) {
+	favorites, err := ml.playlistCache.Get(ml.storageToFsPath(userName, favoritesFile))
 	switch {
 	case os.IsNotExist(err):
 		return false, nil
@@ -132,12 +135,20 @@ func (ml *Library) isFavorite(path string) (bool, error) {
 }
 
 func (ml *Library) setFavorite(
+	userName string,
 	path string,
 	favorite bool,
 ) error {
+	storageDir, err := ml.ensureStorageDir(userName, "")
+	if err != nil {
+		return err
+	}
+
+	favoritesPath := filepath.Join(storageDir, favoritesFile)
+
 	if favorite {
 		return ml.playlistCache.CreateOrModify(
-			ml.storageToFsPath(favoritesPath),
+			favoritesPath,
 			func(favorites []string) ([]string, error) {
 				for _, line := range favorites {
 					if line == path {
@@ -149,7 +160,7 @@ func (ml *Library) setFavorite(
 		)
 	} else {
 		return ml.playlistCache.CreateOrModify(
-			ml.storageToFsPath(favoritesPath),
+			favoritesPath,
 			func(favorites []string) ([]string, error) {
 				for index, line := range favorites {
 					if line == path {

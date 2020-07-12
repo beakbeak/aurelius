@@ -106,10 +106,15 @@ func simpleRequestWithStatus(
 	path string,
 	requestBody string,
 ) ([]byte, int) {
+	userName := ""
 	w := httptest.NewRecorder()
-	if !ml.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody))) {
+	if !ml.ServeHTTP(
+		w, httptest.NewRequest(method, path, strings.NewReader(requestBody)),
+		userName,
+	) {
 		t.Fatal("ServeHTTP() returned false")
 	}
+
 	response := w.Result()
 	defer response.Body.Close()
 

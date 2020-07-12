@@ -10,7 +10,7 @@ func (ml *Library) handlePlaylistRequest(
 	libraryPath string,
 	resource string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) {
 	fsPath := ml.libraryToFsPath(libraryPath)
 	libraryDir := path.Dir(libraryPath)
@@ -21,9 +21,9 @@ func (ml *Library) handlePlaylistRequest(
 func (ml *Library) handleFavoritesRequest(
 	resource string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) {
-	fsPath := ml.storageToFsPath(favoritesPath)
+	fsPath := ml.storageToFsPath(req.userName, favoritesFile)
 	libraryDir := "/"
 
 	ml.handlePlaylistRequestImpl(fsPath, libraryDir, resource, w, req)
@@ -34,11 +34,11 @@ func (ml *Library) handlePlaylistRequestImpl(
 	libraryDir string,
 	resource string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) {
 	lines, err := ml.playlistCache.Get(fsPath)
 	if err != nil {
-		http.NotFound(w, req)
+		http.NotFound(w, req.Request)
 		log.Printf("failed to load '%v': %v", fsPath, err)
 	}
 

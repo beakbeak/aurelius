@@ -18,7 +18,7 @@ var (
 func (ml *Library) handleDirRequest(
 	libraryPath string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) bool {
 	query := req.URL.Query()
 

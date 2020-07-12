@@ -114,39 +114,51 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 	return &ml, nil
 }
 
+type requestWrapper struct {
+	*http.Request
+	userName string
+}
+
 // ServeHTTP handles an HTTP request. It returns true if the request was
 // handled, and false if a directory was requested without a query string. In
 // this case, the caller should handle the request by serving HTML for the user
 // interface.
+//
+// userName is the name of the authorized user, and is used for storage of
+// persistent data (favorites, etc.). An empty string indicates single-user
+// mode.
 func (ml *Library) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
+	userName string,
 ) bool {
 	if ml.reRootPath.MatchString(req.URL.Path) {
 		http.Redirect(w, req, ml.libraryToUrlPath("")+"/", http.StatusFound)
 		return true
 	}
 
+	wrappedReq := requestWrapper{req, userName}
+
 	if matches := ml.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[2]
 
-		return ml.handleDirRequest(libraryPath, w, req)
+		return ml.handleDirRequest(libraryPath, w, wrappedReq)
 	}
 	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[1]
 		resource := matches[2]
 
 		if ml.rePlaylistPath.FindStringSubmatch(libraryPath) != nil {
-			ml.handlePlaylistRequest(libraryPath, resource, w, req)
+			ml.handlePlaylistRequest(libraryPath, resource, w, wrappedReq)
 			return true
 		}
-		ml.handleTrackRequest(libraryPath, resource, w, req)
+		ml.handleTrackRequest(libraryPath, resource, w, wrappedReq)
 		return true
 	}
 	if matches := ml.reFavoritesPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		resource := matches[1]
 
-		ml.handleFavoritesRequest(resource, w, req)
+		ml.handleFavoritesRequest(resource, w, wrappedReq)
 		return true
 	}
 
