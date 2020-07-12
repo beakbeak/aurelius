@@ -10,7 +10,7 @@ import (
 func (ml *Library) handleTrackStreamRequest(
 	fsPath string,
 	w http.ResponseWriter,
-	req *http.Request,
+	req requestWrapper,
 ) {
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)

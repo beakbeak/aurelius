@@ -10,7 +10,7 @@ import (
 )
 
 const treePrefix = "tree"
-const favoritesPath = "favorites.m3u"
+const favoritesFile = "favorites.m3u"
 
 // libraryToFsPath converts a URL-style path relative to the root of the media
 // library to a path in the local file system.
@@ -68,15 +68,32 @@ func (ml *Library) fsToLibraryPathWithContext(fsPath, context string) (string, e
 	return ml.fsToLibraryPath(fsPath)
 }
 
-// libraryToUrlPath prepends the library's routing prefix to libraryPath and applies
-// URL encoding to the result.
+// libraryToUrlPath prepends the library's routing prefix to libraryPath and
+// applies URL encoding to the result.
 func (ml *Library) libraryToUrlPath(libraryPath string) string {
 	urlPath := path.Join(ml.config.Prefix, treePrefix, libraryPath)
 	return (&url.URL{Path: urlPath}).String()
 }
 
-// storageToFsPath converts a path relative to the library's configured storage path to an absolute
-// path.
-func (ml *Library) storageToFsPath(storagePath string) string {
-	return filepath.Join(ml.config.StoragePath, storagePath)
+// storageToFsPath resolves a path relative to a user's storage location.
+func (ml *Library) storageToFsPath(
+	userName string,
+	storagePath string,
+) string {
+	if userName == "" {
+		return filepath.Join(ml.config.StoragePath, storagePath)
+	}
+	return filepath.Join(ml.config.StoragePath, "user", userName, storagePath)
+}
+
+// ensureStorageDir creates a directory relative to a user's storage location
+// and returns its path in the local filesystem. Parent directories will be
+// created if they don't exist.
+func (ml *Library) ensureStorageDir(
+	userName string,
+	storagePath string,
+) (string, error) {
+	fsPath := ml.storageToFsPath(userName, storagePath)
+	error := os.MkdirAll(fsPath, os.ModePerm)
+	return fsPath, error
 }
