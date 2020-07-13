@@ -38,7 +38,7 @@ This produces a package as `/path/to/aurelius/aurelius.zip`.
 
 See [Building without a container](#building-without-a-container).
 
-## Using the command line
+## Command-line arguments
 
 Command-line arguments can also be passed to `docker run`.
 
@@ -67,6 +67,8 @@ Command-line arguments can also be passed to `docker run`.
                 Path to directory where persistent data (favorites, etc.) will be stored.
                 It will be created if it doesn't exist. (default ".")
 
+## Usage notes
+
 ### ReplayGain
 
 Supported metadata (non-exhaustive):
@@ -81,6 +83,15 @@ Currently unsupported:
 
 - WAV tags applied with foobar2000
 - MP3 tags applied with unpatched mp3gain (RVA2 format)
+
+### Importing favorites
+
+Favorites are stored in a file named `favorites.m3u` in the configured persistent storage directory (`-storage`). Each line of the file is a path relative to the root of the media library (`-media`).
+
+### Transcoding
+
+Currently, streamed audio is always transcoded. For playback with no quality
+loss, choose the FLAC codec under Settings > Stream Encoding.
 
 ## Development
 
