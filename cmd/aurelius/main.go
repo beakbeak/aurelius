@@ -1,8 +1,14 @@
 package main
 
 import (
+	cryptoRand "crypto/rand"
+	"encoding/base32"
 	"flag"
+	"fmt"
 	"log"
+	"math"
+	"math/big"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -79,29 +85,38 @@ so use of HTTPS is recommended.`)
 
 	sessionStore := sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
 
-	isAuthorized := func(req *http.Request) bool {
+	getUserName := func(req *http.Request) (string, error) {
 		if *passphrase == "" {
-			return true
+			return "", nil // single-user mode
 		}
 
 		session, err := sessionStore.Get(req, sessionName)
 		if err != nil {
-			return false
+			return "", fmt.Errorf("missing cookie")
 		}
-		if valid, ok := session.Values["valid"]; ok {
-			if validBool, ok := valid.(bool); ok {
-				return validBool
-			}
+
+		if valid, ok := session.Values["valid"]; !ok {
+			return "", fmt.Errorf("missing 'valid' field")
+		} else if validBool, ok := valid.(bool); !ok || !validBool {
+			return "", fmt.Errorf("user logged out")
 		}
-		return false
+
+		if userName, ok := session.Values["userName"]; !ok {
+			return "", fmt.Errorf("missing 'userName' field")
+		} else if userNameString, ok := userName.(string); ok {
+			return userNameString, nil
+		}
+		return "", fmt.Errorf("invalid 'userName' field")
 	}
 
-	loginIfUnauthorized := func(w http.ResponseWriter, req *http.Request) bool {
-		if isAuthorized(req) {
-			return false
+	getUserNameOrLogin := func(w http.ResponseWriter, req *http.Request) (string, bool) {
+		if userName, err := getUserName(req); err == nil {
+			return userName, true
+		} else {
+			log.Printf("getUserName failed: %v", err)
 		}
 		http.Redirect(w, req, "/login?from="+url.QueryEscape(req.URL.String()), http.StatusFound)
-		return true
+		return "", false
 	}
 
 	trySaveSessionValues := func(w http.ResponseWriter, req *http.Request, values ...interface{}) bool {
@@ -122,7 +137,7 @@ so use of HTTPS is recommended.`)
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		if loginIfUnauthorized(w, req) {
+		if _, ok := getUserNameOrLogin(w, req); !ok {
 			return
 		}
 		http.Redirect(w, req, mlConfig.Prefix+"/", http.StatusFound)
@@ -156,7 +171,17 @@ so use of HTTPS is recommended.`)
 			return
 		}
 
-		if !trySaveSessionValues(w, req, "valid", true) {
+		userName, err := randomUserName()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if !trySaveSessionValues(
+			w, req,
+			"valid", true,
+			"userName", userName,
+		) {
 			return
 		}
 
@@ -172,11 +197,10 @@ so use of HTTPS is recommended.`)
 	})
 
 	forwardToMediaLibrary := func(w http.ResponseWriter, req *http.Request) {
-		if loginIfUnauthorized(w, req) {
+		userName, ok := getUserNameOrLogin(w, req)
+		if !ok {
 			return
 		}
-
-		userName := "" // single-user mode
 
 		if !ml.ServeHTTP(w, req, userName) {
 			http.ServeFile(w, req, htmlPath("main.html"))
@@ -221,4 +245,35 @@ func (srv fileOnlyServer) ServeHTTP(
 	}
 
 	http.ServeFile(w, req, path)
+}
+
+var randomSource = mustCreateRandomSource()
+
+func mustCreateRandomSource() *rand.Rand {
+	seed, err := cryptoRand.Int(cryptoRand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		panic(err)
+	}
+	return rand.New(rand.NewSource(seed.Int64()))
+}
+
+const randomUserNameLength = 30
+
+func randomUserName() (string, error) {
+	randomBytes := [randomUserNameLength]uint8{}
+	for i := range randomBytes {
+		randomBytes[i] = uint8(randomSource.Int31n(math.MaxUint8))
+	}
+
+	stringBuilder := strings.Builder{}
+
+	base32Encoder := base32.NewEncoder(base32.StdEncoding, &stringBuilder)
+	if _, err := base32Encoder.Write(randomBytes[:]); err != nil {
+		return "", err
+	}
+	if err := base32Encoder.Close(); err != nil {
+		return "", err
+	}
+
+	return stringBuilder.String(), nil
 }
