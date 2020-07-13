@@ -10,9 +10,13 @@
 	margin: 1rem auto;
 }
 
-#login-form:before {
-	content: "aurelius";
+#plug {
 	display: block;
 	text-align: center;
 	font-style: italic;
+	text-decoration: none;
+	color: inherit;
+}
+#plug:hover {
+	text-decoration: underline;
 }
