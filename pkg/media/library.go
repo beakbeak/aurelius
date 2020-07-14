@@ -10,8 +10,9 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/pkg/textcache"
 	"time"
+
+	"github.com/beakbeak/aurelius/pkg/textcache"
 )
 
 // LibraryConfig contains configuration parameters used by NewLibrary. It should

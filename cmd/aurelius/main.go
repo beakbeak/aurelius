@@ -7,8 +7,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sb/aurelius/pkg/media"
 	"strings"
+
+	"github.com/beakbeak/aurelius/pkg/media"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"

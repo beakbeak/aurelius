@@ -1,4 +1,4 @@
-module sb/aurelius
+module github.com/beakbeak/aurelius
 
 go 1.13
 

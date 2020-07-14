@@ -27,10 +27,11 @@ import (
 	"fmt"
 	"math"
 	"regexp"
-	"sb/aurelius/internal/maputil"
 	"strconv"
 	"time"
 	"unsafe"
+
+	"github.com/beakbeak/aurelius/internal/maputil"
 )
 
 // A Source produces raw audio data to be consumed by a Sink.

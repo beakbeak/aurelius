@@ -1,7 +1,7 @@
 package media
 
 import (
-	"sb/aurelius/pkg/aurelib"
+	"github.com/beakbeak/aurelius/pkg/aurelib"
 )
 
 // A Logger implements a subset of methods provided by the standard library's log.Logger.

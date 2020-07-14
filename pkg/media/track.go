@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sb/aurelius/internal/maputil"
-	"sb/aurelius/pkg/aurelib"
-	"sb/aurelius/pkg/fragment"
 	"time"
+
+	"github.com/beakbeak/aurelius/internal/maputil"
+	"github.com/beakbeak/aurelius/pkg/aurelib"
+	"github.com/beakbeak/aurelius/pkg/fragment"
 )
 
 func (ml *Library) handleTrackRequest(

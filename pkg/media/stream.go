@@ -2,9 +2,10 @@ package media
 
 import (
 	"net/http"
-	"sb/aurelius/pkg/aurelib"
 	"strconv"
 	"time"
+
+	"github.com/beakbeak/aurelius/pkg/aurelib"
 )
 
 func (ml *Library) handleTrackStreamRequest(

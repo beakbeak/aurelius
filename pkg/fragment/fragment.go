@@ -23,8 +23,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sb/aurelius/pkg/aurelib"
 	"time"
+
+	"github.com/beakbeak/aurelius/pkg/aurelib"
 )
 
 var (

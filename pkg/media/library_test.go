@@ -15,9 +15,10 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sb/aurelius/pkg/media"
 	"strings"
 	"testing"
+
+	"github.com/beakbeak/aurelius/pkg/media"
 )
 
 var (
