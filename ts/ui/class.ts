@@ -8,6 +8,7 @@ export const enum Class {
     DirLink = "dir__link",
     DirLink_Aux = "dir__link--aux",
     DirListing = "dir__listing",
+    DirNotes = "dir__notes",
     Hidden = "hidden",
     MainDir = "main__dir",
     MaterialIcons = "material-icons",

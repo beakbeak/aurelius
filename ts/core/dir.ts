@@ -10,6 +10,7 @@ export interface DirInfo {
     readonly dirs: PathUrl[];
     readonly playlists: PathUrl[];
     readonly tracks: PathUrl[];
+    readonly notes: string;
 }
 
 export function fetchDirInfo(url: string): Promise<DirInfo> {

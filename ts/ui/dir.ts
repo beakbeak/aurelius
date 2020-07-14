@@ -2,7 +2,7 @@ import { Player } from "../core/player";
 import { DirInfo, fetchDirInfo } from "../core/dir";
 import { ReplayGainMode } from "../core/track";
 import { Class } from "./class";
-import { closestAncestorWithClass } from "./dom";
+import { closestAncestorWithClass, toggleClass } from "./dom";
 
 let player: Player;
 
@@ -10,6 +10,7 @@ let specialList: HTMLElement;
 let dirList: HTMLElement;
 let playlistList: HTMLElement;
 let trackList: HTMLElement;
+let notesElement: HTMLElement;
 
 let lastPlaying: HTMLElement | undefined;
 
@@ -31,12 +32,14 @@ export default async function setupDirUi(inPlayer: Player) {
     dirList = createList();
     playlistList = createList();
     trackList = createList();
+    notesElement = createNotes();
 
     container.innerHTML = "";
     container.appendChild(specialList);
     container.appendChild(dirList);
     container.appendChild(playlistList);
     container.appendChild(trackList);
+    container.appendChild(notesElement);
 
     populateSpecial();
 
@@ -122,6 +125,7 @@ export async function loadDir(url?: string): Promise<void> {
     populateDirs(info);
     populatePlaylists(info);
     populateTracks(info);
+    populateNotes(info);
 }
 
 function populateDirs(info: DirInfo): void {
@@ -231,4 +235,15 @@ function populateTracks(info: DirInfo): void {
     }
 
     trackList.classList.remove(Class.Hidden);
+}
+
+function createNotes(): HTMLElement {
+    const out = document.createElement("p");
+    out.classList.add(Class.Hidden, Class.DirNotes);
+    return out;
+}
+
+function populateNotes(info: DirInfo): void {
+    notesElement.innerText = info.notes;
+    toggleClass(notesElement, Class.Hidden, !info.notes);
 }

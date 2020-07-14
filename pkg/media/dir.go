@@ -70,6 +70,7 @@ func (ml *Library) handleDirInfoRequest(
 		Dirs      []PathUrl `json:"dirs"`
 		Playlists []PathUrl `json:"playlists"`
 		Tracks    []PathUrl `json:"tracks"`
+		Notes     string    `json:"notes"`
 	}
 	result := Result{
 		Dirs:      make([]PathUrl, 0),
@@ -108,6 +109,14 @@ func (ml *Library) handleDirInfoRequest(
 			result.Dirs = append(result.Dirs, url)
 
 		case mode.IsRegular():
+			if info.Name() == "notes.txt" {
+				fsPath := ml.libraryToFsPath(path.Join(libraryDirPath, info.Name()))
+				if notes, err := ioutil.ReadFile(fsPath); err == nil {
+					result.Notes = string(notes)
+				}
+				continue
+			}
+
 			if reDirIgnore.MatchString(info.Name()) && !reDirUnignore.MatchString(info.Name()) {
 				continue
 			}
