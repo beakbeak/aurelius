@@ -6,6 +6,8 @@ Aurelius is a web-based streaming music player with a focus on simplicity.
 Stream your personal music collection to your workstation or mobile device using
 only a web browser.
 
+Try the [live demo](https://aurelius.app/) (password: demo).
+
 Features:
 
 - Broad format support provided by FFmpeg, including video container formats
@@ -13,7 +15,6 @@ Features:
 - Network traffic control via:
   - Transcoding
   - Streaming throttled to playback speed
-- Play subsections of a track
 
 ## Running
 
@@ -86,7 +87,9 @@ Currently unsupported:
 
 ### Importing favorites
 
-Favorites are stored in a file named `favorites.m3u` in the configured persistent storage directory (`-storage`). Each line of the file is a path relative to the root of the media library (`-media`).
+Favorites are stored in a file named `favorites.m3u` in the configured
+persistent storage directory (`-storage`). Each line of the file is a path
+relative to the root of the media library (`-media`).
 
 ### Transcoding
 
