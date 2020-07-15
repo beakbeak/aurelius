@@ -22,8 +22,14 @@ Features:
 
 ### Docker
 
+Pull from Docker Hub:
+
+    docker run --rm -it -v /path/to/media/library:/media -p 9090:9090 beakbeak/aurelius
+
+Or, build from source:
+
     docker build -t aurelius .
-    docker run -v /path/to/media/library:/media -p 9090:9090 aurelius
+    docker run --rm -it -v /path/to/media/library:/media -p 9090:9090 aurelius
 
 Then point your browser to [http://localhost:9090](http://localhost:9090).
 
