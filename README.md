@@ -8,6 +8,8 @@ only a web browser.
 
 Try the [live demo](https://aurelius.app/) (password: demo).
 
+<a href="https://pkg.go.dev/github.com/beakbeak/aurelius"><img src="https://pkg.go.dev/badge/github.com/beakbeak/aurelius" alt="PkgGoDev"></a>
+
 Features:
 
 - Broad format support provided by FFmpeg, including video container formats
@@ -90,6 +92,11 @@ Currently unsupported:
 Favorites are stored in a file named `favorites.m3u` in the configured
 persistent storage directory (`-storage`). Each line of the file is a path
 relative to the root of the media library (`-media`).
+
+### Playing subsections of a track
+
+It's possible to create descriptor files that represent subsections of a track.
+See [documentation for pkg/fragment](https://pkg.go.dev/github.com/beakbeak/aurelius/pkg/fragment?tab=doc).
 
 ### Transcoding
 
