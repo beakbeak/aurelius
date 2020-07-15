@@ -33,6 +33,9 @@ Or, build from source:
 
 Then point your browser to [http://localhost:9090](http://localhost:9090).
 
+Note that if using the above commands, an additional mount to `/storage` will be
+needed for favorites to persist across runs.
+
 ### Windows package
 
 A portable `.zip` package containing native Windows binaries can be easily built
