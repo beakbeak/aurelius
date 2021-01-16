@@ -16,8 +16,12 @@ describe("Player", function () {
 
         const gotFavorite = new EventChecker();
         const gotUnfavorite = new EventChecker();
-        player.addEventListener("favorite", () => { gotFavorite.set(); });
-        player.addEventListener("unfavorite", () => { gotUnfavorite.set(); });
+        player.addEventListener("favorite", () => {
+            gotFavorite.set();
+        });
+        player.addEventListener("unfavorite", () => {
+            gotUnfavorite.set();
+        });
 
         await player.unfavorite();
         ok(!gotUnfavorite.consume());
@@ -44,8 +48,12 @@ describe("Player", function () {
 
         const gotPause = new EventChecker();
         const gotUnpause = new EventChecker();
-        player.addEventListener("pause", () => { gotPause.set(); });
-        player.addEventListener("unpause", () => { gotUnpause.set(); });
+        player.addEventListener("pause", () => {
+            gotPause.set();
+        });
+        player.addEventListener("unpause", () => {
+            gotUnpause.set();
+        });
 
         await player.playTrack(trackUrl);
         player.unpause();
@@ -77,19 +85,18 @@ describe("Player", function () {
         strictEqual(player.track.currentTime(), 10);
     });
 
-    function makePlaylistTests(
-        playlistType: string,
-        getUrls: () => Promise<string | string[]>
-    ) {
+    function makePlaylistTests(playlistType: string, getUrls: () => Promise<string | string[]>) {
         it(`cycles through a ${playlistType} playlist`, async function () {
             const player = new Player();
 
             const gotPlay = new EventChecker();
-            player.addEventListener("play", () => { gotPlay.set(); });
+            player.addEventListener("play", () => {
+                gotPlay.set();
+            });
 
             ok(await player.playList(await getUrls(), { startPos: 1 }));
             if (player.playlist === undefined) {
-                throw new Error("player.playlist is undefined")
+                throw new Error("player.playlist is undefined");
             }
             ok(gotPlay.consume());
 
@@ -98,7 +105,7 @@ describe("Player", function () {
             ok(gotPlay.consume());
 
             ok(!player.hasPrevious());
-            ok(!await player.previous());
+            ok(!(await player.previous()));
             ok(!gotPlay.consume());
 
             for (let i = 1, end = player.playlist.length() >> 1; i < end; ++i) {
@@ -114,7 +121,7 @@ describe("Player", function () {
             }
 
             ok(!player.hasPrevious());
-            ok(!await player.previous());
+            ok(!(await player.previous()));
             ok(!gotPlay.consume());
 
             for (let i = 1, end = player.playlist.length(); i < end; ++i) {
@@ -124,7 +131,7 @@ describe("Player", function () {
             }
 
             ok(!player.hasNext());
-            ok(!await player.next());
+            ok(!(await player.next()));
             ok(!gotPlay.consume());
 
             for (let i = 1, end = player.playlist.length(); i < end; ++i) {
@@ -134,15 +141,15 @@ describe("Player", function () {
             }
 
             ok(!player.hasPrevious());
-            ok(!await player.previous());
+            ok(!(await player.previous()));
             ok(!gotPlay.consume());
 
             await player.playTrack(trackUrl);
             ok(gotPlay.consume());
             ok(!player.hasNext());
             ok(!player.hasPrevious());
-            ok(!await player.next());
-            ok(!await player.previous());
+            ok(!(await player.next()));
+            ok(!(await player.previous()));
             ok(!gotPlay.consume());
         });
 
@@ -151,11 +158,11 @@ describe("Player", function () {
 
             ok(await player.playList(await getUrls(), { random: true }));
             if (player.playlist === undefined) {
-                throw new Error("player.playlist is undefined")
+                throw new Error("player.playlist is undefined");
             }
 
             ok(!player.hasPrevious());
-            ok(!await player.previous());
+            ok(!(await player.previous()));
 
             const moreThanOriginalLength = player.playlist.length() + 2;
             for (let i = 0; i < moreThanOriginalLength; ++i) {
@@ -168,13 +175,13 @@ describe("Player", function () {
             }
 
             ok(!player.hasPrevious());
-            ok(!await player.previous());
+            ok(!(await player.previous()));
         });
     }
 
     makePlaylistTests("remote", async () => remotePlaylistUrl);
     makePlaylistTests("local", async () => {
         const dirInfo = await fetchDirInfo(localPlaylistDir);
-        return dirInfo.tracks.map(pathUrl => pathUrl.url);
+        return dirInfo.tracks.map((pathUrl) => pathUrl.url);
     });
 });

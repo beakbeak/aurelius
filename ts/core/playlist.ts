@@ -12,10 +12,7 @@ export interface Playlist {
 }
 
 /** Return a random integer in the range `[min, max)`.*/
-function randomInt(
-    min: number,
-    max: number,
-): number {
+function randomInt(min: number, max: number): number {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min)) + min;
@@ -59,10 +56,7 @@ export class RemotePlaylist implements Playlist {
 
     private readonly _length: number;
 
-    private constructor(
-        url: string,
-        length: number,
-    ) {
+    private constructor(url: string, length: number) {
         this.url = url;
         this._length = length;
     }
@@ -80,17 +74,15 @@ export class RemotePlaylist implements Playlist {
     }
 
     public async at(pos: number): Promise<PlaylistItem | undefined> {
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(
-            `${this.url}/${pos}`
-        ));
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(`${this.url}/${pos}`));
     }
 
     public async random(): Promise<PlaylistItem | undefined> {
         if (this._length < 1) {
             return Promise.resolve(undefined);
         }
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(
-            `${this.url}/${randomInt(0, this._length)}`
-        ));
+        return nullToUndefined(
+            await fetchJson<PlaylistItem | null>(`${this.url}/${randomInt(0, this._length)}`),
+        );
     }
 }

@@ -1,30 +1,35 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<title>aurelius</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<head>
+		<title>aurelius</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-	<link rel="icon" type="image/png" href="/static/img/icon.png">
+		<link rel="icon" type="image/png" href="/static/img/icon.png" />
 
-	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	<link href="/static/css/base.css" rel="stylesheet">
-	<link href="/static/css/login.css" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+		<link href="/static/css/base.css" rel="stylesheet" />
+		<link href="/static/css/login.css" rel="stylesheet" />
 
-	<script src="/static/js/login.js"></script>
-</head>
-<body>
-	<main id="content" class="modal">
-		<form id="login-form" class="ui dialog" action="/login" method="POST">
-			<div class="ui__entry-group">
-				<label class="ui__entry-label">
-					<i class="material-icons">lock</i>
-					<input id="password-input" class="ui__entry-input" type="password" name="passphrase" placeholder="Password">
-				</label>
-			</div>
-			<p id="login-error" class="ui__error hidden">
-				Login failed.
-			</p>
-			<button class="ui__button" type="submit">Login</button>
-		</form>
-	</main>
-</body>
+		<script src="/static/js/login.js"></script>
+	</head>
+	<body>
+		<main id="content" class="modal">
+			<form id="login-form" class="ui dialog" action="/login" method="POST">
+				<div class="ui__entry-group">
+					<label class="ui__entry-label">
+						<i class="material-icons">lock</i>
+						<input
+							id="password-input"
+							class="ui__entry-input"
+							type="password"
+							name="passphrase"
+							placeholder="Password"
+						/>
+					</label>
+				</div>
+				<p id="login-error" class="ui__error hidden">Login failed.</p>
+				<button class="ui__button" type="submit">Login</button>
+			</form>
+		</main>
+	</body>
+</html>

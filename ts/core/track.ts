@@ -5,7 +5,7 @@ export interface TrackInfo {
     readonly duration: number;
     readonly replayGainTrack: number;
     readonly replayGainAlbum: number;
-    readonly tags: {[key: string]: string | undefined};
+    readonly tags: { [key: string]: string | undefined };
 
     favorite: boolean;
 }
@@ -38,10 +38,7 @@ export interface StreamConfig {
     preventClipping?: boolean;
 }
 
-function streamQueryString(
-    config: StreamConfig,
-    startTime = 0,
-): string {
+function streamQueryString(config: StreamConfig, startTime = 0): string {
     let query = "";
     let argCount = 0;
 
@@ -63,7 +60,7 @@ function streamQueryString(
 }
 
 export class Track {
-    private _listeners: { name: string; func: any; }[] = [];
+    private _listeners: { name: string; func: any }[] = [];
 
     private constructor(
         public readonly url: string,
@@ -101,7 +98,7 @@ export class Track {
         } else {
             audio = new Audio();
         }
-        
+
         audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
         const playablePromise = new Promise<void>((resolve, reject) => {

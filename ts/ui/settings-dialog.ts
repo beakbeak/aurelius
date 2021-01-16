@@ -14,9 +14,7 @@ let saveButton: HTMLButtonElement;
 
 const settingsElements: SettingsElement[] = [];
 
-export function showSettingsDialog(
-    onApply: (settings: Settings) => void,
-): void {
+export function showSettingsDialog(onApply: (settings: Settings) => void): void {
     populateElements(getSettings());
     showModalDialog(settingsDialog);
 
@@ -26,7 +24,7 @@ export function showSettingsDialog(
         const settings = gatherSettings();
         saveSettings(settings);
         onApply(settings);
-    }
+    };
 }
 
 function populateElements(settings: Settings): void {
@@ -62,10 +60,7 @@ function ensureElements() {
     settingsElements.push(new PreventClippingElement());
 }
 
-function createOption(
-    value: string,
-    text = value,
-): HTMLOptionElement {
+function createOption(value: string, text = value): HTMLOptionElement {
     const option = document.createElement("option");
     option.value = value;
     option.innerText = text;
@@ -78,7 +73,7 @@ function populateSelectWithEnumValues<EnumType>(
 ): void {
     for (const keyString of Object.keys(enumObject)) {
         const key = keyString as keyof EnumType;
-        const valueString = enumObject[key] as unknown as string;
+        const valueString = (enumObject[key] as unknown) as string;
 
         const option = createOption(valueString);
         select.appendChild(option);
@@ -92,14 +87,18 @@ class CodecElement implements SettingsElement {
     public constructor() {
         populateSelectWithEnumValues(this.element, StreamCodec);
 
-        this.element.oninput = () => { this._onUpdate(); };
+        this.element.oninput = () => {
+            this._onUpdate();
+        };
     }
 
     private _onUpdate(): void {
         const codec = this.value();
         toggleClass(
-            this._targetMetricRow, Class.Hidden,
-            !(codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3));
+            this._targetMetricRow,
+            Class.Hidden,
+            !(codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3),
+        );
     }
 
     public value(): StreamCodec {
@@ -120,13 +119,17 @@ class CodecElement implements SettingsElement {
 
 class ReplayGainElement implements SettingsElement {
     public readonly element = document.getElementById("settings-replay-gain") as HTMLSelectElement;
-    private readonly _preventClippingRow = document.getElementById("settings-prevent-clipping-row")!;
+    private readonly _preventClippingRow = document.getElementById(
+        "settings-prevent-clipping-row",
+    )!;
 
     public constructor() {
         this.element.appendChild(createOption("auto"));
         populateSelectWithEnumValues(this.element, ReplayGainMode);
 
-        this.element.oninput = () => { this._onUpdate(); };
+        this.element.oninput = () => {
+            this._onUpdate();
+        };
     }
 
     private _onUpdate(): void {
@@ -134,7 +137,7 @@ class ReplayGainElement implements SettingsElement {
     }
 
     public value(): ReplayGainMode | "auto" {
-        return this.element.value as (ReplayGainMode | "auto");
+        return this.element.value as ReplayGainMode | "auto";
     }
 
     public fromSettings(settings: Settings): void {
@@ -150,7 +153,9 @@ class ReplayGainElement implements SettingsElement {
 }
 
 class PreventClippingElement implements SettingsElement {
-    public readonly element = document.getElementById("settings-prevent-clipping") as HTMLInputElement;
+    public readonly element = document.getElementById(
+        "settings-prevent-clipping",
+    ) as HTMLInputElement;
 
     public value(): boolean {
         return this.element.checked.valueOf();
@@ -170,12 +175,14 @@ enum TargetMetricType {
 }
 
 class TargetMetricElement implements SettingsElement {
-    public readonly typeElement = document.getElementById("settings-target-metric-type") as HTMLSelectElement;
-    public readonly valueElement = document.getElementById("settings-target-metric-value") as HTMLInputElement;
+    public readonly typeElement = document.getElementById(
+        "settings-target-metric-type",
+    ) as HTMLSelectElement;
+    public readonly valueElement = document.getElementById(
+        "settings-target-metric-value",
+    ) as HTMLInputElement;
 
-    public constructor(
-        private readonly _codecElement: CodecElement,
-    ) {
+    public constructor(private readonly _codecElement: CodecElement) {
         const update = () => {
             this._updateBounds();
             this._updateHelp();

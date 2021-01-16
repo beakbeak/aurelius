@@ -25,9 +25,7 @@ let unfavoriteButton: HTMLElement;
 // [0..1]
 let _seekSliderPosition: number | undefined;
 
-export default function setupPlayerUi(
-    inPlayer: Player,
-) {
+export default function setupPlayerUi(inPlayer: Player) {
     player = inPlayer;
 
     aboutButton = document.getElementById("about-button")!;
@@ -76,7 +74,7 @@ export default function setupPlayerUi(
         if (marquee.href) {
             loadDir(marquee.href);
         }
-    }
+    };
 
     progressBarEmpty.onmousedown = (event) => {
         event.preventDefault();
@@ -88,7 +86,7 @@ export default function setupPlayerUi(
             const touch = event.changedTouches[0];
             startSeekSliderDrag(touch.clientX, touch.screenX, touch.identifier);
         }
-    }
+    };
     updateAll();
 
     window.addEventListener("resize", () => {
@@ -115,10 +113,7 @@ export default function setupPlayerUi(
     player.addEventListener("unpause", updateAll);
 }
 
-function setMarquee(
-    text: string,
-    url: string,
-): void {
+function setMarquee(text: string, url: string): void {
     marquee.textContent = text;
     marquee.href = url;
 
@@ -128,15 +123,14 @@ function setMarquee(
     }
 
     const scrollLength = marquee.scrollWidth - marquee.clientWidth;
-    const scrollTime = scrollLength / 50 /* px/second */;
-    const waitTime = 2 /* seconds */;
+    const scrollTime = scrollLength / 50; /* px/second */
+    const waitTime = 2; /* seconds */
     const totalTime = 2 * (scrollTime + waitTime);
     const scrollPercent = 100 * (scrollTime / totalTime);
     const waitPercent = 100 * (waitTime / totalTime);
 
     const style = document.createElement("style");
-    style.textContent =
-        `@keyframes marquee {
+    style.textContent = `@keyframes marquee {
             ${scrollPercent}% {
                 transform: translateX(-${scrollLength}px);
             }
@@ -151,11 +145,7 @@ function setMarquee(
     marquee.style.animation = `marquee ${totalTime}s infinite linear`;
 }
 
-function startSeekSliderDrag(
-    anchorClientX: number,
-    anchorScreenX: number,
-    touchId?: number,
-): void {
+function startSeekSliderDrag(anchorClientX: number, anchorScreenX: number, touchId?: number): void {
     if (player.track === undefined) {
         return;
     }
@@ -176,18 +166,20 @@ function startSeekSliderDrag(
     _seekSliderPosition = getSeekSliderPosition(anchorScreenX);
     updateTime();
 
-    onDrag((screenX) => {
-        _seekSliderPosition = getSeekSliderPosition(screenX);
-        updateTime();
-    },
-    (screenX) => {
-        _seekSliderPosition = undefined;
+    onDrag(
+        (screenX) => {
+            _seekSliderPosition = getSeekSliderPosition(screenX);
+            updateTime();
+        },
+        (screenX) => {
+            _seekSliderPosition = undefined;
 
-        if (player.track !== undefined) {
-            player.seekTo(
-                getSeekSliderPosition(screenX) * player.track.info.duration);
-        }
-    }, touchId);
+            if (player.track !== undefined) {
+                player.seekTo(getSeekSliderPosition(screenX) * player.track.info.duration);
+            }
+        },
+        touchId,
+    );
 }
 
 function updateStatus(): void {
@@ -209,7 +201,7 @@ function updateStatus(): void {
     if (info.tags["title"] !== undefined) {
         text = `${text}${info.tags["title"]}`;
     } else {
-        text = `${text}${info.name}`
+        text = `${text}${info.name}`;
     }
 
     if (info.tags["album"] !== undefined) {
@@ -243,8 +235,8 @@ function updateTime(): void {
     }
 
     const duration = track.info.duration;
-    const currentTime = _seekSliderPosition !== undefined
-        ? _seekSliderPosition * duration : track.currentTime();
+    const currentTime =
+        _seekSliderPosition !== undefined ? _seekSliderPosition * duration : track.currentTime();
     const currentTimeStr = secondsToString(currentTime);
     const durationStr = secondsToString(duration);
 

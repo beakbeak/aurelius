@@ -57,16 +57,12 @@ export function onDrag(
  * If `addClass` is `true`, add `class` to the element's class list. If `false`,
  * remove it.
  */
-export function toggleClass(
-    element: Element,
-    className: string,
-    addClass: boolean,
-): void {
-   if (addClass) {
-       element.classList.add(className);
-   } else {
-       element.classList.remove(className);
-   }
+export function toggleClass(element: Element, className: string, addClass: boolean): void {
+    if (addClass) {
+        element.classList.add(className);
+    } else {
+        element.classList.remove(className);
+    }
 }
 
 /**

@@ -16,9 +16,11 @@ export interface PlayerEventMap {
 }
 export type PlayerEvent = keyof PlayerEventMap;
 
-export type PlayerStreamConfig = StreamConfig | (Omit<StreamConfig, "replayGain"> & {
-    replayGain: "auto";
-});
+export type PlayerStreamConfig =
+    | StreamConfig
+    | (Omit<StreamConfig, "replayGain"> & {
+          replayGain: "auto";
+      });
 
 export class Player extends EventDispatcher<PlayerEventMap> {
     private _history = new PlayHistory();
@@ -29,16 +31,11 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     public track?: Track;
     public playlist?: Playlist;
 
-    public constructor(
-        public streamConfig: PlayerStreamConfig = {},
-    ) {
+    public constructor(public streamConfig: PlayerStreamConfig = {}) {
         super();
     }
 
-    private async _play(
-        url: string,
-        startTime?: number,
-    ): Promise<void> {
+    private async _play(url: string, startTime?: number): Promise<void> {
         let streamConfig: StreamConfig;
         if (this.streamConfig.replayGain === "auto") {
             streamConfig = copyJson(this.streamConfig);
@@ -72,7 +69,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         });
 
         track.addEventListener("ended", async () => {
-            if (!await this.next()) {
+            if (!(await this.next())) {
                 if (this.track !== undefined) {
                     this.track.destroy();
                     delete this.track;
@@ -108,16 +105,16 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     public async playList(
         playlistUrlOrTrackUrls: string | string[],
         configOverride?: {
-            random?: boolean,
-            startPos?: number,
-            replayGainHint?: ReplayGainMode,
-        }
+            random?: boolean;
+            startPos?: number;
+            replayGainHint?: ReplayGainMode;
+        },
     ): Promise<boolean> {
         const config = {
             random: false,
             startPos: 0,
             replayGainHint: ReplayGainMode.Track,
-            ...configOverride
+            ...configOverride,
         };
 
         if (typeof playlistUrlOrTrackUrls === "string") {
@@ -143,7 +140,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         if (this.playlist === undefined || this.playlist.length() < 1) {
             return false;
         }
-        return this._random || this._playlistPos < (this.playlist.length() - 1);
+        return this._random || this._playlistPos < this.playlist.length() - 1;
     }
 
     public hasPrevious(): boolean {
@@ -165,7 +162,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
             if (this._random) {
                 item = await this.playlist.random();
-            } else if (this._playlistPos < (this.playlist.length() - 1)) {
+            } else if (this._playlistPos < this.playlist.length() - 1) {
                 item = await this.playlist.at(this._playlistPos + 1);
             }
 
@@ -182,10 +179,12 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     public async previous(): Promise<boolean> {
         let item = this._history.previous();
         if (item === undefined) {
-            if (this._random
-                || this.playlist === undefined || this.playlist.length() < 1
-                || this._playlistPos <= 0)
-            {
+            if (
+                this._random ||
+                this.playlist === undefined ||
+                this.playlist.length() < 1 ||
+                this._playlistPos <= 0
+            ) {
                 return false;
             }
 

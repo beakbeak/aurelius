@@ -16,7 +16,7 @@ export function sendJsonRequest<Response>(
             } else {
                 reject(new Error(`request failed (${req.status}): ${url}`));
             }
-        }
+        };
 
         if (data !== undefined) {
             req.setRequestHeader("Content-Type", "application/json");
@@ -31,10 +31,7 @@ export function fetchJson<Response>(url: string): Promise<Response> {
     return sendJsonRequest<Response>("GET", url);
 }
 
-export function postJson<Response>(
-    url: string,
-    data?: any,
-): Promise<Response> {
+export function postJson<Response>(url: string, data?: any): Promise<Response> {
     return sendJsonRequest<Response>("POST", url, data);
 }
 

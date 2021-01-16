@@ -15,13 +15,10 @@
 export default class EventDispatcher<
     EventMap extends Record<keyof EventMap, (...args: any[]) => any>
 > {
-    private _listeners: {[eventName: string]: ((...args: any[]) => any)[] | undefined} = {};
+    private _listeners: { [eventName: string]: ((...args: any[]) => any)[] | undefined } = {};
 
     /** Set a function to be called when a particular event is dispatched. */
-    public addEventListener<K extends keyof EventMap>(
-        eventName: K,
-        value: EventMap[K],
-    ): void {
+    public addEventListener<K extends keyof EventMap>(eventName: K, value: EventMap[K]): void {
         let listeners = this._listeners[eventName as string];
         if (listeners === undefined) {
             listeners = [];

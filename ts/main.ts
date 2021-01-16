@@ -11,6 +11,8 @@ window.onload = () => {
     setupPlayerUi(player);
 
     document.getElementById("settings-button")!.onclick = () => {
-        showSettingsDialog(settings => { player.streamConfig = settings.streamConfig; });
-    }
+        showSettingsDialog((settings) => {
+            player.streamConfig = settings.streamConfig;
+        });
+    };
 };

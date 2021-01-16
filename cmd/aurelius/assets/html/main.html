@@ -1,144 +1,170 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<title>aurelius</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<head>
+		<title>aurelius</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-	<link rel="icon" type="image/png" href="/static/img/icon.png">
+		<link rel="icon" type="image/png" href="/static/img/icon.png" />
 
-	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	<link href="/static/css/base.css" rel="stylesheet">
-	<link href="/static/css/main.css" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+		<link href="/static/css/base.css" rel="stylesheet" />
+		<link href="/static/css/main.css" rel="stylesheet" />
 
-	<script src="/static/js/main.js"></script>
-</head>
-<body>
-	<nav class="controls main__controls">
-		<div class="controls__marquee-spacer">
-			<div class="controls__marquee-container">
-				<a id="marquee" class="controls__marquee controls__link" title="Jump to directory containing this track"></a>
+		<script src="/static/js/main.js"></script>
+	</head>
+	<body>
+		<nav class="controls main__controls">
+			<div class="controls__marquee-spacer">
+				<div class="controls__marquee-container">
+					<a
+						id="marquee"
+						class="controls__marquee controls__link"
+						title="Jump to directory containing this track"
+					></a>
+				</div>
+			</div>
+			<div id="progress-controls" class="controls__group">
+				<div id="progress-bar-empty" class="controls__progress-trough">
+					<span id="progress-bar-fill" class="controls__progress-fill"></span>
+					<span class="controls__slider-range">
+						<span id="seek-slider" class="controls__slider"></span>
+					</span>
+				</div>
+			</div>
+			<div class="controls__group controls__group--shift-up">
+				<i id="prev-button" class="controls__button material-icons" title="Previous track">
+					skip_previous
+				</i>
+				<i id="play-button" class="controls__button material-icons" title="Play">
+					play_arrow
+				</i>
+				<i id="pause-button" class="controls__button hidden material-icons" title="Pause">
+					pause
+				</i>
+				<i id="next-button" class="controls__button material-icons" title="Next track">
+					skip_next
+				</i>
+				<i
+					id="favorite-button"
+					class="controls__button controls__button--medium material-icons"
+					title="Add to favorites"
+				>
+					favorite_border
+				</i>
+				<i
+					id="unfavorite-button"
+					class="controls__button controls__button--medium hidden material-icons"
+					title="Remove from favorites"
+				>
+					favorite
+				</i>
+			</div>
+			<span id="about-button" class="controls__link controls__bottom-left">aurelius</span>
+			<span id="duration" class="controls__bottom-right"></span>
+		</nav>
+
+		<main class="dir main__dir"></main>
+
+		<aside class="menu top-right__menu">
+			<i id="settings-button" class="menu__button material-icons" title="Settings">
+				settings
+			</i>
+		</aside>
+
+		<div id="settings-dialog" class="ui modal dialog hidden">
+			<div class="ui__section-header">Stream Encoding</div>
+			<div class="ui__section-body">
+				<table class="ui__table">
+					<tr>
+						<td>Codec</td>
+						<td><select id="settings-codec"></select></td>
+					</tr>
+					<tr id="settings-target-metric-row">
+						<td>
+							<select id="settings-target-metric-type">
+								<option value="quality">Quality</option>
+								<option value="bit-rate">Bit rate (kb/s)</option>
+							</select>
+						</td>
+						<td>
+							<div><input id="settings-target-metric-value" type="number" /></div>
+							<div id="settings-mp3-quality-help" class="settings-target-metric-help">
+								Range: 0 (best) to 9.999 (worst).
+							</div>
+							<div
+								id="settings-vorbis-quality-help"
+								class="settings-target-metric-help"
+							>
+								Range: -1 (worst) to 10 (best).
+							</div>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="ui__section-header">ReplayGain</div>
+			<div class="ui__section-body">
+				<table class="ui__table">
+					<tr>
+						<td>Mode</td>
+						<td><select id="settings-replay-gain"></select></td>
+					</tr>
+					<tr id="settings-prevent-clipping-row">
+						<td>Prevent clipping</td>
+						<td>
+							<label>
+								<input id="settings-prevent-clipping" type="checkbox" />
+								Enabled
+							</label>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+			<button id="settings-save" class="ui__button" type="button">Save</button>
+		</div>
+
+		<div id="about-dialog" class="ui modal dialog hidden">
+			<div class="ui__section-header">About</div>
+			<div class="ui__section-body">
+				<p>
+					Aurelius is © Philip Lafleur.
+					<br />Licensed under the Apache License Version 2.0. <br /><a
+						href="https://github.com/beakbeak/aurelius"
+						>https://github.com/beakbeak/aurelius</a
+					>
+				</p>
+			</div>
+			<div class="ui__section-header">Attributions</div>
+			<div class="ui__section-body ui__section-body--scroll">
+				<p>
+					Background image by Steve Schoger.
+					<br />Licensed under Creative Commons
+					<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. <br /><a
+						href="https://www.heropatterns.com/"
+						>https://www.heropatterns.com/</a
+					>
+				</p>
+				<p>
+					<a
+						href="https://commons.wikimedia.org/wiki/File:Roman_-_Portrait_of_the_Emperor_Marcus_Aurelius_-_Walters_23215.jpg"
+						>Image of Marcus Aurelius sculpture</a
+					>
+					by Walters Art Museum. <br />Licensed under Creative Commons
+					<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>.
+					<br />Presented here with modifications.
+				</p>
+				<p>
+					Material design icons licensed from Google under the Apache 2.0 license.
+					<br /><a href="https://github.com/google/material-design-icons"
+						>https://github.com/google/material-design-icons</a
+					>
+				</p>
+				<p>
+					This software uses libraries from the FFmpeg project under the LGPLv2.1.
+					<br /><a href="https://ffmpeg.org/">https://ffmpeg.org/</a>
+				</p>
 			</div>
 		</div>
-		<div id="progress-controls" class="controls__group">
-			<div id="progress-bar-empty" class="controls__progress-trough">
-				<span id="progress-bar-fill" class="controls__progress-fill"></span>
-				<span class="controls__slider-range">
-					<span id="seek-slider" class="controls__slider"></span>
-				</span>
-			</div>
-		</div>
-		<div class="controls__group controls__group--shift-up">
-			<i id="prev-button" class="controls__button material-icons" title="Previous track">
-				skip_previous
-			</i>
-			<i id="play-button" class="controls__button material-icons" title="Play">
-				play_arrow
-			</i>
-			<i id="pause-button" class="controls__button hidden material-icons" title="Pause">
-				pause
-			</i>
-			<i id="next-button" class="controls__button material-icons" title="Next track">
-				skip_next
-			</i>
-			<i id="favorite-button" class="controls__button controls__button--medium material-icons" title="Add to favorites">
-				favorite_border
-			</i>
-			<i id="unfavorite-button" class="controls__button controls__button--medium hidden material-icons" title="Remove from favorites">
-				favorite
-			</i>
-		</div>
-		<span id="about-button" class="controls__link controls__bottom-left">aurelius</span>
-		<span id="duration" class="controls__bottom-right"></span>
-	</nav>
-
-	<main class="dir main__dir"></main>
-
-	<aside class="menu top-right__menu">
-		<i id="settings-button" class="menu__button material-icons" title="Settings">
-			settings
-		</i>
-	</aside>
-
-	<div id="settings-dialog" class="ui modal dialog hidden">
-		<div class="ui__section-header">Stream Encoding</div>
-		<div class="ui__section-body">
-			<table class="ui__table">
-				<tr>
-					<td>Codec</td>
-					<td><select id="settings-codec"></select></td>
-				</tr>
-				<tr id="settings-target-metric-row">
-					<td>
-						<select id="settings-target-metric-type">
-							<option value="quality">Quality</option>
-							<option value="bit-rate">Bit rate (kb/s)</option>
-						</select>
-					</td>
-					<td>
-						<div><input id="settings-target-metric-value" type="number"></div>
-						<div id="settings-mp3-quality-help" class="settings-target-metric-help">
-							Range: 0 (best) to 9.999 (worst).
-						</div>
-						<div id="settings-vorbis-quality-help" class="settings-target-metric-help">
-							Range: -1 (worst) to 10 (best).
-						</div>
-					</td>
-				</tr>
-			</table>
-		</div>
-
-		<div class="ui__section-header">ReplayGain</div>
-		<div class="ui__section-body">
-			<table class="ui__table">
-				<tr>
-					<td>Mode</td>
-					<td><select id="settings-replay-gain"></select></td>
-				</tr>
-				<tr id="settings-prevent-clipping-row">
-					<td>Prevent clipping</td>
-					<td>
-						<label>
-							<input id="settings-prevent-clipping" type="checkbox">
-							Enabled
-						</label>
-					</td>
-				</tr>
-			</table>
-		</div>
-
-		<button id="settings-save" class="ui__button" type="button">Save</button>
-	</div>
-
-	<div id="about-dialog" class="ui modal dialog hidden">
-		<div class="ui__section-header">About</div>
-		<div class="ui__section-body">
-			<p>
-				Aurelius is © Philip Lafleur.
-				<br>Licensed under the Apache License Version 2.0.
-				<br><a href="https://github.com/beakbeak/aurelius">https://github.com/beakbeak/aurelius</a>
-			</p>
-		</div>
-		<div class="ui__section-header">Attributions</div>
-		<div class="ui__section-body ui__section-body--scroll">
-			<p>
-				Background image by Steve Schoger.
-				<br>Licensed under Creative Commons <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
-				<br><a href="https://www.heropatterns.com/">https://www.heropatterns.com/</a>
-			</p>
-			<p>
-				<a href="https://commons.wikimedia.org/wiki/File:Roman_-_Portrait_of_the_Emperor_Marcus_Aurelius_-_Walters_23215.jpg">Image of Marcus Aurelius sculpture</a> by Walters Art Museum.
-				<br>Licensed under Creative Commons <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>.
-				<br>Presented here with modifications.
-			</p>
-			<p>
-				Material design icons licensed from Google under the Apache 2.0 license.
-				<br><a href="https://github.com/google/material-design-icons">https://github.com/google/material-design-icons</a>
-			</p>
-			<p>
-				This software uses libraries from the FFmpeg project under the LGPLv2.1.
-				<br><a href="https://ffmpeg.org/">https://ffmpeg.org/</a>
-			</p>
-		</div>
-	</div>
-</body>
+	</body>
 </html>

@@ -15,7 +15,7 @@ class TestEventDispatcher extends EventDispatcher<TestEventMap> {
     }
 
     public forEachEventListener(
-        callback: (key: string, listener: (...args: any[]) => any) => void
+        callback: (key: string, listener: (...args: any[]) => any) => void,
     ): void {
         super.forEachEventListener(callback);
     }
@@ -30,10 +30,14 @@ describe("EventDispatcher", function () {
         const ed = new TestEventDispatcher();
 
         let firstValue = 0;
-        ed.addEventListener("test", (x) => { firstValue = x; })
+        ed.addEventListener("test", (x) => {
+            firstValue = x;
+        });
 
         let secondValue = 0;
-        ed.addEventListener("test", (x) => { secondValue = x; })
+        ed.addEventListener("test", (x) => {
+            secondValue = x;
+        });
 
         const expectedValue = 1;
         ed.dispatchEvent("test", expectedValue);
@@ -51,10 +55,16 @@ describe("EventDispatcher", function () {
 
         let expectedListeners: { [K in keyof TestEventMap]?: TestEventMap[K][] } = {
             test: [
-                x => { console.log(1); },
-                x => { console.log(2); },
-                x => { console.log(3); },
-            ]
+                (x) => {
+                    console.log(1);
+                },
+                (x) => {
+                    console.log(2);
+                },
+                (x) => {
+                    console.log(3);
+                },
+            ],
         };
 
         for (const keyString of Object.keys(expectedListeners)) {

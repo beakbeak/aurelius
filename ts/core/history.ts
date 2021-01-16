@@ -27,7 +27,7 @@ export class PlayHistory {
     }
 
     public hasNext(): boolean {
-        return this._index < (this._items.length - 1);
+        return this._index < this._items.length - 1;
     }
 
     public previous(): PlaylistItem | undefined {
@@ -39,7 +39,7 @@ export class PlayHistory {
     }
 
     public next(): PlaylistItem | undefined {
-        if (this._index >= (this._items.length - 1)) {
+        if (this._index >= this._items.length - 1) {
             return undefined;
         }
         ++this._index;

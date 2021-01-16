@@ -35,12 +35,12 @@ type MockMedia = HTMLMediaElement & {
 Object.defineProperty(window.HTMLMediaElement.prototype, "readyState", {
     get(this: MockMedia): number {
         return this._readyState !== undefined ? this._readyState : 0;
-    }
+    },
 });
 Object.defineProperty(window.HTMLMediaElement.prototype, "paused", {
     get(this: MockMedia): boolean {
         return this._paused !== undefined ? this._paused : false;
-    }
+    },
 });
 
 function mediaLoad(this: MockMedia) {
