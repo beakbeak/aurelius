@@ -1,0 +1,14 @@
+printWidth: 100
+tabWidth: 4
+quoteProps: "consistent"
+
+overrides:
+  - files:
+    - "*.html"
+    - "*.css"
+    options:
+      useTabs: true
+  - files:
+    - "*.ts"
+    options:
+      trailingComma: "all"
