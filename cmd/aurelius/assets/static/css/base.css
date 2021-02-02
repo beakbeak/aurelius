@@ -87,6 +87,7 @@ body {
 .ui__section-body--scroll {
 	max-height: 8em;
 	overflow-y: scroll;
+	scrollbar-color: hsl(39, 8%, 43%) hsl(39, 8%, 30%);
 }
 
 .ui__entry-group {
