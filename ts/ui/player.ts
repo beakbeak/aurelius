@@ -111,6 +111,13 @@ export default function setupPlayerUi(inPlayer: Player) {
     player.addEventListener("ended", updateAll);
     player.addEventListener("pause", updateAll);
     player.addEventListener("unpause", updateAll);
+
+    navigator.mediaSession?.setActionHandler("previoustrack", () => {
+        player.previous();
+    });
+    navigator.mediaSession?.setActionHandler("nexttrack", () => {
+        player.next();
+    });
 }
 
 function setMarquee(text: string, url: string): void {
