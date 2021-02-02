@@ -199,27 +199,31 @@ function updateStatus(): void {
     const info = track.info;
     let text = "";
 
-    if (info.tags["artist"] !== undefined) {
-        text = `${text}${info.tags["artist"]} - `;
-    } else if (info.tags["composer"] !== undefined) {
-        text = `${text}${info.tags["composer"]} - `;
-    }
+    const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
+    const title = info.tags["title"] ?? info.name;
 
-    if (info.tags["title"] !== undefined) {
-        text = `${text}${info.tags["title"]}`;
-    } else {
-        text = `${text}${info.name}`;
-    }
-
+    let album = "";
     if (info.tags["album"] !== undefined) {
         let trackName = "";
         if (info.tags["track"] !== undefined) {
             trackName = ` #${info.tags["track"]}`;
         }
+        album = `${info.tags["album"]}${trackName}`;
         text = `${text} [${info.tags["album"]}${trackName}]`;
     }
 
-    setMarquee(text, `${stripLastPathElement(track.url)}/`);
+    setMarquee(
+        `${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`,
+        `${stripLastPathElement(track.url)}/`,
+    );
+
+    if (navigator.mediaSession !== undefined) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            artist,
+            title,
+            album,
+        });
+    }
 }
 
 function secondsToString(totalSeconds: number): string {
