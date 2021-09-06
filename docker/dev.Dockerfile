@@ -1,20 +1,27 @@
 # This Dockerfile is for development purposes (via Visual Studio Code) only.
 # It is referenced by .devcontainer/devcontainer.json
 
-FROM archlinux
+FROM ubuntu:latest
 
-RUN pacman -Sy && pacman -S --noconfirm \
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     ffmpeg \
     gcc \
     git \
-    go \
+    libavformat-dev \
     npm \
-    pkgconf \
+    pkg-config \
     sudo \
-    vim
+    wget
+
+ARG GO_VERSION=1.17
+
+RUN wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+    && rm -rf /usr/local/go \
+    && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
+    && rm -f go${GO_VERSION}.linux-amd64.tar.gz
 
 RUN groupadd -g 1000 code \
-    && useradd -g 1000 -u 1000 -m code
+    && useradd -g 1000 -u 1000 -m -s /usr/bin/bash code
 
 # allow default user to run sudo without a password
 RUN mkdir -p /etc/sudoers.d && \
@@ -22,11 +29,7 @@ RUN mkdir -p /etc/sudoers.d && \
 
 USER code
 
-RUN echo "export PATH=${PATH}:~/go/bin" >> /home/code/.bashrc && \
-    GO111MODULE=on go get -v \
-    golang.org/x/tools/gopls@latest \
-    github.com/ramya-rao-a/go-outline \
-    github.com/go-delve/delve/cmd/dlv
+RUN echo "export PATH=${PATH}:/usr/local/go/bin:~/go/bin" >> /home/code/.profile
 
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/77e211ba75b7802fe5e40b276bca0e928553fc7f/install.sh \
     | sh -s -- -b $(go env GOPATH)/bin v1.24.0
