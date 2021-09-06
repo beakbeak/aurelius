@@ -1,12 +1,14 @@
 html {
 	min-height: 100%;
-	scrollbar-color: hsl(39, 8%, 43%) hsl(39, 8%, 30%);
+	scrollbar-color: hsl(0, 0%, 30%) hsl(0, 0%, 20%);
 }
 
 body {
-	background: fixed linear-gradient(hsl(39, 8%, 43%) 50%, hsl(39, 8%, 30%));
-	color: hsl(39, 100%, 93%);
-	font-family: serif;
+	background:
+		fixed url("/static/img/bg.svgz"),
+		fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
+	color: white;
+	font-family: segoe ui;
 }
 
 .hidden {
@@ -51,8 +53,8 @@ body {
 
 /* UI elements ****************************************************************/
 .ui {
-	background-color: hsl(39, 100%, 93%);
-	color: black;
+	background-color: hsl(0, 0%, 33%);
+	color: white;
 	scrollbar-color: initial;
 }
 
@@ -69,12 +71,15 @@ body {
 	border-radius: 0.25em;
 	background-color: rgba(0, 0, 0, 0.15);
 	border-color: rgba(0, 0, 0, 0.54);
+	color: white;
 }
 .ui__button:hover {
 	background-color: rgba(255, 255, 255, 0.5);
+	color: black;
 }
 .ui__button:active {
 	background-color: white;
+	color: black;
 }
 
 .ui__section-header {
@@ -87,7 +92,7 @@ body {
 .ui__section-body--scroll {
 	max-height: 8em;
 	overflow-y: scroll;
-	scrollbar-color: hsl(39, 8%, 43%) hsl(39, 8%, 30%);
+	scrollbar-color: hsl(0, 0%, 43%) hsl(0, 0%, 30%);
 }
 
 .ui__entry-group {
@@ -107,20 +112,25 @@ body {
 }
 
 .ui__error {
-	color: rgb(180, 0, 0);
+	color: hsl(0, 100%, 65%);
 	text-align: center;
+}
+
+.ui a {
+	color: black;
+	text-decoration: underline;
 }
 
 /* Playback controls **********************************************************/
 .controls {
-	background-color: hsl(39, 100%, 93%);
-	color: black;
+	background-color: hsl(0, 0%, 33%);
+	color: white;
 }
 
 /* Button */
 .controls__button {
 	cursor: pointer;
-	color: rgba(0, 0, 0, 0.54);
+	color: hsl(0, 0%, 10%);
 	font-size: 4rem;
 }
 .controls__button--medium {
@@ -129,7 +139,7 @@ body {
 .controls--disabled .controls__button,
 .controls__button--disabled {
 	cursor: default;
-	color: rgba(0, 0, 0, 0.26);
+	color: rgba(0, 0, 0, 0.3);
 }
 
 /* Progress/seek bar */
@@ -143,7 +153,6 @@ body {
 }
 .controls--disabled .controls__progress-trough {
 	cursor: default;
-	color: hsl(39, 16%, 69%);
 }
 
 .controls__progress-fill {
@@ -167,11 +176,12 @@ body {
 	width: 3rem;
 	height: 200%;
 	top: -50%;
-	background-color: hsl(39, 8%, 43%);
+	background-color: hsl(0, 0%, 10%);
+	border-radius: 0.25em;
 }
 .controls--disabled .controls__slider {
 	cursor: default;
-	background-color: hsl(39, 16%, 69%);
+	background-color: hsl(0, 0%, 24%);
 }
 
 /* Link */
@@ -246,20 +256,20 @@ body {
 
 .dir__link {
 	text-decoration: none;
-	color: hsl(39, 100%, 93%);
+	color: hsl(0, 0%, 66.3%);
 }
 .dir__link:hover {
-	box-shadow: 0 1px rgba(0, 0, 0, 0.54);
+	text-decoration: underline;
 }
 
 .dir__icon {
-	color: black;
+	color: hsl(198.3, 56.5%, 72.9%);
 	font-size: 24px;
 	margin-right: 0.25em;
 }
 .dir__icon--playing {
 	display: none;
-	color: hsl(39, 100%, 93%);
+	color: white;
 }
 
 .dir__link--aux {
@@ -268,7 +278,7 @@ body {
 }
 
 .dir__entry--playing .dir__link {
-	text-decoration: underline;
+	color: white;
 }
 .dir__entry--playing .dir__icon {
 	display: none;
@@ -294,5 +304,5 @@ body {
 .menu__button {
 	cursor: pointer;
 	font-size: 3rem;
-	color: rgba(0, 0, 0, 0.54);
+	color: black;
 }
