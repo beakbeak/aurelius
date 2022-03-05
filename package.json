@@ -9,10 +9,10 @@
   },
   "devDependencies": {
     "@types/jsdom": "^16.2.14",
-    "@types/mocha": "^7.0.2",
+    "@types/mocha": "^9.1.0",
     "@types/node": "^13.11.1",
     "jsdom": "^16.7.0",
-    "mocha": "^7.2.0",
+    "mocha": "^9.2.1",
     "nyc": "^15.1.0",
     "ts-node": "^9.1.1"
   },
