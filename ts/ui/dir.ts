@@ -109,19 +109,34 @@ function setPlayingClass(element: HTMLAnchorElement | undefined): void {
  * Populate directory listing with the contents at the given URL and update
  * history. If `url` is `undefined`, the window's current URL is used.
  */
-export async function loadDir(url?: string): Promise<void> {
-    const info = await fetchDirInfo(url ?? window.location.href);
+export async function loadDir(urlArg?: string): Promise<void> {
+    const url = urlArg ?? window.location.href;
+    const info = await fetchDirInfo(url);
 
-    if (url === undefined) {
+    if (urlArg === undefined) {
         // first call
         window.history.replaceState({}, "");
     } else {
         window.history.pushState({}, "", url);
     }
 
+    setDocumentTitleFromUrl(url);
     populateDirs(info);
     populatePlaylists(info);
     populateTracks(info);
+}
+
+function setDocumentTitleFromUrl(url: string) {
+    const urlTokens = url.replace(/\/$/, "").split("/");
+    if (urlTokens.length <= 0) {
+        return;
+    }
+    try {
+        const leafDir = decodeURIComponent(urlTokens[urlTokens.length - 1]);
+        document.title = `${leafDir} | aurelius`;
+    } catch (e) {
+        document.title = `aurelius`;
+    }
 }
 
 function populateDirs(info: DirInfo): void {
