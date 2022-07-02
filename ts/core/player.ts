@@ -78,6 +78,13 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             }
         });
 
+        track.addEventListener("stalled", () => {
+            if (this.track === undefined || this.track.isPaused()) {
+                return;
+            }
+            this._play(this.track.url, this.track.currentTime());
+        });
+
         await track.play();
         this.dispatchEvent("play");
     }
