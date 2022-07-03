@@ -118,6 +118,11 @@ export default function setupPlayerUi(inPlayer: Player) {
     navigator.mediaSession?.setActionHandler("nexttrack", () => {
         player.next();
     });
+    navigator.mediaSession?.setActionHandler("seekto", (args) => {
+        if (typeof args.seekTime === "number") {
+            player.seekTo(args.seekTime);
+        }
+    });
 }
 
 function setMarquee(text: string, url: string): void {
