@@ -223,6 +223,12 @@ function updateStatus(): void {
             title,
             album,
         });
+        if (navigator.mediaSession.setPositionState !== undefined) {
+            navigator.mediaSession.setPositionState({
+                duration: info.duration,
+                position: Math.min(track.currentTime(), info.duration),
+            });
+        }
     }
 }
 
