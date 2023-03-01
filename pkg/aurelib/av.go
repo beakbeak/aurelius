@@ -68,12 +68,6 @@ func avErr2Str(code C.int) string {
 	return C.GoString(&buffer[0])
 }
 
-func initPacket(packet *C.AVPacket) {
-	C.av_init_packet(packet)
-	packet.data = nil
-	packet.size = 0
-}
-
 func channelLayoutFromCodecContext(ctx *C.AVCodecContext) C.int64_t {
 	if ctx.channel_layout != 0 {
 		return C.int64_t(ctx.channel_layout)

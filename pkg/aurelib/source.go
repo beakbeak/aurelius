@@ -410,17 +410,17 @@ func (src *sourceBase) ReplayGain(
 // When a non-nil error is returned, the 'recoverable' return value will be true
 // if the error is recoverable and Decode can be safely called again.
 func (src *sourceBase) Decode() (err error, recoverable bool) {
-	var packet C.AVPacket
-	initPacket(&packet)
+	packet := C.av_packet_alloc()
+	defer C.av_packet_free(&packet)
 
-	if err := C.av_read_frame(src.formatCtx, &packet); err == C.avErrorEOF() {
+	if err := C.av_read_frame(src.formatCtx, packet); err == C.avErrorEOF() {
 		// return?
 	} else if err < 0 {
 		return fmt.Errorf("failed to read frame: %v", avErr2Str(err)), false
 	}
-	defer C.av_packet_unref(&packet)
+	defer C.av_packet_unref(packet)
 
-	if err := C.avcodec_send_packet(src.codecCtx, &packet); err < 0 {
+	if err := C.avcodec_send_packet(src.codecCtx, packet); err < 0 {
 		return fmt.Errorf("failed to send packet to decoder: %v", avErr2Str(err)), true
 	}
 	return nil, false
