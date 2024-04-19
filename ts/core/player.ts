@@ -36,6 +36,8 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     private async _play(url: string, startTime?: number): Promise<void> {
+        console.log("Player._play", url, startTime);
+
         let streamConfig: StreamConfig;
         if (this.streamConfig.replayGain === "auto") {
             streamConfig = copyJson(this.streamConfig);
