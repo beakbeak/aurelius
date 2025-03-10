@@ -5,21 +5,20 @@
 # Shared base stage ############################################################
 
 ARG ALPINE_VER=latest
-FROM alpine:$ALPINE_VER as base
+FROM alpine:$ALPINE_VER AS base
 
 RUN apk update && apk add --no-cache \
-    ffmpeg-libs
+    ffmpeg-libs \
+    musl-dev
 
 # 82 is the standard uid/gid for "www-data" in Alpine
 ARG UID=82
-ARG GID=82
 
-RUN addgroup -g $GID -S www-data \
-    && adduser -u $UID -D -S -G www-data www-data
+RUN adduser -u $UID -D -S -G www-data www-data
 
 # Build stage ##################################################################
 
-FROM base as build
+FROM base AS build
 
 RUN apk add --no-cache \
     ffmpeg-dev \
@@ -37,7 +36,7 @@ RUN go build \
 
 # Production stage #############################################################
 
-FROM base as prod
+FROM base AS prod
 
 COPY --from=build /aurelius/cmd/aurelius /aurelius
 COPY docker/entrypoint.sh /aurelius

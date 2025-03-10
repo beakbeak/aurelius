@@ -4,6 +4,7 @@ package aurelib
 #cgo pkg-config: libavformat libavcodec libavutil
 
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
 #include <stdlib.h>
 
 static int

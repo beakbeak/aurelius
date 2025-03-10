@@ -13,7 +13,7 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     sudo \
     wget
 
-ARG GO_VERSION=1.20.1
+ARG GO_VERSION=1.24.1
 
 RUN arch=$(arch | sed -e s/aarch64/arm64/ -e s/x86_64/amd64/) \
     && wget https://golang.org/dl/go${GO_VERSION}.linux-${arch}.tar.gz \
@@ -21,7 +21,8 @@ RUN arch=$(arch | sed -e s/aarch64/arm64/ -e s/x86_64/amd64/) \
     && tar -C /usr/local -xzf go${GO_VERSION}.linux-${arch}.tar.gz \
     && rm -f go${GO_VERSION}.linux-${arch}.tar.gz
 
-RUN groupadd -g 1000 code \
+RUN userdel -r ubuntu \
+    && groupadd -g 1000 code \
     && useradd -g 1000 -u 1000 -m -s /usr/bin/bash code
 
 # allow default user to run sudo without a password

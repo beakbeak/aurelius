@@ -67,7 +67,7 @@ function createOption(value: string, text = value): HTMLOptionElement {
     return option;
 }
 
-function populateSelectWithEnumValues<EnumType>(
+function populateSelectWithEnumValues<EnumType extends object>(
     select: HTMLSelectElement,
     enumObject: EnumType,
 ): void {
