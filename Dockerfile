@@ -11,10 +11,11 @@ RUN apk update && apk add --no-cache \
     ffmpeg-libs \
     musl-dev
 
-# 82 is the standard uid/gid for "www-data" in Alpine
-ARG UID=82
+ARG GID=1001
+ARG UID=1001
 
-RUN adduser -u $UID -D -S -G www-data www-data
+RUN addgroup -g $GID -S aurelius \
+    && adduser -u $UID -D -S -G aurelius aurelius
 
 # Build stage ##################################################################
 
@@ -26,9 +27,9 @@ RUN apk add --no-cache \
     go \
     npm
 
-COPY --chown=www-data:www-data . /aurelius
+COPY --chown=aurelius:aurelius . /aurelius
 
-USER www-data
+USER aurelius
 WORKDIR /aurelius/cmd/aurelius
 RUN go build \
     && npm install --only=prod \
@@ -47,9 +48,9 @@ ARG MEDIA_PATH=/media
 ENV MEDIA_PATH=$MEDIA_PATH
 
 RUN mkdir /storage
-RUN chown www-data:www-data /storage
+RUN chown aurelius:aurelius /storage
 VOLUME ["/storage"]
 
-USER www-data
+USER aurelius
 WORKDIR /aurelius
 ENTRYPOINT ["/bin/sh", "entrypoint.sh"]
