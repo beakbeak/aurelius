@@ -90,9 +90,11 @@ func (fifo *Fifo) ReadFrame(maxFrameSize uint) (Frame, error) {
 	}()
 
 	frame.frame.nb_samples = C.int(frameSize)
-	frame.frame.channel_layout = C.uint64_t(fifo.streamInfo.channelLayout)
 	frame.frame.format = C.int(fifo.streamInfo.sampleFormat)
 	frame.frame.sample_rate = C.int(fifo.streamInfo.SampleRate)
+	withChannelLayout(fifo.streamInfo.channelLayout, func(layout *C.AVChannelLayout) {
+		C.av_channel_layout_copy(&frame.frame.ch_layout, layout)
+	})
 
 	if err := C.av_frame_get_buffer(frame.frame, 0); err < 0 {
 		return Frame{}, fmt.Errorf("failed to allocate output frame buffer: %s", avErr2Str(err))

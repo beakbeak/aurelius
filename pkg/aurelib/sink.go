@@ -5,6 +5,7 @@ package aurelib
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/channel_layout.h>
 #include <stdlib.h>
 
 static int
@@ -133,8 +134,6 @@ type Sink interface {
 // NewBufferSink and NewFileSink. It should be created with NewSinkConfig to
 // provide default values.
 type SinkConfig struct {
-	Channels uint // The number of channels. (Default: 2)
-
 	// ChannelLayout describes the number and position of audio channels. It
 	// uses the same format as FFmpeg's av_get_channel_layout().
 	//
@@ -202,31 +201,12 @@ type SinkConfig struct {
 // NewSinkConfig creates a new SinkConfig object with default values.
 func NewSinkConfig() *SinkConfig {
 	return &SinkConfig{
-		Channels:         2,
+		ChannelLayout:    "2c",
 		SampleRate:       44100,
 		Codec:            "pcm_s16le",
 		CompressionLevel: -1,
 		Quality:          -2,
 	}
-}
-
-func (config *SinkConfig) getChannels() (C.int, C.uint64_t) {
-	var channels C.int
-	var channelLayout C.uint64_t
-
-	if config.ChannelLayout != "" {
-		channelLayoutName := C.CString(config.ChannelLayout)
-		defer C.free(unsafe.Pointer(channelLayoutName))
-
-		if channelLayout = C.av_get_channel_layout(channelLayoutName); channelLayout != 0 {
-			channels = C.av_get_channel_layout_nb_channels(channelLayout)
-		}
-	}
-	if channels == 0 {
-		channels = C.int(config.Channels)
-		channelLayout = C.uint64_t(C.av_get_default_channel_layout(channels))
-	}
-	return channels, channelLayout
 }
 
 func allowedFormatsFromCodec(codec *C.AVCodec) []C.enum_AVSampleFormat {
@@ -477,7 +457,9 @@ func (sink *sinkBase) init(
 		return fmt.Errorf("failed to allocate encoding context")
 	}
 
-	sink.codecCtx.channels, sink.codecCtx.channel_layout = config.getChannels()
+	if err := channelLayoutFromString(config.ChannelLayout, &sink.codecCtx.ch_layout); err != nil {
+		return err
+	}
 	sink.codecCtx.sample_rate = C.int(config.SampleRate)
 	sink.codecCtx.sample_fmt = config.getSampleFormat(allowedFormatsFromCodec(codec))
 	sink.codecCtx.time_base = stream.time_base

@@ -5,6 +5,7 @@ package aurelib
 
 #include <libavutil/audio_fifo.h>
 #include <libavutil/opt.h>
+#include <libavutil/channel_layout.h>
 #include <libswresample/swresample.h>
 
 static char const*
@@ -69,16 +70,26 @@ func (rs *Resampler) Setup(
 ) error {
 	const defaultBufferSamples = 4096
 
-	rs.swr = C.swr_alloc_set_opts(
-		rs.swr,
-		C.int64_t(sinkInfo.channelLayout),
-		sinkInfo.sampleFormat,
-		C.int(sinkInfo.SampleRate),
-		C.int64_t(srcInfo.channelLayout),
-		srcInfo.sampleFormat,
-		C.int(srcInfo.SampleRate),
-		0, nil, // logging offset and context
-	)
+	var err error
+	withChannelLayout(srcInfo.channelLayout, func(srcLayout *C.AVChannelLayout) {
+		withChannelLayout(sinkInfo.channelLayout, func(sinkLayout *C.AVChannelLayout) {
+			if avErr := C.swr_alloc_set_opts2(
+				&rs.swr,
+				sinkLayout,
+				sinkInfo.sampleFormat,
+				C.int(sinkInfo.SampleRate),
+				srcLayout,
+				srcInfo.sampleFormat,
+				C.int(srcInfo.SampleRate),
+				0, nil, // logging offset and context
+			); avErr < 0 {
+				err = fmt.Errorf("failed to init resampler: %s", avErr2Str(avErr))
+			}
+		})
+	})
+	if err != nil {
+		return err
+	}
 
 	if err := C.av_opt_set_double(
 		unsafe.Pointer(rs.swr), C.strRematrixVolume(), C.double(volume), 0,

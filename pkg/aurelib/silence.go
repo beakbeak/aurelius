@@ -7,9 +7,10 @@ package aurelib
 #include <libavutil/channel_layout.h>
 #include <libavutil/mem.h>
 
-static uint64_t
+static AVChannelLayout
 avChLayoutStereo() {
-	return AV_CH_LAYOUT_STEREO;
+	AVChannelLayout layout = AV_CHANNEL_LAYOUT_STEREO;
+	return layout;
 }
 */
 import "C"
@@ -35,10 +36,12 @@ const silenceBufferSize = 4096
 // destroyed with Destroy before it is discarded.
 func NewSilenceSource() (*SilenceSource, error) {
 	success := false
+	channelLayout := C.avChLayoutStereo()
+	defer C.av_channel_layout_uninit(&channelLayout)
 	streamInfo := StreamInfo{
 		SampleRate:    44100,
 		sampleFormat:  C.AV_SAMPLE_FMT_S16,
-		channelLayout: int64(C.avChLayoutStereo()),
+		channelLayout: channelLayoutToString(&channelLayout),
 	}
 	s := SilenceSource{
 		tags:       make(map[string]string),

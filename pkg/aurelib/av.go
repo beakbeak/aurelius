@@ -18,6 +18,7 @@ package aurelib
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/channel_layout.h>
 
 #define LOG_BUFFER_SIZE 2048
 
@@ -53,6 +54,7 @@ import "C"
 import (
 	"fmt"
 	"time"
+	"unsafe"
 )
 
 func init() {
@@ -68,11 +70,30 @@ func avErr2Str(code C.int) string {
 	return C.GoString(&buffer[0])
 }
 
-func channelLayoutFromCodecContext(ctx *C.AVCodecContext) C.int64_t {
-	if ctx.channel_layout != 0 {
-		return C.int64_t(ctx.channel_layout)
+func channelLayoutToString(layout *C.AVChannelLayout) string {
+	length := C.av_channel_layout_describe(layout, nil, 0)
+	buffer := make([]C.char, length)
+	C.av_channel_layout_describe(layout, &buffer[0], C.size_t(length))
+	return C.GoString(&buffer[0])
+}
+
+func channelLayoutFromString(layoutStr string, layout *C.AVChannelLayout) error {
+	layoutCstr := C.CString(layoutStr)
+	defer C.free(unsafe.Pointer(layoutCstr))
+	if err := C.av_channel_layout_from_string(layout, layoutCstr); err < 0 {
+		return fmt.Errorf("%s", avErr2Str(err))
 	}
-	return C.av_get_default_channel_layout(ctx.channels)
+	return nil
+}
+
+func withChannelLayout(layoutStr string, f func(layout *C.AVChannelLayout)) {
+	layout := C.AVChannelLayout{}
+	defer C.av_channel_layout_uninit(&layout)
+	if err := channelLayoutFromString(layoutStr, &layout); err != nil {
+		logger.Log(LogError, fmt.Sprintf("failed to convert channel layout: %v", err))
+		C.av_channel_layout_default(&layout, 2)
+	}
+	f(&layout)
 }
 
 // A StreamInfo contains properties of an audio stream.
@@ -80,29 +101,29 @@ type StreamInfo struct {
 	SampleRate uint // The stream's sample rate in Hz.
 
 	sampleFormat  int32
-	channelLayout int64
+	channelLayout string
 }
 
 func streamInfoFromCodecContext(ctx *C.AVCodecContext) StreamInfo {
 	return StreamInfo{
 		SampleRate:    uint(ctx.sample_rate),
 		sampleFormat:  ctx.sample_fmt,
-		channelLayout: int64(channelLayoutFromCodecContext(ctx)),
+		channelLayout: channelLayoutToString(&ctx.ch_layout),
 	}
 }
 
 func (info *StreamInfo) channelCount() C.int {
-	return C.av_get_channel_layout_nb_channels(C.uint64_t(info.channelLayout))
-}
-
-func channelLayoutToString(channelLayout int64) string {
-	return fmt.Sprintf("0x%x", channelLayout)
+	count := C.int(0)
+	withChannelLayout(info.channelLayout, func(layout *C.AVChannelLayout) {
+		count = layout.nb_channels
+	})
+	return count
 }
 
 // ChannelLayout returns the stream's channel layout in a form that can be
 // assigned to SinkConfig.ChannelLayout. It is not human-readable.
 func (info *StreamInfo) ChannelLayout() string {
-	return channelLayoutToString(info.channelLayout)
+	return info.channelLayout
 }
 
 func sampleFormatToString(sampleFormat int32) string {
