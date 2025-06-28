@@ -124,7 +124,7 @@ Press Ctrl+Shift+B to show build tasks, and press F5 to run.
 
 Run Go tests:
 
-    go test ./...
+    go test -asan ./...
 
 Run TypeScript tests:
 
