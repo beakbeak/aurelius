@@ -768,3 +768,83 @@ func TestStream(t *testing.T) {
 
 	writeBaselines(baselines)
 }
+
+func TestTrackImages(t *testing.T) {
+	ml := createDefaultLibrary(t)
+
+	// Test non-existent file
+	simpleRequestShouldFail(t, ml, "GET", treePath("nonexistent.mp3", "images", "0"), "")
+
+	// Test file with no images
+	simpleRequestShouldFail(t, ml, "GET", treePath("test.wav", "images", "0"), "")
+
+	// Test invalid index
+	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "-1"), "")
+	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "abc"), "")
+	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "99"), "")
+
+	// Test file with images - fetch track info first
+	infoBody := simpleRequest(t, ml, "GET", treePath("test.flac", "info"), "")
+
+	type AttachedImageInfo struct {
+		Format string `json:"format"`
+		Hash   string `json:"hash"`
+	}
+	type TrackInfo struct {
+		AttachedImages []AttachedImageInfo `json:"attachedImages"`
+	}
+	var trackInfo TrackInfo
+	if err := json.Unmarshal(infoBody, &trackInfo); err != nil {
+		t.Fatalf("failed to decode track info JSON: %v\n%s", err, indentJson(t, infoBody))
+	}
+
+	if len(trackInfo.AttachedImages) == 0 {
+		t.Skip("test.flac has no attached images")
+	}
+
+	// Test each image index
+	for i, imageInfo := range trackInfo.AttachedImages {
+		t.Run(fmt.Sprintf("image_%d", i), func(t *testing.T) {
+			uri := treePath("test.flac", "images", fmt.Sprintf("%d", i))
+			body, statusCode := simpleRequestWithStatus(t, ml, "GET", uri, "")
+
+			if statusCode != http.StatusOK {
+				t.Fatalf("Request failed with status %d: %s", statusCode, string(body))
+			}
+
+			// Check hash
+			hash := sha256.New()
+			if _, err := hash.Write(body); err != nil {
+				t.Fatalf("hash.Write() failed: %v", err)
+			}
+			actualHash := hex.EncodeToString(hash.Sum(nil))
+
+			if actualHash != imageInfo.Hash {
+				t.Fatalf("Hash mismatch for image %d: expected %s, got %s", i, imageInfo.Hash, actualHash)
+			}
+
+			// Check content type
+			w := httptest.NewRecorder()
+			if !ml.ServeHTTP(w, httptest.NewRequest("GET", uri, nil)) {
+				t.Fatal("ServeHTTP() returned false")
+			}
+
+			contentType := w.Header().Get("Content-Type")
+			var expectedMimeType string
+			switch imageInfo.Format {
+			case "PNG":
+				expectedMimeType = "image/png"
+			case "JPEG":
+				expectedMimeType = "image/jpeg"
+			case "GIF":
+				expectedMimeType = "image/gif"
+			default:
+				t.Fatalf("Unknown format: %s", imageInfo.Format)
+			}
+
+			if contentType != expectedMimeType {
+				t.Fatalf("Content-Type mismatch for image %d: expected %s, got %s", i, expectedMimeType, contentType)
+			}
+		})
+	}
+}

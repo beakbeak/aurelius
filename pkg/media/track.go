@@ -3,15 +3,19 @@ package media
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/beakbeak/aurelius/internal/maputil"
 	"github.com/beakbeak/aurelius/pkg/aurelib"
 	"github.com/beakbeak/aurelius/pkg/fragment"
 )
+
+const cachedImageMaxAge = 3600 * time.Second
 
 func (ml *Library) handleTrackRequest(
 	libraryPath string,
@@ -190,5 +194,61 @@ func (ml *Library) setFavorite(
 				return nil, nil
 			},
 		)
+	}
+}
+
+func (ml *Library) handleTrackImageRequest(
+	libraryPath string,
+	indexStr string,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
+	fsPath := ml.libraryToFsPath(libraryPath)
+	if info, err := os.Stat(fsPath); err != nil || !info.Mode().IsRegular() {
+		http.NotFound(w, req)
+		return
+	}
+
+	index, err := strconv.Atoi(indexStr)
+	if err != nil || index < 0 {
+		http.NotFound(w, req)
+		return
+	}
+
+	src, err := newAudioSource(fsPath)
+	if err != nil {
+		log.Printf("failed to open source '%v': %v\n", fsPath, err)
+		http.NotFound(w, req)
+		return
+	}
+	defer src.Destroy()
+
+	images := src.AttachedImages()
+	if index >= len(images) {
+		http.NotFound(w, req)
+		return
+	}
+	image := &images[index]
+
+	// Set appropriate MIME type
+	var mimeType string
+	switch image.Format {
+	case aurelib.AttachedImageJPEG:
+		mimeType = "image/jpeg"
+	case aurelib.AttachedImagePNG:
+		mimeType = "image/png"
+	case aurelib.AttachedImageGIF:
+		mimeType = "image/gif"
+	default:
+		http.NotFound(w, req)
+		return
+	}
+
+	w.Header().Set("Content-Type", mimeType)
+	w.Header().Set(
+		"Cache-Control",
+		fmt.Sprintf("public, max-age=%v", int(cachedImageMaxAge/time.Second)))
+	if _, err := w.Write(image.Data); err != nil {
+		log.Printf("failed to write image response: %v\n", err)
 	}
 }

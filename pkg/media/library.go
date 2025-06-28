@@ -65,6 +65,7 @@ type Library struct {
 	reRootPath         *regexp.Regexp
 	reDirPath          *regexp.Regexp
 	reFileResourcePath *regexp.Regexp
+	reFileImagePath    *regexp.Regexp
 	rePlaylistPath     *regexp.Regexp
 	reFavoritesPath    *regexp.Regexp
 }
@@ -104,6 +105,7 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		reRootPath:         regexp.MustCompile(`^(` + quotedPrefix + `/?|` + quotedTreePrefix + `)$`),
 		reDirPath:          regexp.MustCompile(`^` + quotedTreePrefix + `/((.*?)/)?$`),
 		reFileResourcePath: regexp.MustCompile(`^` + quotedTreePrefix + `/(.+?)/([^/]+)$`),
+		reFileImagePath:    regexp.MustCompile(`^` + quotedTreePrefix + `/(.+?)/images/([0-9]+)$`),
 		rePlaylistPath:     regexp.MustCompile(`^(?i).+?\.m3u$`),
 		reFavoritesPath:    regexp.MustCompile(`^` + quotedPrefix + `/favorites/([^/]+)$`),
 	}
@@ -131,6 +133,13 @@ func (ml *Library) ServeHTTP(
 		libraryPath := matches[2]
 
 		return ml.handleDirRequest(libraryPath, w, req)
+	}
+	if matches := ml.reFileImagePath.FindStringSubmatch(req.URL.Path); matches != nil {
+		libraryPath := matches[1]
+		imageIndex := matches[2]
+
+		ml.handleTrackImageRequest(libraryPath, imageIndex, w, req)
+		return true
 	}
 	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[1]
