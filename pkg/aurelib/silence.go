@@ -104,9 +104,9 @@ func (s *SilenceSource) StreamInfo() StreamInfo {
 //
 // When a non-nil error is returned, the 'recoverable' return value will be true
 // if the error is recoverable and Decode can be safely called again.
-func (s *SilenceSource) Decode() (error, bool) {
+func (s *SilenceSource) Decode() (bool, error) {
 	s.decodeCalled = true
-	return nil, true
+	return true, nil
 }
 
 // ReceiveFrame receives a decoded frame from the decoder.

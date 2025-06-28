@@ -230,7 +230,7 @@ PlayLoop:
 
 	DecodeLoop:
 		for fifo.Size() < sink.FrameSize() {
-			if err, recoverable := src.Decode(); err != nil {
+			if recoverable, err := src.Decode(); err != nil {
 				log.Printf("failed to decode frame: %v\n", err)
 				if !recoverable {
 					done = true

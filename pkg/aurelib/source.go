@@ -72,7 +72,7 @@ type Source interface {
 	//
 	// When a non-nil error is returned, the 'recoverable' return value will be
 	// true if the error is recoverable and Decode can be safely called again.
-	Decode() (err error, recoverable bool)
+	Decode() (recoverable bool, err error)
 
 	// ReceiveFrame receives a decoded frame from the decoder.
 	//
@@ -410,21 +410,21 @@ func (src *sourceBase) ReplayGain(
 //
 // When a non-nil error is returned, the 'recoverable' return value will be true
 // if the error is recoverable and Decode can be safely called again.
-func (src *sourceBase) Decode() (err error, recoverable bool) {
+func (src *sourceBase) Decode() (recoverable bool, err error) {
 	packet := C.av_packet_alloc()
 	defer C.av_packet_free(&packet)
 
 	if err := C.av_read_frame(src.formatCtx, packet); err == C.avErrorEOF() {
 		// return?
 	} else if err < 0 {
-		return fmt.Errorf("failed to read frame: %v", avErr2Str(err)), false
+		return false, fmt.Errorf("failed to read frame: %v", avErr2Str(err))
 	}
 	defer C.av_packet_unref(packet)
 
 	if err := C.avcodec_send_packet(src.codecCtx, packet); err < 0 {
-		return fmt.Errorf("failed to send packet to decoder: %v", avErr2Str(err)), true
+		return true, fmt.Errorf("failed to send packet to decoder: %v", avErr2Str(err))
 	}
-	return nil, false
+	return false, nil
 }
 
 // ReceiveFrame receives a decoded frame from the decoder.

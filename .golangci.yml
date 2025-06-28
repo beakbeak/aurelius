@@ -2,7 +2,6 @@ linters:
   presets:
     - bugs
     - performance
-    - style
     - unused
   disable:
     - wsl
@@ -10,10 +9,12 @@ linters:
     - gochecknoinits
     - funlen
     - goconst
-    - golint
     - stylecheck
     - unconvert
-    - gomnd
+    - errorlint
+    - gosec
+    - perfsprint
+    - unparam
 
 linters-settings:
   gocritic:

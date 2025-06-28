@@ -13,8 +13,8 @@
 // The lines are written as "start" or "end" followed by a time accepted by
 // time.ParseDuration. For example:
 //
-//     start 15s
-//     end 5m30s
+//	start 15s
+//	end 5m30s
 package fragment
 
 import (
