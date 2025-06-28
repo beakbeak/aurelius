@@ -22,21 +22,85 @@ export type PlayerStreamConfig =
           replayGain: "auto";
       });
 
+export interface PlayerConfig {
+    streamConfig?: PlayerStreamConfig;
+    enableStallDetection?: boolean;
+}
+
 export class Player extends EventDispatcher<PlayerEventMap> {
     private _history = new PlayHistory();
     private _playlistPos = -1;
     private _random = false;
     private _replayGainHint = ReplayGainMode.Track;
 
+    private _stallDetectionTimer?: number;
+    private _lastStallCheck = { timeMs: 0, seekPos: 0 };
+    private _stallDetectionIntervalMs = 1000;
+    private _stallThresholdMs = 2000;
+    private _isRestarting = false;
+    private _stallDetectionEnabled = true;
+
     public track?: Track;
     public playlist?: Playlist;
 
-    public constructor(public streamConfig: PlayerStreamConfig = {}) {
+    public constructor(config: PlayerConfig = {}) {
         super();
+        this.streamConfig = config.streamConfig || {};
+        this._stallDetectionEnabled = config.enableStallDetection ?? true;
+    }
+
+    public streamConfig: PlayerStreamConfig;
+
+    // Start backup stall detection timer to catch unreported stalls.
+    private _startStallDetection(): void {
+        if (!this._stallDetectionEnabled) {
+            return;
+        }
+        this._stopStallDetection();
+        this._lastStallCheck = { timeMs: Date.now(), seekPos: this.track?.currentTime() || 0 };
+        this._stallDetectionTimer = window.setInterval(() => {
+            this._restartIfStalled();
+        }, this._stallDetectionIntervalMs);
+    }
+
+    private _stopStallDetection(): void {
+        if (this._stallDetectionTimer !== undefined) {
+            clearInterval(this._stallDetectionTimer);
+            this._stallDetectionTimer = undefined;
+        }
+    }
+
+    // Check if playback has stalled without triggering a 'stalled' event.
+    // Restarts playback if position hasn't advanced for _stallThresholdMs.
+    private _restartIfStalled(): void {
+        if (this.track === undefined || this.track.isPaused() || this._isRestarting) {
+            return;
+        }
+
+        const currentTime = this.track.currentTime();
+        const now = Date.now();
+
+        if (currentTime === this._lastStallCheck.seekPos) {
+            const stallDuration = now - this._lastStallCheck.timeMs;
+            if (stallDuration >= this._stallThresholdMs) {
+                console.log(
+                    new Date().toISOString(),
+                    `Player: Playback stalled for ${stallDuration / 1000}s; restarting`,
+                );
+                this._isRestarting = true;
+                this._play(this.track.url, currentTime).finally(() => {
+                    this._isRestarting = false;
+                });
+                return;
+            }
+        } else {
+            this._lastStallCheck = { timeMs: now, seekPos: currentTime };
+        }
     }
 
     private async _play(url: string, startTime?: number): Promise<void> {
         console.log(new Date().toISOString(), "Player._play", url, startTime);
+        this._stopStallDetection();
 
         let streamConfig: StreamConfig;
         if (this.streamConfig.replayGain === "auto") {
@@ -52,10 +116,12 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         let wasPaused = false;
 
         track.addEventListener("pause", () => {
+            this._stopStallDetection();
             wasPaused = true;
             this.dispatchEvent("pause");
         });
         track.addEventListener("play", () => {
+            this._startStallDetection();
             // Don't dispatch "unpause" in response to initial "play" event
             if (wasPaused) {
                 this.dispatchEvent("unpause");
@@ -67,10 +133,12 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             this.dispatchEvent("progress");
         });
         track.addEventListener("timeupdate", () => {
+            this._lastStallCheck = { timeMs: Date.now(), seekPos: this.track?.currentTime() || 0 };
             this.dispatchEvent("timeupdate");
         });
 
         track.addEventListener("ended", async () => {
+            this._stopStallDetection();
             if (!(await this.next())) {
                 if (this.track !== undefined) {
                     this.track.destroy();
@@ -88,6 +156,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         });
 
         await track.play();
+        this._startStallDetection();
         this.dispatchEvent("play");
     }
 
@@ -96,6 +165,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return Promise.resolve();
         }
         if (this.track.seekTo(seconds)) {
+            this._lastStallCheck = { timeMs: Date.now(), seekPos: seconds };
             return Promise.resolve();
         }
         return this._play(this.track.url, seconds);
@@ -212,6 +282,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         if (this.track === undefined || this.track.isPaused()) {
             return;
         }
+        this._stopStallDetection();
         this.track.pause();
         this.dispatchEvent("pause");
     }
@@ -221,6 +292,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         this.track.play();
+        this._startStallDetection();
         this.dispatchEvent("unpause");
     }
 

@@ -5,7 +5,7 @@ import { getSettings } from "./ui/settings";
 import { showSettingsDialog } from "./ui/settings-dialog";
 
 window.onload = () => {
-    const player = new Player(getSettings().streamConfig);
+    const player = new Player({ streamConfig: getSettings().streamConfig });
 
     setupDirUi(player);
     setupPlayerUi(player);

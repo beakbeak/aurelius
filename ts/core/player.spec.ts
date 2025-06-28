@@ -6,13 +6,17 @@ import { fetchDirInfo } from "./dir";
 
 import { ok, strictEqual } from "assert";
 
+function MakeTestPlayer(): Player {
+    return new Player({ enableStallDetection: false });
+}
+
 const localPlaylistDir = `${host}/media/tree/`;
 const remotePlaylistUrl = `${host}/media/tree/test.m3u`;
 const trackUrl = `${host}/media/tree/test.flac`;
 
 describe("Player", function () {
     it("toggles favorite status", async function () {
-        const player = new Player();
+        const player = MakeTestPlayer();
 
         const gotFavorite = new EventChecker();
         const gotUnfavorite = new EventChecker();
@@ -44,7 +48,7 @@ describe("Player", function () {
     });
 
     it("pauses and unpauses a track", async function () {
-        const player = new Player();
+        const player = MakeTestPlayer();
 
         const gotPause = new EventChecker();
         const gotUnpause = new EventChecker();
@@ -71,7 +75,7 @@ describe("Player", function () {
         // so some values are not checked and some expected behavior may be
         // unreliable if the test is run in a browser.
 
-        const player = new Player();
+        const player = MakeTestPlayer();
 
         await player.seekTo(10);
         await player.playTrack(trackUrl);
@@ -87,7 +91,7 @@ describe("Player", function () {
 
     function makePlaylistTests(playlistType: string, getUrls: () => Promise<string | string[]>) {
         it(`cycles through a ${playlistType} playlist`, async function () {
-            const player = new Player();
+            const player = MakeTestPlayer();
 
             const gotPlay = new EventChecker();
             player.addEventListener("play", () => {
@@ -154,7 +158,7 @@ describe("Player", function () {
         });
 
         it(`plays a ${playlistType} playlist in random order`, async function () {
-            const player = new Player();
+            const player = MakeTestPlayer();
 
             ok(await player.playList(await getUrls(), { random: true }));
             if (player.playlist === undefined) {
