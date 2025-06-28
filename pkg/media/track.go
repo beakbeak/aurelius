@@ -1,6 +1,8 @@
 package media
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -81,13 +83,41 @@ func (ml *Library) handleTrackInfoRequest(
 	}
 	defer src.Destroy()
 
+	type AttachedImageInfo struct {
+		Format string `json:"format"`
+		Hash   string `json:"hash"`
+	}
+
 	type Result struct {
-		Name            string            `json:"name"`
-		Duration        float64           `json:"duration"`
-		ReplayGainTrack float64           `json:"replayGainTrack"`
-		ReplayGainAlbum float64           `json:"replayGainAlbum"`
-		Favorite        bool              `json:"favorite"`
-		Tags            map[string]string `json:"tags"`
+		Name            string              `json:"name"`
+		Duration        float64             `json:"duration"`
+		ReplayGainTrack float64             `json:"replayGainTrack"`
+		ReplayGainAlbum float64             `json:"replayGainAlbum"`
+		Favorite        bool                `json:"favorite"`
+		Tags            map[string]string   `json:"tags"`
+		AttachedImages  []AttachedImageInfo `json:"attachedImages"`
+	}
+
+	srcImages := src.AttachedImages()
+	attachedImages := make([]AttachedImageInfo, 0, len(srcImages))
+	for _, image := range srcImages {
+		var formatStr string
+		switch image.Format {
+		case aurelib.AttachedImageJPEG:
+			formatStr = "JPEG"
+		case aurelib.AttachedImagePNG:
+			formatStr = "PNG"
+		case aurelib.AttachedImageGIF:
+			formatStr = "GIF"
+		}
+
+		hash := sha256.Sum256(image.Data)
+		hashStr := hex.EncodeToString(hash[:])
+
+		attachedImages = append(attachedImages, AttachedImageInfo{
+			Format: formatStr,
+			Hash:   hashStr,
+		})
 	}
 
 	result := Result{
@@ -96,6 +126,7 @@ func (ml *Library) handleTrackInfoRequest(
 		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
 		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
 		Tags:            maputil.LowerCaseKeys(src.Tags()),
+		AttachedImages:  attachedImages,
 	}
 
 	if favorite, err := ml.isFavorite(urlPath); err != nil {

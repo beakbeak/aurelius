@@ -12,6 +12,20 @@
   },
   "test.flac": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        },
+        {
+          "format": "JPEG",
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+        },
+        {
+          "format": "GIF",
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+        }
+      ],
       "duration": 12.59932,
       "favorite": false,
       "name": "test.flac",
@@ -143,6 +157,20 @@
   },
   "test.flac.1.txt": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        },
+        {
+          "format": "JPEG",
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+        },
+        {
+          "format": "GIF",
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+        }
+      ],
       "duration": 3,
       "favorite": false,
       "name": "test.flac.1.txt",
@@ -170,6 +198,20 @@
   },
   "test.flac.2.txt": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        },
+        {
+          "format": "JPEG",
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+        },
+        {
+          "format": "GIF",
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+        }
+      ],
       "duration": 10.59932,
       "favorite": false,
       "name": "test.flac.2.txt",
@@ -197,6 +239,20 @@
   },
   "test.flac.3.txt": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        },
+        {
+          "format": "JPEG",
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+        },
+        {
+          "format": "GIF",
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+        }
+      ],
       "duration": 5,
       "favorite": false,
       "name": "test.flac.3.txt",
@@ -224,6 +280,12 @@
   },
   "test.m4a": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        }
+      ],
       "duration": 12.599002,
       "favorite": false,
       "name": "test.m4a",
@@ -253,6 +315,12 @@
   },
   "test.mka": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        }
+      ],
       "duration": 12.602,
       "favorite": false,
       "name": "test.mka",
@@ -277,6 +345,12 @@
   },
   "test.mp3": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "JPEG",
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+        }
+      ],
       "duration": 12.669388,
       "favorite": false,
       "name": "test.mp3",
@@ -299,6 +373,12 @@
   },
   "test.ogg": {
     "TrackInfo": {
+      "attachedImages": [
+        {
+          "format": "PNG",
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+        }
+      ],
       "duration": 12.59932,
       "favorite": false,
       "name": "test.ogg",
@@ -325,6 +405,7 @@
   },
   "test.wav": {
     "TrackInfo": {
+      "attachedImages": [],
       "duration": 12.59932,
       "favorite": false,
       "name": "test.wav",

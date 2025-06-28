@@ -129,7 +129,7 @@ func (s *SilenceSource) FrameSize() uint {
 
 // FrameStartTime returns the stream time offset of the start of the last frame
 // received by a call to ReceiveFrame.
-func (s *SilenceSource) FrameStartTime() uint {
+func (s *SilenceSource) FrameStartTime() time.Duration {
 	return 0
 }
 
@@ -164,5 +164,10 @@ func (s *SilenceSource) ResampleFrame(
 // Seek causes streaming to continue from the given offset relative to the
 // beginning of the audio stream.
 func (s *SilenceSource) SeekTo(offset time.Duration) error {
+	return nil
+}
+
+// AttachedImages returns an empty slice since silence has no attached images.
+func (s *SilenceSource) AttachedImages() []AttachedImage {
 	return nil
 }

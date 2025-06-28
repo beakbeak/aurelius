@@ -5,8 +5,10 @@ package aurelib
 
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavcodec/codec_id.h>
 #include <libavutil/replaygain.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int
 avErrorEOF() {
@@ -34,6 +36,21 @@ import (
 
 	"github.com/beakbeak/aurelius/internal/maputil"
 )
+
+// AttachedImageFormat represents the format of an attached image.
+type AttachedImageFormat int
+
+const (
+	AttachedImageJPEG AttachedImageFormat = iota
+	AttachedImagePNG
+	AttachedImageGIF
+)
+
+// AttachedImage represents an image attached to a media file.
+type AttachedImage struct {
+	Data   []byte
+	Format AttachedImageFormat
+}
 
 // A Source produces raw audio data to be consumed by a Sink.
 type Source interface {
@@ -103,6 +120,9 @@ type Source interface {
 		rs *Resampler,
 		fifo *Fifo,
 	) error
+
+	// AttachedImages returns any images attached to the media file.
+	AttachedImages() []AttachedImage
 }
 
 // ReplayGainMode indicates which set of ReplayGain data to use in volume
@@ -131,7 +151,8 @@ const (
 )
 
 type sourceBase struct {
-	tags map[string]string
+	tags           map[string]string
+	attachedImages []AttachedImage
 
 	formatCtx *C.AVFormatContext
 	codecCtx  *C.AVCodecContext
@@ -192,6 +213,28 @@ func NewFileSource(path string) (*FileSource, error) {
 	return &src, nil
 }
 
+// forEachStream iterates over all streams in the format context and calls the provided function for each stream.
+// If the function returns false, iteration stops early.
+func forEachStream(formatCtx *C.AVFormatContext, fn func(*C.AVStream) bool) {
+	streamCount := formatCtx.nb_streams
+	streams := (*[1 << 30]*C.AVStream)(unsafe.Pointer(formatCtx.streams))[:streamCount:streamCount]
+	for _, stream := range streams {
+		if !fn(stream) {
+			break
+		}
+	}
+}
+
+// copyPacketData safely copies data from an AVPacket to a Go byte slice.
+func copyPacketData(packet *C.AVPacket) []byte {
+	if packet.size <= 0 {
+		return nil
+	}
+	data := make([]byte, packet.size)
+	copy(data, (*[1 << 30]byte)(unsafe.Pointer(packet.data))[:packet.size:packet.size])
+	return data
+}
+
 func (src *sourceBase) init() error {
 	// gather streams
 	if err := C.avformat_find_stream_info(src.formatCtx, nil); err < 0 {
@@ -199,16 +242,13 @@ func (src *sourceBase) init() error {
 	}
 
 	// find first audio stream
-	{
-		streamCount := src.formatCtx.nb_streams
-		streams := (*[1 << 30]*C.AVStream)(unsafe.Pointer(src.formatCtx.streams))[:streamCount:streamCount]
-		for _, stream := range streams {
-			if stream.codecpar.codec_type == C.AVMEDIA_TYPE_AUDIO {
-				src.stream = stream
-				break
-			}
+	forEachStream(src.formatCtx, func(stream *C.AVStream) bool {
+		if stream.codecpar.codec_type == C.AVMEDIA_TYPE_AUDIO {
+			src.stream = stream
+			return false // stop iteration
 		}
-	}
+		return true // continue iteration
+	})
 	if src.stream == nil {
 		return fmt.Errorf("no audio streams")
 	}
@@ -250,6 +290,33 @@ func (src *sourceBase) init() error {
 	}
 	gatherTagsFromDict(src.formatCtx.metadata)
 	gatherTagsFromDict(src.stream.metadata)
+
+	// extract attached images
+	forEachStream(src.formatCtx, func(stream *C.AVStream) bool {
+		if (stream.disposition & C.AV_DISPOSITION_ATTACHED_PIC) != 0 {
+			var format AttachedImageFormat
+			var supported bool
+			switch stream.codecpar.codec_id {
+			case C.AV_CODEC_ID_MJPEG:
+				format = AttachedImageJPEG
+				supported = true
+			case C.AV_CODEC_ID_PNG:
+				format = AttachedImagePNG
+				supported = true
+			case C.AV_CODEC_ID_GIF:
+				format = AttachedImageGIF
+				supported = true
+			}
+
+			if supported && stream.attached_pic.size > 0 {
+				src.attachedImages = append(src.attachedImages, AttachedImage{
+					Data:   copyPacketData(&stream.attached_pic),
+					Format: format,
+				})
+			}
+		}
+		return true // continue iteration to find all images
+	})
 
 	return nil
 }
@@ -519,4 +586,9 @@ func (src *sourceBase) SeekTo(offset time.Duration) error {
 		return fmt.Errorf("unknown error")
 	}
 	return nil
+}
+
+// AttachedImages returns any images attached to the media file.
+func (src *sourceBase) AttachedImages() []AttachedImage {
+	return src.attachedImages
 }
