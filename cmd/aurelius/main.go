@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -207,10 +208,21 @@ func (srv fileOnlyServer) ServeHTTP(
 ) {
 	path := filepath.Join(srv.root, req.URL.Path)
 
-	if info, err := os.Stat(path); err != nil || info.IsDir() {
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
 		http.NotFound(w, req)
 		return
 	}
+
+	etag := fmt.Sprintf("\"%x-%x\"", info.ModTime().Unix(), info.Size())
+	w.Header().Set("ETag", etag)
+	if match := req.Header.Get("If-None-Match"); match != "" {
+		if match == etag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
+	w.Header().Set("Cache-Control", "no-cache")
 
 	if strings.ToLower(filepath.Ext(path)) == ".svgz" {
 		w.Header().Set("Content-Type", "image/svg+xml")
