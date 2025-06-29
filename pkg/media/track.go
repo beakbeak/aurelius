@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	cachedImageMaxAge = 3600 * time.Second
+	cachedImageMaxAge     = 3600 * time.Second
+	maxDirectoryImageSize = 256 * 1024
 )
 
 func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
@@ -28,7 +29,15 @@ func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
 		return nil
 	}
 
+	type imageCandidate struct {
+		path   string
+		size   int64
+		format aurelib.AttachedImageFormat
+	}
+
 	knownImageExts := []string{".jpg", ".jpeg", ".png", ".gif"}
+	var candidates []imageCandidate
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -38,8 +47,11 @@ func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
 			continue
 		}
 		imagePath := filepath.Join(dir, entry.Name())
-		data, err := os.ReadFile(imagePath)
+		info, err := os.Stat(imagePath)
 		if err != nil {
+			continue
+		}
+		if info.Size() > maxDirectoryImageSize {
 			continue
 		}
 		var format aurelib.AttachedImageFormat
@@ -51,12 +63,32 @@ func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
 		case ".gif":
 			format = aurelib.AttachedImageGIF
 		}
-		return &aurelib.AttachedImage{
-			Data:   data,
-			Format: format,
+		candidates = append(candidates, imageCandidate{
+			path:   imagePath,
+			size:   info.Size(),
+			format: format,
+		})
+	}
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	smallestCandidate := candidates[0]
+	for _, candidate := range candidates[1:] {
+		if candidate.size < smallestCandidate.size {
+			smallestCandidate = candidate
 		}
 	}
-	return nil
+
+	data, err := os.ReadFile(smallestCandidate.path)
+	if err != nil {
+		return nil
+	}
+
+	return &aurelib.AttachedImage{
+		Data:   data,
+		Format: smallestCandidate.format,
+	}
 }
 
 func (ml *Library) handleTrackRequest(
