@@ -81,7 +81,7 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 
 - Commit messages should follow best practices.
 - Don't include a lot of details about the implementation unless asked for it. Focus on the behavioral and interface changes.
-- Commit messages **MUST** additionally include a whimsical but poignant closing haiku at the end of the message, capturing the spirit of the change. The haiku must be placed at the end of the commit message, but before any attribution to Claude or Claude Code. **DO NOT** include any non-ASCII characters in the haiku.
+- Commit messages **MUST** additionally include a whimsical but poignant closing haiku at the end of the message, capturing the spirit of the change. The haiku must be placed at the end of the commit message, but before any attribution to Claude or Claude Code. **DO NOT** include any non-ASCII characters in the haiku. The first line **MUST** have 5 syllables; the second line **MUST** have 7 syllables; the third line **MUST** have 5 syllables.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
