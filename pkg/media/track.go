@@ -17,7 +17,7 @@ import (
 
 const (
 	cachedImageMaxAge     = 1 * time.Hour
-	maxDirectoryImageSize = 256 * 1024
+	maxDirectoryImageSize = 2 * 1024 * 1024
 )
 
 func findDirectoryImage(trackPath string) *aurelib.AttachedImage {

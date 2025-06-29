@@ -4,8 +4,10 @@ import { loadDir } from "./dir";
 import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
+import { AttachedImageInfo } from "../core/track";
 
 const defaultTrackImageUrl = "/static/img/aurelius.svgz";
+const maxImageSize = 256 * 1024;
 
 let player: Player;
 
@@ -198,6 +200,16 @@ function startSeekSliderDrag(anchorClientX: number, anchorScreenX: number, touch
     );
 }
 
+function filterTrackImages(
+    images: AttachedImageInfo[],
+): (AttachedImageInfo & { originalIndex: number })[] {
+    return (
+        images
+            ?.map((img, index) => ({ ...img, originalIndex: index }))
+            .filter((img) => img.size <= maxImageSize) || []
+    );
+}
+
 function updateStatus(): void {
     const track = player.track;
     if (track === undefined) {
@@ -227,9 +239,10 @@ function updateStatus(): void {
         `${stripLastPathElement(track.url)}/`,
     );
 
+    const filteredImages = filterTrackImages(info.attachedImages);
     let newTrackImageUrl = "";
-    if (info.attachedImages && info.attachedImages.length > 0) {
-        newTrackImageUrl = `${track.url}/images/0`;
+    if (filteredImages.length > 0) {
+        newTrackImageUrl = `${track.url}/images/${filteredImages[0].originalIndex}`;
     } else {
         newTrackImageUrl = defaultTrackImageUrl;
     }
@@ -239,15 +252,13 @@ function updateStatus(): void {
 
     if (navigator.mediaSession !== undefined) {
         const artwork: MediaImage[] = [];
-        if (info.attachedImages && info.attachedImages.length > 0) {
-            info.attachedImages.forEach((imageInfo, index) => {
-                artwork.push({
-                    src: `${track.url}/images/${index}`,
-                    type: `image/${imageInfo.mimeType}`,
-                    sizes: "",
-                });
+        filteredImages.forEach((imageInfo) => {
+            artwork.push({
+                src: `${track.url}/images/${imageInfo.originalIndex}`,
+                type: `image/${imageInfo.mimeType}`,
+                sizes: "",
             });
-        }
+        });
 
         navigator.mediaSession.metadata = new MediaMetadata({
             artist,
