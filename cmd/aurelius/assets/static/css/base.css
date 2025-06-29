@@ -4,8 +4,7 @@ html {
 }
 
 body {
-	background:
-		fixed url("/static/img/bg.svgz"),
+	background: fixed url("/static/img/bg.svgz"),
 		fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
 	color: white;
 	font-family: segoe ui, roboto, sans-serif;
@@ -125,6 +124,10 @@ body {
 .controls {
 	background-color: hsl(0, 0%, 33%);
 	color: white;
+}
+
+.controls__track-image {
+	height: 3rem;
 }
 
 /* Button */

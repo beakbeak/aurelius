@@ -5,6 +5,8 @@ import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
 
+const defaultTrackImageUrl = "/static/img/icon.png";
+
 let player: Player;
 
 let aboutButton: HTMLElement;
@@ -20,6 +22,7 @@ let progressBarEmpty: HTMLElement;
 let progressBarFill: HTMLElement;
 let progressControls: HTMLElement;
 let seekSlider: HTMLElement;
+let trackImage: HTMLImageElement;
 let unfavoriteButton: HTMLElement;
 
 // [0..1]
@@ -41,6 +44,7 @@ export default function setupPlayerUi(inPlayer: Player) {
     progressBarFill = document.getElementById("progress-bar-fill")!;
     progressControls = document.getElementById("progress-controls")!;
     seekSlider = document.getElementById("seek-slider")!;
+    trackImage = document.getElementById("track-image") as HTMLImageElement;
     unfavoriteButton = document.getElementById("unfavorite-button")!;
 
     playButton.onclick = () => {
@@ -198,6 +202,7 @@ function updateStatus(): void {
     const track = player.track;
     if (track === undefined) {
         marquee.textContent = "";
+        trackImage.src = defaultTrackImageUrl;
         return;
     }
 
@@ -221,6 +226,16 @@ function updateStatus(): void {
         `${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`,
         `${stripLastPathElement(track.url)}/`,
     );
+
+    let newTrackImageUrl = "";
+    if (info.attachedImages && info.attachedImages.length > 0) {
+        newTrackImageUrl = `${track.url}/images/0`;
+    } else {
+        newTrackImageUrl = defaultTrackImageUrl;
+    }
+    if (!trackImage.src.endsWith(newTrackImageUrl)) {
+        trackImage.src = newTrackImageUrl;
+    }
 
     if (navigator.mediaSession !== undefined) {
         navigator.mediaSession.metadata = new MediaMetadata({
