@@ -1,8 +1,6 @@
 package media
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -163,7 +161,7 @@ func (ml *Library) handleTrackInfoRequest(
 
 	type AttachedImageInfo struct {
 		MimeType string `json:"mimeType"`
-		Hash     string `json:"hash"`
+		Size     int    `json:"size"`
 	}
 
 	type Result struct {
@@ -177,12 +175,9 @@ func (ml *Library) handleTrackInfoRequest(
 	}
 
 	attachedImageToInfo := func(image aurelib.AttachedImage) AttachedImageInfo {
-		hash := sha256.Sum256(image.Data)
-		hashStr := hex.EncodeToString(hash[:])
-
 		return AttachedImageInfo{
 			MimeType: image.Format.MimeType(),
-			Hash:     hashStr,
+			Size:     len(image.Data),
 		}
 	}
 

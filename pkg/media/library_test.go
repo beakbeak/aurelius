@@ -788,7 +788,7 @@ func TestTrackImages(t *testing.T) {
 
 	type AttachedImageInfo struct {
 		MimeType string `json:"mimeType"`
-		Hash     string `json:"hash"`
+		Size     int    `json:"size"`
 	}
 	type TrackInfo struct {
 		AttachedImages []AttachedImageInfo `json:"attachedImages"`
@@ -812,15 +812,11 @@ func TestTrackImages(t *testing.T) {
 				t.Fatalf("Request failed with status %d: %s", statusCode, string(body))
 			}
 
-			// Check hash
-			hash := sha256.New()
-			if _, err := hash.Write(body); err != nil {
-				t.Fatalf("hash.Write() failed: %v", err)
-			}
-			actualHash := hex.EncodeToString(hash.Sum(nil))
+			// Check size
+			actualSize := len(body)
 
-			if actualHash != imageInfo.Hash {
-				t.Fatalf("Hash mismatch for image %d: expected %s, got %s", i, imageInfo.Hash, actualHash)
+			if actualSize != imageInfo.Size {
+				t.Fatalf("Size mismatch for image %d: expected %d, got %d", i, imageInfo.Size, actualSize)
 			}
 
 			// Check content type
