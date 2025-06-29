@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	cachedImageMaxAge     = 3600 * time.Second
+	cachedImageMaxAge     = 1 * time.Hour
 	maxDirectoryImageSize = 256 * 1024
 )
 
@@ -306,10 +306,19 @@ func (ml *Library) handleTrackImageRequest(
 	}
 	image := &images[index]
 
-	w.Header().Set("Content-Type", image.Format.MimeType())
+	etag := fmt.Sprintf("\"%x\"", len(image.Data))
+	w.Header().Set("ETag", etag)
+	if match := req.Header.Get("If-None-Match"); match != "" {
+		if match == etag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
 	w.Header().Set(
 		"Cache-Control",
-		fmt.Sprintf("public, max-age=%v", int(cachedImageMaxAge/time.Second)))
+		fmt.Sprintf("max-age=%v", int(cachedImageMaxAge/time.Second)))
+
+	w.Header().Set("Content-Type", image.Format.MimeType())
 	if _, err := w.Write(image.Data); err != nil {
 		log.Printf("failed to write image response: %v\n", err)
 	}

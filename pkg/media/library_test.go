@@ -832,3 +832,69 @@ func TestTrackImages(t *testing.T) {
 		})
 	}
 }
+
+func TestTrackImageETag(t *testing.T) {
+	ml := createDefaultLibrary(t)
+
+	// Get track info to find images
+	infoBody := simpleRequest(t, ml, "GET", treePath("test.flac", "info"), "")
+
+	type AttachedImageInfo struct {
+		Size int `json:"size"`
+	}
+	type TrackInfo struct {
+		AttachedImages []AttachedImageInfo `json:"attachedImages"`
+	}
+	var trackInfo TrackInfo
+	if err := json.Unmarshal(infoBody, &trackInfo); err != nil {
+		t.Fatalf("failed to decode track info JSON: %v", err)
+	}
+
+	if len(trackInfo.AttachedImages) == 0 {
+		t.Skip("test.flac has no attached images")
+	}
+
+	imageIndex := 0
+	uri := treePath("test.flac", "images", fmt.Sprintf("%d", imageIndex))
+	expectedSize := trackInfo.AttachedImages[imageIndex].Size
+
+	// First request - should return image with ETag
+	w1 := httptest.NewRecorder()
+	if !ml.ServeHTTP(w1, httptest.NewRequest("GET", uri, nil)) {
+		t.Fatal("ServeHTTP() returned false")
+	}
+
+	if w1.Code != http.StatusOK {
+		t.Fatalf("First request failed with status %d", w1.Code)
+	}
+
+	etag := w1.Header().Get("ETag")
+	expectedETag := fmt.Sprintf("\"%x\"", expectedSize)
+	if etag != expectedETag {
+		t.Fatalf("ETag mismatch: expected %s, got %s", expectedETag, etag)
+	}
+
+	// Second request with If-None-Match - should return 304
+	req2 := httptest.NewRequest("GET", uri, nil)
+	req2.Header.Set("If-None-Match", etag)
+	w2 := httptest.NewRecorder()
+	if !ml.ServeHTTP(w2, req2) {
+		t.Fatal("ServeHTTP() returned false")
+	}
+
+	if w2.Code != http.StatusNotModified {
+		t.Fatalf("Expected 304 Not Modified, got %d", w2.Code)
+	}
+
+	// Third request with different If-None-Match - should return image
+	req3 := httptest.NewRequest("GET", uri, nil)
+	req3.Header.Set("If-None-Match", "\"different-etag\"")
+	w3 := httptest.NewRecorder()
+	if !ml.ServeHTTP(w3, req3) {
+		t.Fatal("ServeHTTP() returned false")
+	}
+
+	if w3.Code != http.StatusOK {
+		t.Fatalf("Third request failed with status %d", w3.Code)
+	}
+}
