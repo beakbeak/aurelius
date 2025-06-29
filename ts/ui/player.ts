@@ -75,6 +75,12 @@ export default function setupPlayerUi(inPlayer: Player) {
         showModalDialog(aboutDialog);
     };
 
+    trackImage.onclick = () => {
+        if (trackImage.src && !trackImage.src.endsWith(defaultTrackImageUrl)) {
+            window.open(trackImage.src, "_blank");
+        }
+    };
+
     marquee.onclick = (e) => {
         e.preventDefault();
         if (marquee.href) {
@@ -221,6 +227,7 @@ function updateStatus(): void {
     if (track === undefined) {
         marquee.textContent = "";
         trackImage.src = defaultTrackImageUrl;
+        trackImage.style.cursor = "default";
         return;
     }
 
@@ -249,8 +256,10 @@ function updateStatus(): void {
     let newTrackImageUrl = "";
     if (filteredImages.length > 0) {
         newTrackImageUrl = `${track.url}/images/${filteredImages[0].originalIndex}`;
+        trackImage.style.cursor = "pointer";
     } else {
         newTrackImageUrl = defaultTrackImageUrl;
+        trackImage.style.cursor = "default";
     }
     if (!trackImage.src.endsWith(newTrackImageUrl)) {
         trackImage.src = newTrackImageUrl;
