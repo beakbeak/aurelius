@@ -137,6 +137,7 @@ body {
 	height: 6rem;
 	width: 6rem;
 	margin: 0.5rem;
+	object-fit: cover;
 }
 
 /* Controls to the right of the track image */
