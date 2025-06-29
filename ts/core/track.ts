@@ -1,7 +1,7 @@
 import { fetchJson, postJson, copyJson } from "./json";
 
 export interface AttachedImageInfo {
-    readonly format: string;
+    readonly mimeType: string;
     readonly hash: string;
 }
 

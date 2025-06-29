@@ -52,6 +52,19 @@ type AttachedImage struct {
 	Format AttachedImageFormat
 }
 
+// MimeType returns the MIME type corresponding to an AttachedImageFormat.
+func (f AttachedImageFormat) MimeType() string {
+	switch f {
+	case AttachedImageJPEG:
+		return "image/jpeg"
+	case AttachedImagePNG:
+		return "image/png"
+	case AttachedImageGIF:
+		return "image/gif"
+	}
+	return ""
+}
+
 // A Source produces raw audio data to be consumed by a Sink.
 type Source interface {
 	// Destroy frees any resources held by the Source so that it may be

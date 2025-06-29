@@ -243,7 +243,7 @@ function updateStatus(): void {
             info.attachedImages.forEach((imageInfo, index) => {
                 artwork.push({
                     src: `${track.url}/images/${index}`,
-                    type: `image/${imageInfo.format.toLowerCase()}`,
+                    type: `image/${imageInfo.mimeType}`,
                     sizes: "",
                 });
             });

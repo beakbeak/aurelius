@@ -14,16 +14,16 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "PNG",
-          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "mimeType": "image/png"
         },
         {
-          "format": "JPEG",
-          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "mimeType": "image/jpeg"
         },
         {
-          "format": "GIF",
-          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "mimeType": "image/gif"
         }
       ],
       "duration": 12.59932,
@@ -159,16 +159,16 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "PNG",
-          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "mimeType": "image/png"
         },
         {
-          "format": "JPEG",
-          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "mimeType": "image/jpeg"
         },
         {
-          "format": "GIF",
-          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "mimeType": "image/gif"
         }
       ],
       "duration": 3,
@@ -200,16 +200,16 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "PNG",
-          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "mimeType": "image/png"
         },
         {
-          "format": "JPEG",
-          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "mimeType": "image/jpeg"
         },
         {
-          "format": "GIF",
-          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "mimeType": "image/gif"
         }
       ],
       "duration": 10.59932,
@@ -241,16 +241,16 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "PNG",
-          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "mimeType": "image/png"
         },
         {
-          "format": "JPEG",
-          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "mimeType": "image/jpeg"
         },
         {
-          "format": "GIF",
-          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "hash": "e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "mimeType": "image/gif"
         }
       ],
       "duration": 5,
@@ -282,8 +282,8 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "PNG",
-          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "mimeType": "image/png"
         }
       ],
       "duration": 12.599002,
@@ -317,8 +317,8 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "PNG",
-          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "hash": "22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "mimeType": "image/png"
         }
       ],
       "duration": 12.602,
@@ -347,8 +347,8 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "JPEG",
-          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "hash": "a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "mimeType": "image/jpeg"
         }
       ],
       "duration": 12.669388,
@@ -375,8 +375,8 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "JPEG",
-          "hash": "b85105c56c9da1df51afa1dade618983545efb2010f5d49ed6277ed3441c455c"
+          "hash": "b85105c56c9da1df51afa1dade618983545efb2010f5d49ed6277ed3441c455c",
+          "mimeType": "image/jpeg"
         }
       ],
       "duration": 12.59932,
@@ -407,8 +407,8 @@
     "TrackInfo": {
       "attachedImages": [
         {
-          "format": "JPEG",
-          "hash": "a5c3211108ecdafd14ffae38b693829aa06f79c30673ddfb33eb540dc54afd7c"
+          "hash": "a5c3211108ecdafd14ffae38b693829aa06f79c30673ddfb33eb540dc54afd7c",
+          "mimeType": "image/jpeg"
         }
       ],
       "duration": 12.59932,

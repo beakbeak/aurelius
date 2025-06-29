@@ -787,8 +787,8 @@ func TestTrackImages(t *testing.T) {
 	infoBody := simpleRequest(t, ml, "GET", treePath("test.flac", "info"), "")
 
 	type AttachedImageInfo struct {
-		Format string `json:"format"`
-		Hash   string `json:"hash"`
+		MimeType string `json:"mimeType"`
+		Hash     string `json:"hash"`
 	}
 	type TrackInfo struct {
 		AttachedImages []AttachedImageInfo `json:"attachedImages"`
@@ -830,20 +830,8 @@ func TestTrackImages(t *testing.T) {
 			}
 
 			contentType := w.Header().Get("Content-Type")
-			var expectedMimeType string
-			switch imageInfo.Format {
-			case "PNG":
-				expectedMimeType = "image/png"
-			case "JPEG":
-				expectedMimeType = "image/jpeg"
-			case "GIF":
-				expectedMimeType = "image/gif"
-			default:
-				t.Fatalf("Unknown format: %s", imageInfo.Format)
-			}
-
-			if contentType != expectedMimeType {
-				t.Fatalf("Content-Type mismatch for image %d: expected %s, got %s", i, expectedMimeType, contentType)
+			if contentType != imageInfo.MimeType {
+				t.Fatalf("Content-Type mismatch for image %d: expected %s, got %s", i, imageInfo.MimeType, contentType)
 			}
 		})
 	}

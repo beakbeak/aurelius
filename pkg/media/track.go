@@ -130,8 +130,8 @@ func (ml *Library) handleTrackInfoRequest(
 	defer src.Destroy()
 
 	type AttachedImageInfo struct {
-		Format string `json:"format"`
-		Hash   string `json:"hash"`
+		MimeType string `json:"mimeType"`
+		Hash     string `json:"hash"`
 	}
 
 	type Result struct {
@@ -145,22 +145,12 @@ func (ml *Library) handleTrackInfoRequest(
 	}
 
 	attachedImageToInfo := func(image aurelib.AttachedImage) AttachedImageInfo {
-		var formatStr string
-		switch image.Format {
-		case aurelib.AttachedImageJPEG:
-			formatStr = "JPEG"
-		case aurelib.AttachedImagePNG:
-			formatStr = "PNG"
-		case aurelib.AttachedImageGIF:
-			formatStr = "GIF"
-		}
-
 		hash := sha256.Sum256(image.Data)
 		hashStr := hex.EncodeToString(hash[:])
 
 		return AttachedImageInfo{
-			Format: formatStr,
-			Hash:   hashStr,
+			MimeType: image.Format.MimeType(),
+			Hash:     hashStr,
 		}
 	}
 
@@ -289,21 +279,7 @@ func (ml *Library) handleTrackImageRequest(
 	}
 	image := &images[index]
 
-	// Set appropriate MIME type
-	var mimeType string
-	switch image.Format {
-	case aurelib.AttachedImageJPEG:
-		mimeType = "image/jpeg"
-	case aurelib.AttachedImagePNG:
-		mimeType = "image/png"
-	case aurelib.AttachedImageGIF:
-		mimeType = "image/gif"
-	default:
-		http.NotFound(w, req)
-		return
-	}
-
-	w.Header().Set("Content-Type", mimeType)
+	w.Header().Set("Content-Type", image.Format.MimeType())
 	w.Header().Set(
 		"Cache-Control",
 		fmt.Sprintf("public, max-age=%v", int(cachedImageMaxAge/time.Second)))
