@@ -238,10 +238,22 @@ function updateStatus(): void {
     }
 
     if (navigator.mediaSession !== undefined) {
+        const artwork: MediaImage[] = [];
+        if (info.attachedImages && info.attachedImages.length > 0) {
+            info.attachedImages.forEach((imageInfo, index) => {
+                artwork.push({
+                    src: `${track.url}/images/${index}`,
+                    type: `image/${imageInfo.format.toLowerCase()}`,
+                    sizes: "",
+                });
+            });
+        }
+
         navigator.mediaSession.metadata = new MediaMetadata({
             artist,
             title,
             album,
+            artwork,
         });
         if (navigator.mediaSession.setPositionState !== undefined) {
             navigator.mediaSession.setPositionState({
