@@ -7,6 +7,7 @@ import { closestAncestorWithClass } from "./dom";
 let player: Player;
 
 let specialList: HTMLElement;
+let navigationList: HTMLElement;
 let dirList: HTMLElement;
 let playlistList: HTMLElement;
 let trackList: HTMLElement;
@@ -28,12 +29,14 @@ export default async function setupDirUi(inPlayer: Player) {
     };
 
     specialList = createList();
+    navigationList = createList();
     dirList = createList();
     playlistList = createList();
     trackList = createList();
 
     container.innerHTML = "";
     container.appendChild(specialList);
+    container.appendChild(navigationList);
     container.appendChild(dirList);
     container.appendChild(playlistList);
     container.appendChild(trackList);
@@ -121,6 +124,7 @@ export async function loadDir(urlArg?: string): Promise<void> {
     }
 
     setDocumentTitleFromUrl(url);
+    populateNavigation(info);
     populateDirs(info);
     populatePlaylists(info);
     populateTracks(info);
@@ -139,26 +143,8 @@ function setDocumentTitleFromUrl(url: string) {
     }
 }
 
-function populateDirs(info: DirInfo): void {
-    let html =
-        //
-        `<li class="${Class.DirEntry}">
-            <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
-            <a class="${Class.DirLink}" href="..">Parent directory</a>
-        </li>`;
-
-    for (const dir of info.dirs) {
-        html +=
-            //
-            `<li class="${Class.DirEntry}">
-                <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
-                <a class="${Class.DirLink}" href="${dir.url}/">${dir.name}/</a>
-            </li>`;
-    }
-
-    dirList.innerHTML = html;
-
-    const links = dirList.getElementsByTagName("a");
+function activateDirLinks(list: HTMLElement): void {
+    const links = list.getElementsByTagName("a");
     for (let i = 0; i < links.length; ++i) {
         const link = links[i];
 
@@ -167,7 +153,35 @@ function populateDirs(info: DirInfo): void {
             loadDir(link.href); // ignore Promise
         };
     }
+}
 
+function populateNavigation(info: DirInfo): void {
+    navigationList.innerHTML =
+        //
+        `<li class="${Class.DirEntry}">
+            <i class="${Class.DirIcon} ${Class.MaterialIcons}">vertical_align_top</i>
+            <a class="${Class.DirLink}" href="/media/tree/">Top level</a>
+        </li>
+        <li class="${Class.DirEntry}">
+            <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
+            <a class="${Class.DirLink}" href="..">Parent directory</a>
+        </li>`;
+    activateDirLinks(navigationList);
+    navigationList.classList.remove(Class.Hidden);
+}
+
+function populateDirs(info: DirInfo): void {
+    let html = "";
+    for (const dir of info.dirs) {
+        html +=
+            //
+            `<li class="${Class.DirEntry}">
+                <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
+                <a class="${Class.DirLink}" href="${dir.url}/">${dir.name}/</a>
+            </li>`;
+    }
+    dirList.innerHTML = html;
+    activateDirLinks(dirList);
     dirList.classList.remove(Class.Hidden);
 }
 
