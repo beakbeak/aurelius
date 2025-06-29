@@ -405,7 +405,12 @@
   },
   "test.wav": {
     "TrackInfo": {
-      "attachedImages": [],
+      "attachedImages": [
+        {
+          "format": "JPEG",
+          "hash": "a5c3211108ecdafd14ffae38b693829aa06f79c30673ddfb33eb540dc54afd7c"
+        }
+      ],
       "duration": 12.59932,
       "favorite": false,
       "name": "test.wav",

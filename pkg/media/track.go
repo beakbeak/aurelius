@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/beakbeak/aurelius/internal/maputil"
@@ -15,7 +17,47 @@ import (
 	"github.com/beakbeak/aurelius/pkg/fragment"
 )
 
-const cachedImageMaxAge = 3600 * time.Second
+const (
+	cachedImageMaxAge = 3600 * time.Second
+)
+
+func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
+	dir := filepath.Dir(trackPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+
+	knownImageExts := []string{".jpg", ".jpeg", ".png", ".gif"}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		if !slices.Contains(knownImageExts, ext) {
+			continue
+		}
+		imagePath := filepath.Join(dir, entry.Name())
+		data, err := os.ReadFile(imagePath)
+		if err != nil {
+			continue
+		}
+		var format aurelib.AttachedImageFormat
+		switch ext {
+		case ".jpg", ".jpeg":
+			format = aurelib.AttachedImageJPEG
+		case ".png":
+			format = aurelib.AttachedImagePNG
+		case ".gif":
+			format = aurelib.AttachedImageGIF
+		}
+		return &aurelib.AttachedImage{
+			Data:   data,
+			Format: format,
+		}
+	}
+	return nil
+}
 
 func (ml *Library) handleTrackRequest(
 	libraryPath string,
@@ -102,9 +144,7 @@ func (ml *Library) handleTrackInfoRequest(
 		AttachedImages  []AttachedImageInfo `json:"attachedImages"`
 	}
 
-	srcImages := src.AttachedImages()
-	attachedImages := make([]AttachedImageInfo, 0, len(srcImages))
-	for _, image := range srcImages {
+	attachedImageToInfo := func(image aurelib.AttachedImage) AttachedImageInfo {
 		var formatStr string
 		switch image.Format {
 		case aurelib.AttachedImageJPEG:
@@ -118,10 +158,23 @@ func (ml *Library) handleTrackInfoRequest(
 		hash := sha256.Sum256(image.Data)
 		hashStr := hex.EncodeToString(hash[:])
 
-		attachedImages = append(attachedImages, AttachedImageInfo{
+		return AttachedImageInfo{
 			Format: formatStr,
 			Hash:   hashStr,
-		})
+		}
+	}
+
+	srcImages := src.AttachedImages()
+	attachedImages := make([]AttachedImageInfo, 0, len(srcImages))
+
+	if len(srcImages) == 0 {
+		if dirImage := findDirectoryImage(fsPath); dirImage != nil {
+			attachedImages = append(attachedImages, attachedImageToInfo(*dirImage))
+		}
+	} else {
+		for _, image := range srcImages {
+			attachedImages = append(attachedImages, attachedImageToInfo(image))
+		}
 	}
 
 	result := Result{
@@ -224,6 +277,12 @@ func (ml *Library) handleTrackImageRequest(
 	defer src.Destroy()
 
 	images := src.AttachedImages()
+	if len(images) == 0 {
+		if dirImage := findDirectoryImage(fsPath); dirImage != nil {
+			images = []aurelib.AttachedImage{*dirImage}
+		}
+	}
+
 	if index >= len(images) {
 		http.NotFound(w, req)
 		return
