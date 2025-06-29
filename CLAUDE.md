@@ -29,6 +29,7 @@ go build
 
 - Go lint: `golangci-lint run`
 - Go tests: `go test -asan ./...`
+- Update baselines for Go tests (**ONLY IF** baselines are expected to change): `UPDATE_BASELINES=1 go test -asan ./...`
 - TypeScript tests: `npm run test`
 
 # Architecture
