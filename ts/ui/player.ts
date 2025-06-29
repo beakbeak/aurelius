@@ -4,7 +4,7 @@ import { loadDir } from "./dir";
 import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
-import { AttachedImageInfo } from "../core/track";
+import { AttachedImageInfo, StreamCodec } from "../core/track";
 
 const defaultTrackImageUrl = "/static/img/aurelius.svgz";
 const maxImageSize = 256 * 1024;
@@ -203,11 +203,17 @@ function startSeekSliderDrag(anchorClientX: number, anchorScreenX: number, touch
 function filterTrackImages(
     images: AttachedImageInfo[],
 ): (AttachedImageInfo & { originalIndex: number })[] {
-    return (
-        images
-            ?.map((img, index) => ({ ...img, originalIndex: index }))
-            .filter((img) => img.size <= maxImageSize) || []
-    );
+    const imagesWithIndex = images?.map((img, index) => ({ ...img, originalIndex: index })) || [];
+
+    switch (player.streamConfig.codec) {
+        case StreamCodec.Flac:
+        case StreamCodec.Wav:
+            // When a lossless codec is chosen, assume that bandwidth is less of a concern,
+            // so do not filter out large images.
+            return imagesWithIndex;
+        default:
+            return imagesWithIndex.filter((img) => img.size <= maxImageSize);
+    }
 }
 
 function updateStatus(): void {
