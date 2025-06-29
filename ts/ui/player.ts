@@ -203,7 +203,7 @@ function startSeekSliderDrag(anchorClientX: number, anchorScreenX: number, touch
 function filterTrackImages(
     images: AttachedImageInfo[],
 ): (AttachedImageInfo & { originalIndex: number })[] {
-    const imagesWithIndex = images?.map((img, index) => ({ ...img, originalIndex: index })) || [];
+    const imagesWithIndex = images.map((img, index) => ({ ...img, originalIndex: index }));
 
     switch (player.streamConfig.codec) {
         case StreamCodec.Flac:
