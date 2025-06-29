@@ -5,7 +5,7 @@ import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
 
-const defaultTrackImageUrl = "/static/img/icon.png";
+const defaultTrackImageUrl = "/static/img/aurelius.svgz";
 
 let player: Player;
 

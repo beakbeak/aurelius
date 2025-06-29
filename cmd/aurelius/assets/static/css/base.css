@@ -124,10 +124,25 @@ body {
 .controls {
 	background-color: hsl(0, 0%, 33%);
 	color: white;
+	display: flex;
+	align-items: center;
+}
+
+.controls__track-image-container {
+	display: flex;
+	align-items: center;
 }
 
 .controls__track-image {
-	height: 3rem;
+	height: 6rem;
+	width: 6rem;
+	margin: 0.5rem;
+}
+
+/* Controls to the right of the track image */
+.controls__everything-else {
+	flex: 1;
+	position: relative;
 }
 
 /* Button */

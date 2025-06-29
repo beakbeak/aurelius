@@ -14,56 +14,66 @@
 	</head>
 	<body>
 		<nav class="controls main__controls">
-			<div class="controls__marquee-spacer">
-				<div class="controls__marquee-container">
-					<a
-						id="marquee"
-						class="controls__marquee controls__link"
-						title="Jump to directory containing this track"
-					></a>
-				</div>
-			</div>
-			<div id="progress-controls" class="controls__group">
-				<div id="progress-bar-empty" class="controls__progress-trough">
-					<span id="progress-bar-fill" class="controls__progress-fill"></span>
-					<span class="controls__slider-range">
-						<span id="seek-slider" class="controls__slider"></span>
-					</span>
-				</div>
-			</div>
-			<div class="controls__group controls__group--shift-up">
-				<i id="prev-button" class="controls__button material-icons" title="Previous track">
-					skip_previous
-				</i>
-				<i id="play-button" class="controls__button material-icons" title="Play">
-					play_arrow
-				</i>
-				<i id="pause-button" class="controls__button hidden material-icons" title="Pause">
-					pause
-				</i>
-				<i id="next-button" class="controls__button material-icons" title="Next track">
-					skip_next
-				</i>
-				<i
-					id="favorite-button"
-					class="controls__button controls__button--medium material-icons"
-					title="Add to favorites"
-				>
-					favorite_border
-				</i>
-				<i
-					id="unfavorite-button"
-					class="controls__button controls__button--medium hidden material-icons"
-					title="Remove from favorites"
-				>
-					favorite
-				</i>
-			</div>
-			<div class="controls__bottom-left">
+			<div class="controls__track-image-container">
 				<img id="track-image" class="controls__track-image" />
-				<span id="about-button" class="controls__link">aurelius</span>
 			</div>
-			<span id="duration" class="controls__bottom-right"></span>
+			<div class="controls__everything-else">
+				<div class="controls__marquee-spacer">
+					<div class="controls__marquee-container">
+						<a
+							id="marquee"
+							class="controls__marquee controls__link"
+							title="Jump to directory containing this track"
+						></a>
+					</div>
+				</div>
+				<div id="progress-controls" class="controls__group">
+					<div id="progress-bar-empty" class="controls__progress-trough">
+						<span id="progress-bar-fill" class="controls__progress-fill"></span>
+						<span class="controls__slider-range">
+							<span id="seek-slider" class="controls__slider"></span>
+						</span>
+					</div>
+				</div>
+				<div class="controls__group controls__group--shift-up">
+					<i
+						id="prev-button"
+						class="controls__button material-icons"
+						title="Previous track"
+					>
+						skip_previous
+					</i>
+					<i id="play-button" class="controls__button material-icons" title="Play">
+						play_arrow
+					</i>
+					<i
+						id="pause-button"
+						class="controls__button hidden material-icons"
+						title="Pause"
+					>
+						pause
+					</i>
+					<i id="next-button" class="controls__button material-icons" title="Next track">
+						skip_next
+					</i>
+					<i
+						id="favorite-button"
+						class="controls__button controls__button--medium material-icons"
+						title="Add to favorites"
+					>
+						favorite_border
+					</i>
+					<i
+						id="unfavorite-button"
+						class="controls__button controls__button--medium hidden material-icons"
+						title="Remove from favorites"
+					>
+						favorite
+					</i>
+				</div>
+				<span id="about-button" class="controls__link controls__bottom-left">aurelius</span>
+				<span id="duration" class="controls__bottom-right"></span>
+			</div>
 		</nav>
 
 		<main class="dir main__dir"></main>
