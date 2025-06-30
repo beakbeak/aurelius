@@ -20,7 +20,7 @@ const (
 	maxDirectoryImageSize = 2 * 1024 * 1024
 )
 
-func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
+func getDirectoryImages(trackPath string) []aurelib.AttachedImage {
 	dir := filepath.Dir(trackPath)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -28,6 +28,7 @@ func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
 	}
 
 	type imageCandidate struct {
+		name   string
 		path   string
 		size   int64
 		format aurelib.AttachedImageFormat
@@ -62,6 +63,7 @@ func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
 			format = aurelib.AttachedImageGIF
 		}
 		candidates = append(candidates, imageCandidate{
+			name:   entry.Name(),
 			path:   imagePath,
 			size:   info.Size(),
 			format: format,
@@ -71,22 +73,31 @@ func findDirectoryImage(trackPath string) *aurelib.AttachedImage {
 		return nil
 	}
 
-	smallestCandidate := candidates[0]
-	for _, candidate := range candidates[1:] {
-		if candidate.size < smallestCandidate.size {
-			smallestCandidate = candidate
+	// Sort candidates lexicographically by filename
+	slices.SortFunc(candidates, func(a, b imageCandidate) int {
+		return strings.Compare(a.name, b.name)
+	})
+
+	images := make([]aurelib.AttachedImage, 0, len(candidates))
+	for _, candidate := range candidates {
+		data, err := os.ReadFile(candidate.path)
+		if err != nil {
+			continue
 		}
+		images = append(images, aurelib.AttachedImage{
+			Data:   data,
+			Format: candidate.format,
+		})
 	}
 
-	data, err := os.ReadFile(smallestCandidate.path)
-	if err != nil {
-		return nil
-	}
+	return images
+}
 
-	return &aurelib.AttachedImage{
-		Data:   data,
-		Format: smallestCandidate.format,
-	}
+func getAttachedAndDirectoryImages(src aurelib.Source, fsPath string) []aurelib.AttachedImage {
+	attachedImages := src.AttachedImages()
+	directoryImages := getDirectoryImages(fsPath)
+
+	return append(attachedImages, directoryImages...)
 }
 
 func (ml *Library) handleTrackRequest(
@@ -174,24 +185,13 @@ func (ml *Library) handleTrackInfoRequest(
 		AttachedImages  []AttachedImageInfo `json:"attachedImages"`
 	}
 
-	attachedImageToInfo := func(image aurelib.AttachedImage) AttachedImageInfo {
-		return AttachedImageInfo{
+	images := getAttachedAndDirectoryImages(src, fsPath)
+	attachedImages := make([]AttachedImageInfo, 0, len(images))
+	for _, image := range images {
+		attachedImages = append(attachedImages, AttachedImageInfo{
 			MimeType: image.Format.MimeType(),
 			Size:     len(image.Data),
-		}
-	}
-
-	srcImages := src.AttachedImages()
-	attachedImages := make([]AttachedImageInfo, 0, len(srcImages))
-
-	if len(srcImages) == 0 {
-		if dirImage := findDirectoryImage(fsPath); dirImage != nil {
-			attachedImages = append(attachedImages, attachedImageToInfo(*dirImage))
-		}
-	} else {
-		for _, image := range srcImages {
-			attachedImages = append(attachedImages, attachedImageToInfo(image))
-		}
+		})
 	}
 
 	result := Result{
@@ -293,13 +293,7 @@ func (ml *Library) handleTrackImageRequest(
 	}
 	defer src.Destroy()
 
-	images := src.AttachedImages()
-	if len(images) == 0 {
-		if dirImage := findDirectoryImage(fsPath); dirImage != nil {
-			images = []aurelib.AttachedImage{*dirImage}
-		}
-	}
-
+	images := getAttachedAndDirectoryImages(src, fsPath)
 	if index >= len(images) {
 		http.NotFound(w, req)
 		return
