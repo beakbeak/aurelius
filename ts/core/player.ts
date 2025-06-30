@@ -83,7 +83,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         if (currentTime === this._lastStallCheck.seekPos) {
             const stallDuration = now - this._lastStallCheck.timeMs;
             if (stallDuration >= this._stallThresholdMs) {
-                console.log(
+                console.warn(
                     new Date().toISOString(),
                     `Player: Playback stalled for ${stallDuration / 1000}s; restarting`,
                 );
@@ -99,7 +99,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     private async _play(url: string, startTime?: number): Promise<void> {
-        console.log(new Date().toISOString(), "Player._play", url, startTime);
+        console.debug(new Date().toISOString(), "Player._play", url, startTime);
         this._stopStallDetection();
 
         let streamConfig: StreamConfig;
