@@ -15,6 +15,7 @@ linters:
     - gosec
     - perfsprint
     - unparam
+    - prealloc
 
 linters-settings:
   gocritic:
