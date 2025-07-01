@@ -136,6 +136,9 @@ type Source interface {
 
 	// AttachedImages returns any images attached to the media file.
 	AttachedImages() []AttachedImage
+
+	// BitRate returns the average bit rate of the audio stream in bits per second.
+	BitRate() int
 }
 
 // ReplayGainMode indicates which set of ReplayGain data to use in volume
@@ -604,4 +607,9 @@ func (src *sourceBase) SeekTo(offset time.Duration) error {
 // AttachedImages returns any images attached to the media file.
 func (src *sourceBase) AttachedImages() []AttachedImage {
 	return src.attachedImages
+}
+
+// BitRate returns the bit rate of the audio stream in bits per second.
+func (src *sourceBase) BitRate() int {
+	return int(src.stream.codecpar.bit_rate)
 }

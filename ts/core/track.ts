@@ -12,6 +12,9 @@ export interface TrackInfo {
     readonly replayGainAlbum: number;
     readonly tags: { [key: string]: string | undefined };
     readonly attachedImages: AttachedImageInfo[];
+    readonly bitRate: number;
+    readonly sampleRate: number;
+    readonly sampleFormat: string;
 
     favorite: boolean;
 }

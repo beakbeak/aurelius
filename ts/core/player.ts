@@ -112,6 +112,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
         const track = await Track.fetch(url, streamConfig, startTime, this.track);
         this.track = track;
+        console.debug("Track info:", track.info);
 
         let wasPaused = false;
 

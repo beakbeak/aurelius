@@ -219,6 +219,9 @@ func (ml *Library) handleTrackInfoRequest(
 		Favorite        bool                `json:"favorite"`
 		Tags            map[string]string   `json:"tags"`
 		AttachedImages  []AttachedImageInfo `json:"attachedImages"`
+		BitRate         int                 `json:"bitRate"`
+		SampleRate      uint                `json:"sampleRate"`
+		SampleFormat    string              `json:"sampleFormat"`
 	}
 
 	images := getAttachedAndDirectoryImages(src, fsPath)
@@ -230,6 +233,7 @@ func (ml *Library) handleTrackInfoRequest(
 		})
 	}
 
+	streamInfo := src.StreamInfo()
 	result := Result{
 		Name:            filepath.Base(fsPath),
 		Duration:        float64(src.Duration()) / float64(time.Second),
@@ -237,6 +241,9 @@ func (ml *Library) handleTrackInfoRequest(
 		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
 		Tags:            maputil.LowerCaseKeys(src.Tags()),
 		AttachedImages:  attachedImages,
+		BitRate:         src.BitRate(),
+		SampleRate:      streamInfo.SampleRate,
+		SampleFormat:    streamInfo.SampleFormat(),
 	}
 
 	if favorite, err := ml.isFavorite(urlPath); err != nil {

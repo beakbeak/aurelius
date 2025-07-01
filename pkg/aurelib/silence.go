@@ -171,3 +171,8 @@ func (s *SilenceSource) SeekTo(offset time.Duration) error {
 func (s *SilenceSource) AttachedImages() []AttachedImage {
 	return nil
 }
+
+// BitRate returns 0.
+func (s *SilenceSource) BitRate() int {
+	return 0
+}
