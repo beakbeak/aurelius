@@ -149,6 +149,7 @@ func (ml *Library) handleTrackRequest(
 	case http.MethodGet:
 		switch resource {
 		case "stream":
+			slog.Info("stream", "path", libraryPath)
 			ml.handleTrackStreamRequest(fsPath, w, req)
 		case "info":
 			ml.handleTrackInfoRequest(libraryPath, fsPath, w, req)
