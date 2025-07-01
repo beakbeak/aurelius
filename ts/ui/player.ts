@@ -270,7 +270,7 @@ function updateStatus(): void {
         filteredImages.forEach((imageInfo) => {
             artwork.push({
                 src: `${track.url}/images/${imageInfo.originalIndex}`,
-                type: `image/${imageInfo.mimeType}`,
+                type: `${imageInfo.mimeType}`,
                 sizes: "",
             });
         });
