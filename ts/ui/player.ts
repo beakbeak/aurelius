@@ -218,7 +218,16 @@ function filterTrackImages(
             // so do not filter out large images.
             return imagesWithIndex;
         default:
-            return imagesWithIndex.filter((img) => img.size <= maxImageSize);
+            return imagesWithIndex.filter((img) => {
+                if (img.size > maxImageSize) {
+                    console.debug("skipping oversized image", {
+                        ...img,
+                        maxSize: maxImageSize,
+                    });
+                    return false;
+                }
+                return true;
+            });
     }
 }
 

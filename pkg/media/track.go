@@ -87,6 +87,10 @@ func getDirectoryImages(trackPath string) []directoryImage {
 			continue
 		}
 		if info.Size() > maxDirectoryImageSize {
+			slog.Info(
+				"skipping oversized directory image",
+				"path", imagePath, "size", info.Size(),
+				"maxSize", maxDirectoryImageSize)
 			continue
 		}
 		var format aurelib.AttachedImageFormat
