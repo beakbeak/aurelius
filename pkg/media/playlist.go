@@ -1,6 +1,7 @@
 package media
 
 import (
+	"log/slog"
 	"net/http"
 	"path"
 	"strconv"
@@ -39,7 +40,7 @@ func (ml *Library) handlePlaylistRequestImpl(
 	lines, err := ml.playlistCache.Get(fsPath)
 	if err != nil {
 		http.NotFound(w, req)
-		log.Printf("failed to load '%v': %v", fsPath, err)
+		slog.Error("failed to load", "path", fsPath, "error", err)
 	}
 
 	switch resource {
@@ -60,7 +61,7 @@ func (ml *Library) handlePlaylistRequestImpl(
 
 		pos64, err := strconv.ParseInt(resource, 0, 0)
 		if err != nil {
-			log.Printf("failed to parse playlist position '%v': %v\n", resource, err)
+			slog.Error("failed to parse playlist position", "position", resource, "error", err)
 			writeJson(w, nil)
 			return
 		}

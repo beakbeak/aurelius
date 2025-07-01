@@ -66,8 +66,6 @@ so use of HTTPS is recommended.`)
 		return filepath.Join(assetsDir, "html", fileName)
 	}
 
-	media.SetLogger(log.New(log.Writer(), "", log.LstdFlags))
-
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = *mediaPath
 	mlConfig.StoragePath = *storagePath

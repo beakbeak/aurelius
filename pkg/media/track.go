@@ -2,6 +2,7 @@ package media
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -159,7 +160,7 @@ func (ml *Library) handleTrackRequest(
 		switch resource {
 		case "favorite":
 			if err := ml.setFavorite(libraryPath, true); err != nil {
-				log.Printf("Favorite failed: %v\n", err)
+				slog.Error("Favorite failed", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
@@ -167,7 +168,7 @@ func (ml *Library) handleTrackRequest(
 
 		case "unfavorite":
 			if err := ml.setFavorite(libraryPath, false); err != nil {
-				log.Printf("Unfavorite failed: %v\n", err)
+				slog.Error("Unfavorite failed", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
 				writeJson(w, nil)
@@ -194,7 +195,7 @@ func (ml *Library) handleTrackInfoRequest(
 ) {
 	src, err := newAudioSource(fsPath)
 	if err != nil {
-		log.Printf("failed to open source '%v': %v\n", fsPath, err)
+		slog.Error("failed to open source", "path", fsPath, "error", err)
 		http.NotFound(w, req)
 		return
 	}
@@ -234,7 +235,7 @@ func (ml *Library) handleTrackInfoRequest(
 	}
 
 	if favorite, err := ml.isFavorite(urlPath); err != nil {
-		log.Printf("isFavorite failed: %v", err)
+		slog.Error("isFavorite failed", "error", err)
 	} else {
 		result.Favorite = favorite
 	}
@@ -317,7 +318,7 @@ func (ml *Library) handleTrackImageRequest(
 
 	src, err := newAudioSource(fsPath)
 	if err != nil {
-		log.Printf("failed to open source '%v': %v\n", fsPath, err)
+		slog.Error("failed to open source", "path", fsPath, "error", err)
 		http.NotFound(w, req)
 		return
 	}
@@ -331,7 +332,7 @@ func (ml *Library) handleTrackImageRequest(
 
 	image, err := images[index].ToAttachedImage()
 	if err != nil {
-		log.Printf("failed to load image: %v\n", err)
+		slog.Error("failed to load image", "error", err)
 		http.NotFound(w, req)
 		return
 	}
@@ -350,6 +351,6 @@ func (ml *Library) handleTrackImageRequest(
 
 	w.Header().Set("Content-Type", image.Format.MimeType())
 	if _, err := w.Write(image.Data); err != nil {
-		log.Printf("failed to write image response: %v\n", err)
+		slog.Error("failed to write image response", "error", err)
 	}
 }

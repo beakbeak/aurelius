@@ -1,6 +1,7 @@
 package media
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,7 +16,7 @@ func (ml *Library) handleTrackStreamRequest(
 ) {
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)
-		log.Printf(format, args...)
+		slog.Error(format, args...)
 	}
 	rejectInternalError := func(format string, args ...interface{}) {
 		reject(http.StatusInternalServerError, format, args...)
@@ -162,7 +163,7 @@ func (ml *Library) handleTrackStreamRequest(
 			return
 		} else if startTime > 0 {
 			if err := src.SeekTo(startTime); err != nil {
-				log.Printf("seek failed: %v\n", err)
+				slog.Error("seek failed", "error", err)
 			}
 		}
 	}
@@ -231,7 +232,7 @@ PlayLoop:
 	DecodeLoop:
 		for fifo.Size() < sink.FrameSize() {
 			if recoverable, err := src.Decode(); err != nil {
-				log.Printf("failed to decode frame: %v\n", err)
+				slog.Error("failed to decode frame", "error", err)
 				if !recoverable {
 					done = true
 					break DecodeLoop
@@ -241,7 +242,7 @@ PlayLoop:
 			for {
 				receiveStatus, err := src.ReceiveFrame()
 				if err != nil {
-					log.Printf("failed to receive frame: %v\n", err)
+					slog.Error("failed to receive frame", "error", err)
 					done = true
 					break DecodeLoop
 				}
@@ -253,7 +254,7 @@ PlayLoop:
 					break
 				}
 				if err = src.ResampleFrame(resampler, fifo); err != nil {
-					log.Printf("failed to copy frame to output: %v\n", err)
+					slog.Error("failed to copy frame to output", "error", err)
 					done = true
 					break DecodeLoop
 				}
@@ -272,16 +273,16 @@ PlayLoop:
 		for fifo.Size() >= outFrameSize {
 			frame, err := fifo.ReadFrame(sink.FrameSize())
 			if err != nil {
-				log.Printf("failed to read frame from FIFO: %v\n", err)
+				slog.Error("failed to read frame from FIFO", "error", err)
 				break PlayLoop
 			}
 			if _, err = sink.Encode(frame); err != nil {
-				log.Printf("failed to encode frame: %v\n", err)
+				slog.Error("failed to encode frame", "error", err)
 				break PlayLoop
 			}
 		}
 		if err = writeBuffer(); err != nil {
-			log.Printf("failed to write buffer: %v\n", err)
+			slog.Debug("failed to write buffer", "error", err)
 			break PlayLoop
 		}
 
@@ -298,9 +299,9 @@ PlayLoop:
 	}
 
 	if err = aurelib.FlushSink(sink); err != nil {
-		log.Printf("failed to flush sink: %v\n", err)
+		slog.Info("failed to flush sink", "error", err)
 	}
 	if err = writeBuffer(); err != nil {
-		log.Printf("failed to write buffer: %v\n", err)
+		slog.Debug("failed to write buffer", "error", err)
 	}
 }

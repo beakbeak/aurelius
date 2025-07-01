@@ -286,19 +286,8 @@ func removeJsonElement(
 
 // Library utilities ///////////////////////////////////////////////////////////
 
-type testLogger testing.T
-
-func (t *testLogger) Print(v ...interface{}) {
-	t.Log(v...)
-}
-func (t *testLogger) Printf(format string, v ...interface{}) {
-	t.Logf(format, v...)
-}
-
 func createDefaultLibrary(t *testing.T) *media.Library {
 	clearStorage(t)
-
-	media.SetLogger((*testLogger)(t))
 
 	mlConfig := media.NewLibraryConfig()
 	mlConfig.RootPath = testMediaPath

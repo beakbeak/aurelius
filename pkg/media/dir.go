@@ -1,6 +1,7 @@
 package media
 
 import (
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -38,7 +39,7 @@ func (ml *Library) handleDirInfoRequest(
 	entries, err := os.ReadDir(fsDirPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("ReadDir failed: %v\n", err)
+		slog.Error("ReadDir failed", "error", err)
 		return
 	}
 
@@ -79,7 +80,7 @@ func (ml *Library) handleDirInfoRequest(
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
-			log.Printf("entry.Info() failed for %s: %v\n", entry.Name(), err)
+			slog.Error("entry.Info() failed", "entry", entry.Name(), "error", err)
 			continue
 		}
 		mode := info.Mode()
@@ -89,13 +90,13 @@ func (ml *Library) handleDirInfoRequest(
 			linkPath := filepath.Join(fsDirPath, entry.Name())
 			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
-				log.Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
+				slog.Error("EvalSymlinks failed", "path", linkPath, "error", err)
 				continue
 			}
 
 			linkedInfo, err := os.Stat(linkedPath)
 			if err != nil {
-				log.Printf("stat '%v' failed: %v\n", linkedPath, err)
+				slog.Error("stat failed", "path", linkedPath, "error", err)
 				continue
 			}
 			mode = linkedInfo.Mode()

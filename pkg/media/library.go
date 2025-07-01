@@ -5,6 +5,7 @@ package media
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -110,8 +111,7 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		reFavoritesPath:    regexp.MustCompile(`^` + quotedPrefix + `/favorites/([^/]+)$`),
 	}
 
-	log.Printf(
-		"media library opened: prefix='%v' root='%v'", config.Prefix, config.RootPath)
+	slog.Info("media library opened", "prefix", config.Prefix, "root", config.RootPath)
 
 	return &ml, nil
 }
@@ -169,7 +169,7 @@ func writeJson(
 ) {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
-		log.Printf("failed to marshal JSON: %v\n", err)
+		slog.Error("failed to marshal JSON", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -178,6 +178,6 @@ func writeJson(
 	w.Header().Set("Cache-Control", "no-cache, no-store")
 
 	if _, err := w.Write(dataJson); err != nil {
-		log.Printf("failed to write response: %v\n", err)
+		slog.Error("failed to write response", "error", err)
 	}
 }
