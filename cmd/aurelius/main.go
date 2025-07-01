@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -145,6 +146,8 @@ so use of HTTPS is recommended.`)
 			return
 		}
 		if req.PostForm.Get("passphrase") != *passphrase {
+			slog.Info("login attempt failed", "remote_addr", req.RemoteAddr)
+
 			query := url.Values{}
 			query.Set("from", req.URL.Query().Get("from"))
 			query.Set("failed", "")
@@ -158,6 +161,8 @@ so use of HTTPS is recommended.`)
 		if !trySaveSessionValues(w, req, "valid", true) {
 			return
 		}
+
+		slog.Info("login succeeded", "remote_addr", req.RemoteAddr)
 
 		fromUrl := req.URL.Query().Get("from")
 		if fromUrl == "" {
