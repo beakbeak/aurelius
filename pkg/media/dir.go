@@ -1,7 +1,6 @@
 package media
 
 import (
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -36,7 +35,7 @@ func (ml *Library) handleDirInfoRequest(
 ) {
 	fsDirPath := ml.libraryToFsPath(libraryDirPath)
 
-	infos, err := ioutil.ReadDir(fsDirPath)
+	entries, err := os.ReadDir(fsDirPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ReadDir failed: %v\n", err)
@@ -77,12 +76,17 @@ func (ml *Library) handleDirInfoRequest(
 		Tracks:    make([]PathUrl, 0),
 	}
 
-	for _, info := range infos {
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			log.Printf("entry.Info() failed for %s: %v\n", entry.Name(), err)
+			continue
+		}
 		mode := info.Mode()
-		url := makeRelativePathUrl(info.Name())
+		url := makeRelativePathUrl(entry.Name())
 
 		if (mode & os.ModeSymlink) != 0 {
-			linkPath := filepath.Join(fsDirPath, info.Name())
+			linkPath := filepath.Join(fsDirPath, entry.Name())
 			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
 				log.Printf("EvalSymlinks(%v) failed: %v\n", linkPath, err)
@@ -97,7 +101,7 @@ func (ml *Library) handleDirInfoRequest(
 			mode = linkedInfo.Mode()
 
 			if mode.IsDir() {
-				if absUrl, err := makeAbsolutePathUrl(info.Name(), linkedPath); err == nil {
+				if absUrl, err := makeAbsolutePathUrl(entry.Name(), linkedPath); err == nil {
 					url = absUrl
 				}
 			}
@@ -108,10 +112,10 @@ func (ml *Library) handleDirInfoRequest(
 			result.Dirs = append(result.Dirs, url)
 
 		case mode.IsRegular():
-			if reDirIgnore.MatchString(info.Name()) && !reDirUnignore.MatchString(info.Name()) {
+			if reDirIgnore.MatchString(entry.Name()) && !reDirUnignore.MatchString(entry.Name()) {
 				continue
 			}
-			if rePlaylist.MatchString(info.Name()) {
+			if rePlaylist.MatchString(entry.Name()) {
 				result.Playlists = append(result.Playlists, url)
 			} else {
 				result.Tracks = append(result.Tracks, url)
