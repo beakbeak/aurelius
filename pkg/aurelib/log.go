@@ -47,6 +47,32 @@ const (
 	LogTrace
 )
 
+// String returns a string representation of a LogLevel.
+func (level LogLevel) String() string {
+	switch level {
+	case LogQuiet:
+		return "Quiet"
+	case LogPanic:
+		return "Panic"
+	case LogFatal:
+		return "Fatal"
+	case LogError:
+		return "Error"
+	case LogWarning:
+		return "Warning"
+	case LogInfo:
+		return "Info"
+	case LogVerbose:
+		return "Verbose"
+	case LogDebug:
+		return "Debug"
+	case LogTrace:
+		return "Trace"
+	default:
+		return "Unknown"
+	}
+}
+
 // A Logger handles log messages produced by FFmpeg.
 type Logger interface {
 	Log(level LogLevel, message string) // Must be thread-safe!

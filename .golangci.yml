@@ -22,3 +22,5 @@ linters-settings:
     disabled-checks:
       - dupSubExpr
       - ifElseChain
+  exhaustive:
+    default-signifies-exhaustive: true
