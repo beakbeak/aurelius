@@ -204,9 +204,9 @@ so use of HTTPS is recommended.`)
 	}
 }
 
-type contextKey string
+type contextKey int
 
-const requestIDKey contextKey = "requestID"
+const requestIDKey contextKey = 0
 
 // contextLogHandler is a custom slog handler that includes request ID from context.
 type contextLogHandler struct {
