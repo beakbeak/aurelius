@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -13,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/beakbeak/aurelius/pkg/media"
-	"github.com/google/uuid"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
@@ -220,13 +221,22 @@ func (h *contextLogHandler) Handle(ctx context.Context, r slog.Record) error {
 	return h.Handler.Handle(ctx, r)
 }
 
-// withRequestID is middleware that adds a UUID to the request context.
+// withRequestID is middleware that adds a 64-bit ID to the request context.
 func withRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestID := uuid.New().String()
+		requestID := makeRequestID()
 		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// makeRequestID creates a 64-bit random ID as a hex string.
+func makeRequestID() string {
+	var buf [8]byte
+	if _, err := rand.Read(buf[:]); err != nil {
+		panic(fmt.Sprintf("failed to generate request ID: %v", err))
+	}
+	return fmt.Sprintf("%016x", binary.BigEndian.Uint64(buf[:]))
 }
 
 // A fileOnlyServer serves local files from the directory tree rooted at root.
