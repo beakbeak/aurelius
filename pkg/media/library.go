@@ -3,6 +3,7 @@
 package media
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -121,6 +122,7 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 // this case, the caller should handle the request by serving HTML for the user
 // interface.
 func (ml *Library) ServeHTTP(
+	ctx context.Context,
 	w http.ResponseWriter,
 	req *http.Request,
 ) bool {
@@ -132,13 +134,13 @@ func (ml *Library) ServeHTTP(
 	if matches := ml.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[2]
 
-		return ml.handleDirRequest(libraryPath, w, req)
+		return ml.handleDirRequest(ctx, libraryPath, w, req)
 	}
 	if matches := ml.reFileImagePath.FindStringSubmatch(req.URL.Path); matches != nil {
 		libraryPath := matches[1]
 		imageIndex := matches[2]
 
-		ml.handleTrackImageRequest(libraryPath, imageIndex, w, req)
+		ml.handleTrackImageRequest(ctx, libraryPath, imageIndex, w, req)
 		return true
 	}
 	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
@@ -146,16 +148,16 @@ func (ml *Library) ServeHTTP(
 		resource := matches[2]
 
 		if ml.rePlaylistPath.FindStringSubmatch(libraryPath) != nil {
-			ml.handlePlaylistRequest(libraryPath, resource, w, req)
+			ml.handlePlaylistRequest(ctx, libraryPath, resource, w, req)
 			return true
 		}
-		ml.handleTrackRequest(libraryPath, resource, w, req)
+		ml.handleTrackRequest(ctx, libraryPath, resource, w, req)
 		return true
 	}
 	if matches := ml.reFavoritesPath.FindStringSubmatch(req.URL.Path); matches != nil {
 		resource := matches[1]
 
-		ml.handleFavoritesRequest(resource, w, req)
+		ml.handleFavoritesRequest(ctx, resource, w, req)
 		return true
 	}
 
@@ -164,12 +166,13 @@ func (ml *Library) ServeHTTP(
 }
 
 func writeJson(
+	ctx context.Context,
 	w http.ResponseWriter,
 	data interface{},
 ) {
 	dataJson, err := json.Marshal(data)
 	if err != nil {
-		slog.Error("failed to marshal JSON", "error", err)
+		slog.ErrorContext(ctx, "failed to marshal JSON", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -178,6 +181,6 @@ func writeJson(
 	w.Header().Set("Cache-Control", "no-cache, no-store")
 
 	if _, err := w.Write(dataJson); err != nil {
-		slog.Error("failed to write response", "error", err)
+		slog.ErrorContext(ctx, "failed to write response", "error", err)
 	}
 }

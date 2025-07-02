@@ -3,6 +3,7 @@ package media_test
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -107,7 +108,10 @@ func simpleRequestWithStatus(
 	requestBody string,
 ) ([]byte, int) {
 	w := httptest.NewRecorder()
-	if !ml.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody))) {
+	if !ml.ServeHTTP(
+		context.Background(), w,
+		httptest.NewRequest(method, path, strings.NewReader(requestBody)),
+	) {
 		t.Fatal("ServeHTTP() returned false")
 	}
 	response := w.Result()
@@ -810,7 +814,9 @@ func TestTrackImages(t *testing.T) {
 
 			// Check content type
 			w := httptest.NewRecorder()
-			if !ml.ServeHTTP(w, httptest.NewRequest("GET", uri, nil)) {
+			if !ml.ServeHTTP(
+				context.Background(), w, httptest.NewRequest("GET", uri, nil),
+			) {
 				t.Fatal("ServeHTTP() returned false")
 			}
 
@@ -849,7 +855,7 @@ func TestTrackImageETag(t *testing.T) {
 
 	// First request - should return image with ETag
 	w1 := httptest.NewRecorder()
-	if !ml.ServeHTTP(w1, httptest.NewRequest("GET", uri, nil)) {
+	if !ml.ServeHTTP(context.Background(), w1, httptest.NewRequest("GET", uri, nil)) {
 		t.Fatal("ServeHTTP() returned false")
 	}
 
@@ -867,7 +873,7 @@ func TestTrackImageETag(t *testing.T) {
 	req2 := httptest.NewRequest("GET", uri, nil)
 	req2.Header.Set("If-None-Match", etag)
 	w2 := httptest.NewRecorder()
-	if !ml.ServeHTTP(w2, req2) {
+	if !ml.ServeHTTP(context.Background(), w2, req2) {
 		t.Fatal("ServeHTTP() returned false")
 	}
 
@@ -879,7 +885,7 @@ func TestTrackImageETag(t *testing.T) {
 	req3 := httptest.NewRequest("GET", uri, nil)
 	req3.Header.Set("If-None-Match", "\"different-etag\"")
 	w3 := httptest.NewRecorder()
-	if !ml.ServeHTTP(w3, req3) {
+	if !ml.ServeHTTP(context.Background(), w3, req3) {
 		t.Fatal("ServeHTTP() returned false")
 	}
 

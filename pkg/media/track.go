@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -136,6 +137,7 @@ func getAttachedAndDirectoryImages(src aurelib.Source, fsPath string) []attached
 }
 
 func (ml *Library) handleTrackRequest(
+	ctx context.Context,
 	libraryPath string,
 	resource string,
 	w http.ResponseWriter,
@@ -153,10 +155,10 @@ func (ml *Library) handleTrackRequest(
 	case http.MethodGet:
 		switch resource {
 		case "stream":
-			slog.Info("stream", "path", libraryPath)
-			ml.handleTrackStreamRequest(fsPath, w, req)
+			slog.InfoContext(ctx, "stream", "path", libraryPath)
+			ml.handleTrackStreamRequest(ctx, fsPath, w, req)
 		case "info":
-			ml.handleTrackInfoRequest(libraryPath, fsPath, w, req)
+			ml.handleTrackInfoRequest(ctx, libraryPath, fsPath, w, req)
 		default:
 			handled = false
 		}
@@ -165,18 +167,18 @@ func (ml *Library) handleTrackRequest(
 		switch resource {
 		case "favorite":
 			if err := ml.setFavorite(libraryPath, true); err != nil {
-				slog.Error("Favorite failed", "error", err)
+				slog.ErrorContext(ctx, "Favorite failed", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
-				writeJson(w, nil)
+				writeJson(ctx, w, nil)
 			}
 
 		case "unfavorite":
 			if err := ml.setFavorite(libraryPath, false); err != nil {
-				slog.Error("Unfavorite failed", "error", err)
+				slog.ErrorContext(ctx, "Unfavorite failed", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			} else {
-				writeJson(w, nil)
+				writeJson(ctx, w, nil)
 			}
 
 		default:
@@ -193,6 +195,7 @@ func (ml *Library) handleTrackRequest(
 }
 
 func (ml *Library) handleTrackInfoRequest(
+	ctx context.Context,
 	urlPath string,
 	fsPath string,
 	w http.ResponseWriter,
@@ -200,7 +203,7 @@ func (ml *Library) handleTrackInfoRequest(
 ) {
 	src, err := newAudioSource(fsPath)
 	if err != nil {
-		slog.Error("failed to open source", "path", fsPath, "error", err)
+		slog.ErrorContext(ctx, "failed to open source", "path", fsPath, "error", err)
 		http.NotFound(w, req)
 		return
 	}
@@ -247,12 +250,12 @@ func (ml *Library) handleTrackInfoRequest(
 	}
 
 	if favorite, err := ml.isFavorite(urlPath); err != nil {
-		slog.Error("isFavorite failed", "error", err)
+		slog.ErrorContext(ctx, "isFavorite failed", "error", err)
 	} else {
 		result.Favorite = favorite
 	}
 
-	writeJson(w, result)
+	writeJson(ctx, w, result)
 }
 
 func newAudioSource(path string) (aurelib.Source, error) {
@@ -311,6 +314,7 @@ func (ml *Library) setFavorite(
 }
 
 func (ml *Library) handleTrackImageRequest(
+	ctx context.Context,
 	libraryPath string,
 	indexStr string,
 	w http.ResponseWriter,
@@ -330,7 +334,7 @@ func (ml *Library) handleTrackImageRequest(
 
 	src, err := newAudioSource(fsPath)
 	if err != nil {
-		slog.Error("failed to open source", "path", fsPath, "error", err)
+		slog.ErrorContext(ctx, "failed to open source", "path", fsPath, "error", err)
 		http.NotFound(w, req)
 		return
 	}
@@ -344,7 +348,7 @@ func (ml *Library) handleTrackImageRequest(
 
 	image, err := images[index].ToAttachedImage()
 	if err != nil {
-		slog.Error("failed to load image", "error", err)
+		slog.ErrorContext(ctx, "failed to load image", "error", err)
 		http.NotFound(w, req)
 		return
 	}
@@ -363,6 +367,6 @@ func (ml *Library) handleTrackImageRequest(
 
 	w.Header().Set("Content-Type", image.Format.MimeType())
 	if _, err := w.Write(image.Data); err != nil {
-		slog.Error("failed to write image response", "error", err)
+		slog.ErrorContext(ctx, "failed to write image response", "error", err)
 	}
 }

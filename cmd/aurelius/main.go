@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/beakbeak/aurelius/pkg/media"
+	"github.com/google/uuid"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
@@ -53,6 +55,9 @@ so use of HTTPS is recommended.`)
 	}
 
 	iniflags.Parse()
+
+	logHandler := &contextLogHandler{Handler: slog.NewTextHandler(os.Stdout, nil)}
+	slog.SetDefault(slog.New(logHandler))
 
 	var assetsDir string
 	{
@@ -179,7 +184,7 @@ so use of HTTPS is recommended.`)
 		if loginIfUnauthorized(w, req) {
 			return
 		}
-		if !ml.ServeHTTP(w, req) {
+		if !ml.ServeHTTP(req.Context(), w, req) {
 			http.ServeFile(w, req, htmlPath("main.html"))
 		}
 	}
@@ -187,7 +192,7 @@ so use of HTTPS is recommended.`)
 	router.Path(mlConfig.Prefix).HandlerFunc(forwardToMediaLibrary)
 	router.PathPrefix(mlConfig.Prefix + "/").HandlerFunc(forwardToMediaLibrary)
 
-	http.Handle("/", router)
+	http.Handle("/", withRequestID(router))
 
 	log.Printf("listening on %s\n", *listen)
 	if len(*tlsCert) > 0 || len(*tlsKey) > 0 {
@@ -197,6 +202,31 @@ so use of HTTPS is recommended.`)
 		log.Printf("TLS certificate and key not provided; using HTTP")
 		log.Fatal(http.ListenAndServe(*listen, nil))
 	}
+}
+
+type contextKey string
+
+const requestIDKey contextKey = "requestID"
+
+// contextLogHandler is a custom slog handler that includes request ID from context.
+type contextLogHandler struct {
+	slog.Handler
+}
+
+func (h *contextLogHandler) Handle(ctx context.Context, r slog.Record) error {
+	if requestID, ok := ctx.Value(requestIDKey).(string); ok {
+		r.Add("reqID", requestID)
+	}
+	return h.Handler.Handle(ctx, r)
+}
+
+// withRequestID is middleware that adds a UUID to the request context.
+func withRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := uuid.New().String()
+		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // A fileOnlyServer serves local files from the directory tree rooted at root.

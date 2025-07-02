@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ var (
 )
 
 func (ml *Library) handleDirRequest(
+	ctx context.Context,
 	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -23,7 +25,7 @@ func (ml *Library) handleDirRequest(
 	query := req.URL.Query()
 
 	if _, ok := query["info"]; ok {
-		ml.handleDirInfoRequest(libraryPath, w)
+		ml.handleDirInfoRequest(ctx, libraryPath, w)
 		return true
 	}
 
@@ -31,6 +33,7 @@ func (ml *Library) handleDirRequest(
 }
 
 func (ml *Library) handleDirInfoRequest(
+	ctx context.Context,
 	libraryDirPath string,
 	w http.ResponseWriter,
 ) {
@@ -39,7 +42,7 @@ func (ml *Library) handleDirInfoRequest(
 	entries, err := os.ReadDir(fsDirPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		slog.Error("ReadDir failed", "error", err)
+		slog.ErrorContext(ctx, "ReadDir failed", "error", err)
 		return
 	}
 
@@ -80,7 +83,7 @@ func (ml *Library) handleDirInfoRequest(
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
-			slog.Error("entry.Info() failed", "entry", entry.Name(), "error", err)
+			slog.ErrorContext(ctx, "entry.Info() failed", "entry", entry.Name(), "error", err)
 			continue
 		}
 		mode := info.Mode()
@@ -90,13 +93,13 @@ func (ml *Library) handleDirInfoRequest(
 			linkPath := filepath.Join(fsDirPath, entry.Name())
 			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
-				slog.Error("EvalSymlinks failed", "path", linkPath, "error", err)
+				slog.ErrorContext(ctx, "EvalSymlinks failed", "path", linkPath, "error", err)
 				continue
 			}
 
 			linkedInfo, err := os.Stat(linkedPath)
 			if err != nil {
-				slog.Error("stat failed", "path", linkedPath, "error", err)
+				slog.ErrorContext(ctx, "stat failed", "path", linkedPath, "error", err)
 				continue
 			}
 			mode = linkedInfo.Mode()
@@ -124,5 +127,5 @@ func (ml *Library) handleDirInfoRequest(
 		}
 	}
 
-	writeJson(w, result)
+	writeJson(ctx, w, result)
 }

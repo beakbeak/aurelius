@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -10,13 +11,14 @@ import (
 )
 
 func (ml *Library) handleTrackStreamRequest(
+	ctx context.Context,
 	fsPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)
-		slog.Error(format, args...)
+		slog.ErrorContext(ctx, format, args...)
 	}
 	rejectInternalError := func(format string, args ...interface{}) {
 		reject(http.StatusInternalServerError, format, args...)
@@ -163,7 +165,7 @@ func (ml *Library) handleTrackStreamRequest(
 			return
 		} else if startTime > 0 {
 			if err := src.SeekTo(startTime); err != nil {
-				slog.Error("seek failed", "error", err)
+				slog.ErrorContext(ctx, "seek failed", "error", err)
 			}
 		}
 	}
@@ -232,7 +234,7 @@ PlayLoop:
 	DecodeLoop:
 		for fifo.Size() < sink.FrameSize() {
 			if recoverable, err := src.Decode(); err != nil {
-				slog.Error("failed to decode frame", "error", err)
+				slog.ErrorContext(ctx, "failed to decode frame", "error", err)
 				if !recoverable {
 					done = true
 					break DecodeLoop
@@ -242,7 +244,7 @@ PlayLoop:
 			for {
 				receiveStatus, err := src.ReceiveFrame()
 				if err != nil {
-					slog.Error("failed to receive frame", "error", err)
+					slog.ErrorContext(ctx, "failed to receive frame", "error", err)
 					done = true
 					break DecodeLoop
 				}
@@ -254,7 +256,7 @@ PlayLoop:
 					break
 				}
 				if err = src.ResampleFrame(resampler, fifo); err != nil {
-					slog.Error("failed to copy frame to output", "error", err)
+					slog.ErrorContext(ctx, "failed to copy frame to output", "error", err)
 					done = true
 					break DecodeLoop
 				}
@@ -273,16 +275,16 @@ PlayLoop:
 		for fifo.Size() >= outFrameSize {
 			frame, err := fifo.ReadFrame(sink.FrameSize())
 			if err != nil {
-				slog.Error("failed to read frame from FIFO", "error", err)
+				slog.ErrorContext(ctx, "failed to read frame from FIFO", "error", err)
 				break PlayLoop
 			}
 			if _, err = sink.Encode(frame); err != nil {
-				slog.Error("failed to encode frame", "error", err)
+				slog.ErrorContext(ctx, "failed to encode frame", "error", err)
 				break PlayLoop
 			}
 		}
 		if err = writeBuffer(); err != nil {
-			slog.Debug("failed to write buffer", "error", err)
+			slog.DebugContext(ctx, "failed to write buffer", "error", err)
 			break PlayLoop
 		}
 
@@ -299,9 +301,9 @@ PlayLoop:
 	}
 
 	if err = aurelib.FlushSink(sink); err != nil {
-		slog.Info("failed to flush sink", "error", err)
+		slog.InfoContext(ctx, "failed to flush sink", "error", err)
 	}
 	if err = writeBuffer(); err != nil {
-		slog.Debug("failed to write buffer", "error", err)
+		slog.DebugContext(ctx, "failed to write buffer", "error", err)
 	}
 }
