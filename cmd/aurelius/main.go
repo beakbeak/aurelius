@@ -221,11 +221,17 @@ func (h *contextLogHandler) Handle(ctx context.Context, r slog.Record) error {
 	return h.Handler.Handle(ctx, r)
 }
 
-// withRequestID is middleware that adds a 64-bit ID to the request context.
+// withRequestID is middleware that adds a 64-bit ID to the request context and logs request details.
 func withRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := makeRequestID()
 		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+		slog.InfoContext(ctx, "request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"query", r.URL.RawQuery,
+			"remote_addr", r.RemoteAddr,
+		)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
