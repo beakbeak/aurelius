@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,6 +21,10 @@ import (
 const (
 	cachedImageMaxAge     = 1 * time.Hour
 	maxDirectoryImageSize = 2 * 1024 * 1024
+)
+
+var (
+	coverImageRegex = regexp.MustCompile(`[Ff][Rr][Oo][Nn][Tt]|[Cc][Oo][Vv][Ee][Rr]|[Tt][Hh][Uu][Mm][Bb]|F$`)
 )
 
 type directoryImage struct {
@@ -111,8 +116,20 @@ func getDirectoryImages(trackPath string) []directoryImage {
 		})
 	}
 
-	// Sort candidates lexicographically by filename
+	// Sort cover images first, then lexicographically
 	slices.SortFunc(images, func(a, b directoryImage) int {
+		aNameWithoutExt := strings.TrimSuffix(a.name, filepath.Ext(a.name))
+		bNameWithoutExt := strings.TrimSuffix(b.name, filepath.Ext(b.name))
+
+		aCover := coverImageRegex.MatchString(aNameWithoutExt)
+		bCover := coverImageRegex.MatchString(bNameWithoutExt)
+
+		if aCover && !bCover {
+			return -1
+		}
+		if !aCover && bCover {
+			return 1
+		}
 		return strings.Compare(a.name, b.name)
 	})
 

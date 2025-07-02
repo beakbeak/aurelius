@@ -27,6 +27,10 @@
         },
         {
           "mimeType": "image/jpeg",
+          "size": 139632
+        },
+        {
+          "mimeType": "image/jpeg",
           "size": 199870
         }
       ],
@@ -179,6 +183,10 @@
         },
         {
           "mimeType": "image/jpeg",
+          "size": 139632
+        },
+        {
+          "mimeType": "image/jpeg",
           "size": 199870
         }
       ],
@@ -224,6 +232,10 @@
         {
           "mimeType": "image/gif",
           "size": 3604
+        },
+        {
+          "mimeType": "image/jpeg",
+          "size": 139632
         },
         {
           "mimeType": "image/jpeg",
@@ -275,6 +287,10 @@
         },
         {
           "mimeType": "image/jpeg",
+          "size": 139632
+        },
+        {
+          "mimeType": "image/jpeg",
           "size": 199870
         }
       ],
@@ -312,6 +328,10 @@
         {
           "mimeType": "image/png",
           "size": 7494
+        },
+        {
+          "mimeType": "image/jpeg",
+          "size": 139632
         },
         {
           "mimeType": "image/jpeg",
@@ -357,6 +377,10 @@
         },
         {
           "mimeType": "image/jpeg",
+          "size": 139632
+        },
+        {
+          "mimeType": "image/jpeg",
           "size": 199870
         }
       ],
@@ -391,6 +415,10 @@
         {
           "mimeType": "image/jpeg",
           "size": 6737
+        },
+        {
+          "mimeType": "image/jpeg",
+          "size": 139632
         },
         {
           "mimeType": "image/jpeg",
@@ -429,6 +457,10 @@
         },
         {
           "mimeType": "image/jpeg",
+          "size": 139632
+        },
+        {
+          "mimeType": "image/jpeg",
           "size": 199870
         }
       ],
@@ -462,6 +494,10 @@
   "test.wav": {
     "TrackInfo": {
       "attachedImages": [
+        {
+          "mimeType": "image/jpeg",
+          "size": 139632
+        },
         {
           "mimeType": "image/jpeg",
           "size": 199870

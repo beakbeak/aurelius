@@ -769,7 +769,7 @@ func TestTrackImages(t *testing.T) {
 	simpleRequestShouldFail(t, ml, "GET", treePath("nonexistent.mp3", "images", "0"), "")
 
 	// Test file with no images
-	simpleRequestShouldFail(t, ml, "GET", treePath("test.wav", "images", "1"), "")
+	simpleRequestShouldFail(t, ml, "GET", treePath("test.wav", "images", "9"), "")
 
 	// Test invalid index
 	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "-1"), "")
