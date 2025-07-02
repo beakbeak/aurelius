@@ -33,9 +33,15 @@ type LibraryConfig struct {
 	// Library. (Default: "/media")
 	Prefix string
 
-	// PlayAhead controls how far beyond the current play position to stream
-	// when streaming is throttled. (Default: 10s)
-	PlayAhead time.Duration
+	// StreamAheadBytes controls how many encoded bytes beyond the current play
+	// position to stream when streaming is throttled. The maximum of
+	// StreamAheadBytes and StreamAheadTime will be used. (Default: 512KiB)
+	StreamAheadBytes int
+
+	// StreamAheadTime controls how far beyond the current play position to
+	// stream when streaming is throttled. The maximum of StreamAheadBytes and
+	// StreamAheadTime will be used. (Default: 10s)
+	StreamAheadTime time.Duration
 
 	// ThrottleStreaming controls whether streaming throughput is limited to
 	// playback speed. If false, streaming throughput is not limited.
@@ -52,7 +58,8 @@ type LibraryConfig struct {
 func NewLibraryConfig() *LibraryConfig {
 	return &LibraryConfig{
 		Prefix:            "/media",
-		PlayAhead:         10 * time.Second,
+		StreamAheadBytes:  512 * 1024,
+		StreamAheadTime:   10 * time.Second,
 		ThrottleStreaming: true,
 	}
 }

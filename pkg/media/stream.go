@@ -208,10 +208,10 @@ func (ml *Library) handleTrackStreamRequest(
 	w.Header().Set("Content-Type", mimeType)
 	w.Header().Set("Cache-Control", "no-cache, no-store") //?
 
-	writeBuffer := func() error {
+	writeBuffer := func() (int, error) {
 		buffer := sink.Buffer()
 		if len(buffer) == 0 {
-			return nil
+			return 0, nil
 		}
 
 		count, err := w.Write(buffer)
@@ -219,11 +219,22 @@ func (ml *Library) handleTrackStreamRequest(
 			sink.Drain(uint(count))
 		}
 		//log.Printf("wrote %v bytes\n", count)
-		return err
+		return count, err
 	}
 
 	startTime := time.Now()
 	playedSamples := uint64(0)
+	getPlayedTime := func() time.Duration {
+		// calculate with millisecond precision to prevent overflow
+		return time.Duration(((playedSamples * 1000) /
+			uint64(sinkStreamInfo.SampleRate)) * 1000000)
+	}
+
+	type bufferInfo struct {
+		startTime time.Duration
+		byteSize  int
+	}
+	var writtenBuffers []bufferInfo
 
 	done := false
 
@@ -263,6 +274,9 @@ PlayLoop:
 			}
 		}
 
+		latestWrittenBuffer := bufferInfo{
+			startTime: getPlayedTime(),
+		}
 		playedSamples += uint64(fifo.Size() - fifoSize)
 
 		var outFrameSize uint
@@ -283,19 +297,27 @@ PlayLoop:
 				break PlayLoop
 			}
 		}
-		if err = writeBuffer(); err != nil {
+		latestWrittenBuffer.byteSize, err = writeBuffer()
+		if err != nil {
 			slog.DebugContext(ctx, "failed to write buffer", "error", err)
 			break PlayLoop
 		}
 
-		if ml.config.ThrottleStreaming && ml.config.PlayAhead > 0 {
-			// calculate playedTime with millisecond precision to prevent overflow
-			playedTime := time.Duration(((playedSamples * 1000) /
-				uint64(sinkStreamInfo.SampleRate)) * 1000000)
-			timeToSleep := playedTime - ml.config.PlayAhead - time.Since(startTime)
-			if timeToSleep > time.Millisecond {
-				//log.Printf("sleeping %v", timeToSleep)
-				time.Sleep(timeToSleep)
+		if ml.config.ThrottleStreaming {
+			writtenBuffers = append(writtenBuffers, latestWrittenBuffer)
+			remaningBufferBytes := 0
+			for i := len(writtenBuffers) - 1; i >= 0; i-- {
+				remaningBufferBytes += writtenBuffers[i].byteSize
+				if remaningBufferBytes < ml.config.StreamAheadBytes {
+					continue
+				}
+				timeToWake := min(writtenBuffers[i].startTime, getPlayedTime()-ml.config.StreamAheadTime)
+				timeToSleep := timeToWake - time.Since(startTime)
+				if timeToSleep > time.Millisecond {
+					//log.Printf("sleeping %v", timeToSleep)
+					time.Sleep(timeToSleep)
+				}
+				break
 			}
 		}
 	}
@@ -303,7 +325,7 @@ PlayLoop:
 	if err = aurelib.FlushSink(sink); err != nil {
 		slog.InfoContext(ctx, "failed to flush sink", "error", err)
 	}
-	if err = writeBuffer(); err != nil {
+	if _, err = writeBuffer(); err != nil {
 		slog.DebugContext(ctx, "failed to write buffer", "error", err)
 	}
 }
