@@ -43,6 +43,8 @@ It will be created if it doesn't exist.`)
 
 WARNING: Passphrases from the client will be transmitted as plain text,
 so use of HTTPS is recommended.`)
+		logLevel = flag.String(
+			"log", "info", "Log level: debug, info, warn, error.")
 	)
 
 	// Reword usage strings of flags from iniflags package
@@ -57,7 +59,21 @@ so use of HTTPS is recommended.`)
 
 	iniflags.Parse()
 
-	logHandler := &contextLogHandler{Handler: slog.NewTextHandler(os.Stdout, nil)}
+	var level slog.Level
+	switch strings.ToLower(*logLevel) {
+	case "debug":
+		level = slog.LevelDebug
+	case "info":
+		level = slog.LevelInfo
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		log.Fatalf("invalid log level: %s", *logLevel)
+	}
+
+	logHandler := &contextLogHandler{Handler: slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})}
 	slog.SetDefault(slog.New(logHandler))
 
 	var assetsDir string

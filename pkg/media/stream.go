@@ -323,7 +323,7 @@ PlayLoop:
 	}
 
 	if err = aurelib.FlushSink(sink); err != nil {
-		slog.InfoContext(ctx, "failed to flush sink", "error", err)
+		slog.ErrorContext(ctx, "failed to flush sink", "error", err)
 	}
 	if _, err = writeBuffer(); err != nil {
 		slog.DebugContext(ctx, "failed to write buffer", "error", err)

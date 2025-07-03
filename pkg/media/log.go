@@ -22,6 +22,8 @@ func (aurelibLogger) Log(
 	case aurelib.LogFatal:
 		slog.Warn(message)
 	default:
-		slog.Debug(message, "level", aurelibLevel.String())
+		if aurelibLevel <= aurelib.LogInfo {
+			slog.Debug(message, "level", aurelibLevel.String())
+		}
 	}
 }
