@@ -16,7 +16,6 @@ import (
 
 	"github.com/beakbeak/aurelius/pkg/media"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/vharitonsky/iniflags"
@@ -141,7 +140,7 @@ so use of HTTPS is recommended.`)
 		return true
 	}
 
-	router := mux.NewRouter()
+	router := http.NewServeMux()
 
 	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if loginIfUnauthorized(w, req) {
@@ -150,16 +149,19 @@ so use of HTTPS is recommended.`)
 		http.Redirect(w, req, mlConfig.Prefix+"/", http.StatusFound)
 	})
 
-	router.PathPrefix("/static/").Handler(fileOnlyServer{assetsDir})
+	router.Handle("/static/", fileOnlyServer{assetsDir})
 
-	router.Path("/login").Methods("GET", "POST").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("GET /login", func(w http.ResponseWriter, req *http.Request) {
 		if *passphrase == "" {
 			http.NotFound(w, req)
 			return
 		}
+		http.ServeFile(w, req, htmlPath("login.html"))
+	})
 
-		if req.Method == "GET" {
-			http.ServeFile(w, req, htmlPath("login.html"))
+	router.HandleFunc("POST /login", func(w http.ResponseWriter, req *http.Request) {
+		if *passphrase == "" {
+			http.NotFound(w, req)
 			return
 		}
 
@@ -193,7 +195,7 @@ so use of HTTPS is recommended.`)
 		http.Redirect(w, req, fromUrl, http.StatusFound)
 	})
 
-	router.Path("/logout").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	router.HandleFunc("/logout", func(w http.ResponseWriter, req *http.Request) {
 		trySaveSessionValues(w, req, "valid", false)
 	})
 
@@ -206,8 +208,8 @@ so use of HTTPS is recommended.`)
 		}
 	}
 
-	router.Path(mlConfig.Prefix).HandlerFunc(forwardToMediaLibrary)
-	router.PathPrefix(mlConfig.Prefix + "/").HandlerFunc(forwardToMediaLibrary)
+	router.HandleFunc(mlConfig.Prefix, forwardToMediaLibrary)
+	router.HandleFunc(mlConfig.Prefix+"/", forwardToMediaLibrary)
 
 	http.Handle("/", withRequestID(router))
 
