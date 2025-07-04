@@ -16,28 +16,12 @@ var (
 	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
 )
 
-func (ml *Library) handleDirRequest(
-	ctx context.Context,
-	libraryPath string,
-	w http.ResponseWriter,
-	req *http.Request,
-) bool {
-	query := req.URL.Query()
-
-	if _, ok := query["info"]; ok {
-		ml.handleDirInfoRequest(ctx, libraryPath, w)
-		return true
-	}
-
-	return false
-}
-
 func (ml *Library) handleDirInfoRequest(
 	ctx context.Context,
-	libraryDirPath string,
+	dirLibraryPath string,
 	w http.ResponseWriter,
 ) {
-	fsDirPath := ml.libraryToFsPath(libraryDirPath)
+	fsDirPath := ml.libraryToFsPath(dirLibraryPath)
 
 	entries, err := os.ReadDir(fsDirPath)
 	if err != nil {
@@ -46,35 +30,50 @@ func (ml *Library) handleDirInfoRequest(
 		return
 	}
 
+	type LibraryPath struct {
+		Name string
+		Path string
+	}
+
+	makeRelativeLibraryPath := func(name string) LibraryPath {
+		return LibraryPath{
+			Name: name,
+			Path: path.Join(dirLibraryPath, name),
+		}
+	}
+
+	makeAbsoluteLibraryPath := func(name, fsPath string) (LibraryPath, error) {
+		libraryPath, err := ml.fsToLibraryPathWithContext(fsPath, fsDirPath)
+		if err != nil {
+			return LibraryPath{}, err
+		}
+		return LibraryPath{Name: name, Path: libraryPath}, nil
+	}
+
 	type PathUrl struct {
 		Name string `json:"name"`
 		Url  string `json:"url"`
 	}
 
-	makeRelativePathUrl := func(name string) PathUrl {
+	makePathUrl := func(collection string, libraryPath LibraryPath) PathUrl {
 		return PathUrl{
-			Name: name,
-			Url:  ml.libraryToUrlPath(path.Join(libraryDirPath, name)),
+			Name: libraryPath.Name,
+			Url:  ml.libraryToUrlPath(collection, libraryPath.Path),
 		}
-	}
-
-	makeAbsolutePathUrl := func(name, fsPath string) (PathUrl, error) {
-		libraryPath, err := ml.fsToLibraryPathWithContext(fsPath, fsDirPath)
-		if err != nil {
-			return PathUrl{}, err
-		}
-		return PathUrl{
-			Name: name,
-			Url:  ml.libraryToUrlPath(libraryPath),
-		}, nil
 	}
 
 	type Result struct {
+		TopLevel  string    `json:"topLevel"`
+		Parent    string    `json:"parent"`
+		Path      string    `json:"path"`
 		Dirs      []PathUrl `json:"dirs"`
 		Playlists []PathUrl `json:"playlists"`
 		Tracks    []PathUrl `json:"tracks"`
 	}
 	result := Result{
+		TopLevel:  ml.libraryToUrlPath("dirs", ""),
+		Parent:    ml.libraryToUrlPath("dirs", cleanLibraryPath(path.Dir(dirLibraryPath))),
+		Path:      dirLibraryPath,
 		Dirs:      make([]PathUrl, 0),
 		Playlists: make([]PathUrl, 0),
 		Tracks:    make([]PathUrl, 0),
@@ -87,7 +86,7 @@ func (ml *Library) handleDirInfoRequest(
 			continue
 		}
 		mode := info.Mode()
-		url := makeRelativePathUrl(entry.Name())
+		entryLibraryPath := makeRelativeLibraryPath(entry.Name())
 
 		if (mode & os.ModeSymlink) != 0 {
 			linkPath := filepath.Join(fsDirPath, entry.Name())
@@ -105,24 +104,24 @@ func (ml *Library) handleDirInfoRequest(
 			mode = linkedInfo.Mode()
 
 			if mode.IsDir() {
-				if absUrl, err := makeAbsolutePathUrl(entry.Name(), linkedPath); err == nil {
-					url = absUrl
+				if absPath, err := makeAbsoluteLibraryPath(entry.Name(), linkedPath); err == nil {
+					entryLibraryPath = absPath
 				}
 			}
 		}
 
 		switch {
 		case mode.IsDir():
-			result.Dirs = append(result.Dirs, url)
+			result.Dirs = append(result.Dirs, makePathUrl("dirs", entryLibraryPath))
 
 		case mode.IsRegular():
 			if reDirIgnore.MatchString(entry.Name()) && !reDirUnignore.MatchString(entry.Name()) {
 				continue
 			}
 			if rePlaylist.MatchString(entry.Name()) {
-				result.Playlists = append(result.Playlists, url)
+				result.Playlists = append(result.Playlists, makePathUrl("playlists", entryLibraryPath))
 			} else {
-				result.Tracks = append(result.Tracks, url)
+				result.Tracks = append(result.Tracks, makePathUrl("tracks", entryLibraryPath))
 			}
 		}
 	}

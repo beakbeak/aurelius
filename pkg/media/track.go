@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -213,7 +214,7 @@ func (ml *Library) handleTrackRequest(
 
 func (ml *Library) handleTrackInfoRequest(
 	ctx context.Context,
-	urlPath string,
+	libraryPath string,
 	fsPath string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -242,6 +243,7 @@ func (ml *Library) handleTrackInfoRequest(
 		BitRate         int                 `json:"bitRate"`
 		SampleRate      uint                `json:"sampleRate"`
 		SampleFormat    string              `json:"sampleFormat"`
+		Dir             string              `json:"dir"`
 	}
 
 	images := getAttachedAndDirectoryImages(src, fsPath)
@@ -264,9 +266,10 @@ func (ml *Library) handleTrackInfoRequest(
 		BitRate:         src.BitRate(),
 		SampleRate:      streamInfo.SampleRate,
 		SampleFormat:    streamInfo.SampleFormat(),
+		Dir:             ml.libraryToUrlPath("dirs", cleanLibraryPath(path.Dir(libraryPath))),
 	}
 
-	if favorite, err := ml.isFavorite(urlPath); err != nil {
+	if favorite, err := ml.isFavorite(libraryPath); err != nil {
 		slog.ErrorContext(ctx, "isFavorite failed", "error", err)
 	} else {
 		result.Favorite = favorite

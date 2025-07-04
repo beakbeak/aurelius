@@ -1,5 +1,4 @@
 import { Player } from "../core/player";
-import { stripLastPathElement } from "../core/url";
 import { loadDir } from "./dir";
 import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
@@ -256,10 +255,7 @@ function updateStatus(): void {
         text = `${text} [${info.tags["album"]}${trackName}]`;
     }
 
-    setMarquee(
-        `${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`,
-        `${stripLastPathElement(track.url)}/`,
-    );
+    setMarquee(`${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`, info.dir);
 
     const filteredImages = filterTrackImages(info.attachedImages);
     let newTrackImageUrl = "";

@@ -1,5 +1,5 @@
 import { Player } from "../core/player";
-import { DirInfo, fetchDirInfo } from "../core/dir";
+import { DirInfo, dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "../core/dir";
 import { ReplayGainMode } from "../core/track";
 import { Class } from "./class";
 import { closestAncestorWithClass } from "./dom";
@@ -51,10 +51,10 @@ export default async function setupDirUi(inPlayer: Player) {
     });
 
     window.onpopstate = () => {
-        loadDir();
+        loadCurrentDir();
     };
 
-    await loadDir();
+    await loadCurrentDir();
 }
 
 function populateSpecial(): void {
@@ -69,7 +69,7 @@ function populateSpecial(): void {
 
     favoritesLink.onclick = (e) => {
         e.preventDefault();
-        player.playList("/media/favorites", { random: true });
+        player.playList("/media/playlists/favorites", { random: true });
     };
 
     specialList.classList.remove(Class.Hidden);
@@ -108,39 +108,38 @@ function setPlayingClass(element: HTMLAnchorElement | undefined): void {
     lastPlaying?.classList.add(Class.DirEntry_Playing);
 }
 
+async function loadCurrentDir(): Promise<void> {
+    const url = window.location.href;
+    window.history.replaceState({}, "");
+    await loadDir(dirUrlFromTreeUrl(url), /*addHistory=*/ false);
+}
+
 /**
  * Populate directory listing with the contents at the given URL and update
  * history. If `url` is `undefined`, the window's current URL is used.
  */
-export async function loadDir(urlArg?: string): Promise<void> {
-    const url = urlArg ?? window.location.href;
+export async function loadDir(url: string, addHistory = true): Promise<void> {
     const info = await fetchDirInfo(url);
-
-    if (urlArg === undefined) {
-        // first call
-        window.history.replaceState({}, "");
-    } else {
-        window.history.pushState({}, "", url);
+    console.debug(treeUrlFromDirInfo(info));
+    if (addHistory) {
+        window.history.pushState({}, "", treeUrlFromDirInfo(info));
     }
-
-    setDocumentTitleFromUrl(url);
+    setDocumentTitleFromPath(info.path);
     populateNavigation(info);
     populateDirs(info);
     populatePlaylists(info);
     populateTracks(info);
 }
 
-function setDocumentTitleFromUrl(url: string) {
-    const urlTokens = url.replace(/\/$/, "").split("/");
-    if (urlTokens.length <= 0) {
+function setDocumentTitleFromPath(path: string) {
+    const cleanedPath = path.replace(/\/$/g, "");
+    if (cleanedPath === "") {
+        document.title = `aurelius`;
         return;
     }
-    try {
-        const leafDir = decodeURIComponent(urlTokens[urlTokens.length - 1]);
-        document.title = `${leafDir} | aurelius`;
-    } catch (e) {
-        document.title = `aurelius`;
-    }
+    const urlTokens = cleanedPath.split("/");
+    const leafDir = urlTokens[urlTokens.length - 1];
+    document.title = `${leafDir} | aurelius`;
 }
 
 function activateDirLinks(list: HTMLElement): void {
@@ -160,11 +159,11 @@ function populateNavigation(info: DirInfo): void {
         //
         `<li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">vertical_align_top</i>
-            <a class="${Class.DirLink}" href="/media/tree/">Top level</a>
+            <a class="${Class.DirLink}" href="${info.topLevel}">Top level</a>
         </li>
         <li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
-            <a class="${Class.DirLink}" href="..">Parent directory</a>
+            <a class="${Class.DirLink}" href="${info.parent}">Parent directory</a>
         </li>`;
     activateDirLinks(navigationList);
     navigationList.classList.remove(Class.Hidden);
@@ -177,7 +176,7 @@ function populateDirs(info: DirInfo): void {
             //
             `<li class="${Class.DirEntry}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
-                <a class="${Class.DirLink}" href="${dir.url}/">${dir.name}/</a>
+                <a class="${Class.DirLink}" href="${dir.url}">${dir.name}/</a>
             </li>`;
     }
     dirList.innerHTML = html;

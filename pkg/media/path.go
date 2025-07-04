@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-const treePrefix = "tree"
 const favoritesPath = "favorites.m3u"
 
 // libraryToFsPath converts a URL-style path relative to the root of the media
@@ -68,15 +67,24 @@ func (ml *Library) fsToLibraryPathWithContext(fsPath, context string) (string, e
 	return ml.fsToLibraryPath(fsPath)
 }
 
-// libraryToUrlPath prepends the library's routing prefix to libraryPath and applies
-// URL encoding to the result.
-func (ml *Library) libraryToUrlPath(libraryPath string) string {
-	urlPath := path.Join(ml.config.Prefix, treePrefix, libraryPath)
-	return (&url.URL{Path: urlPath}).String()
+// libraryToUrlPath converts a library path to the URI of a resource within a collection (e.g., "tracks").
+func (ml *Library) libraryToUrlPath(collection string, libraryPath string) string {
+	out := &url.URL{Path: ml.config.Prefix}
+	out = out.JoinPath(collection, "at:"+url.PathEscape(libraryPath))
+	return out.String()
 }
 
 // storageToFsPath converts a path relative to the library's configured storage path to an absolute
 // path.
 func (ml *Library) storageToFsPath(storagePath string) string {
 	return filepath.Join(ml.config.StoragePath, storagePath)
+}
+
+// cleanLibraryPath calls path.Clean() and then replaces "." with "".
+func cleanLibraryPath(libraryPath string) string {
+	cleanedPath := path.Clean(libraryPath)
+	if cleanedPath == "." {
+		return ""
+	}
+	return cleanedPath
 }

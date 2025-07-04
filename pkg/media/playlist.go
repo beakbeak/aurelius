@@ -83,7 +83,7 @@ func (ml *Library) handlePlaylistRequestImpl(
 
 		writeJson(ctx, w, Result{
 			Pos:  pos,
-			Path: ml.libraryToUrlPath(path.Join(libraryDir, lines[pos])),
+			Path: ml.libraryToUrlPath("tracks", path.Join(libraryDir, lines[pos])),
 		})
 	}
 }

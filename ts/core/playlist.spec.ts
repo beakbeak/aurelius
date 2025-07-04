@@ -1,7 +1,7 @@
 import { host } from "../testing";
 
 import { Playlist, LocalPlaylist, RemotePlaylist } from "./playlist";
-import { fetchDirInfo } from "./dir";
+import { fetchDirInfo, dirUrlFromTreeUrl } from "./dir";
 import { fetchTrackInfo } from "./track";
 
 import { ok, strictEqual } from "assert";
@@ -39,12 +39,12 @@ function makeCommonTests(suiteName: string, makePlaylist: () => Promise<Playlist
 }
 
 async function makeLocalPlaylist(libraryPath = ""): Promise<LocalPlaylist> {
-    const dir = await fetchDirInfo(`${host}/media/tree/${libraryPath}`);
+    const dir = await fetchDirInfo(dirUrlFromTreeUrl(`${host}/media/tree/${libraryPath}`));
     return new LocalPlaylist(dir.tracks.map((pathUrl) => pathUrl.url));
 }
 
 async function makeRemotePlaylist(libraryPath = "test.m3u"): Promise<RemotePlaylist> {
-    return RemotePlaylist.fetch(`${host}/media/tree/${libraryPath}`);
+    return RemotePlaylist.fetch(`${host}/media/playlists/at:${encodeURIComponent(libraryPath)}`);
 }
 
 makeCommonTests("LocalPlaylist", makeLocalPlaylist);

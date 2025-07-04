@@ -15,12 +15,13 @@ export interface TrackInfo {
     readonly bitRate: number;
     readonly sampleRate: number;
     readonly sampleFormat: string;
+    readonly dir: string;
 
     favorite: boolean;
 }
 
 export async function fetchTrackInfo(url: string): Promise<TrackInfo> {
-    return fetchJson<TrackInfo>(`${url}/info`);
+    return fetchJson<TrackInfo>(url);
 }
 
 export enum StreamCodec {

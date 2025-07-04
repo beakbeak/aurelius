@@ -1,6 +1,135 @@
 {
+  "dirs.foo": {
+    "Info": {
+      "dirs": [
+        {
+          "name": "another directory",
+          "url": "/prefix/dirs/at:%2Ffoo%2Fanother%20directory"
+        }
+      ],
+      "parent": "/prefix/dirs/at:%2F",
+      "path": "/foo",
+      "playlists": [],
+      "topLevel": "/prefix/dirs/at:",
+      "tracks": []
+    },
+    "StreamHashes": null
+  },
+  "dirs.foo-another-directory": {
+    "Info": {
+      "dirs": [],
+      "parent": "/prefix/dirs/at:%2Ffoo",
+      "path": "/foo/another directory",
+      "playlists": [],
+      "topLevel": "/prefix/dirs/at:",
+      "tracks": [
+        {
+          "name": "test.m4a",
+          "url": "/prefix/tracks/at:%2Ffoo%2Fanother%20directory%2Ftest.m4a"
+        }
+      ]
+    },
+    "StreamHashes": null
+  },
+  "dirs.root": {
+    "Info": {
+      "dirs": [
+        {
+          "name": "foo",
+          "url": "/prefix/dirs/at:%2Ffoo"
+        }
+      ],
+      "parent": "/prefix/dirs/at:%2F",
+      "path": "/",
+      "playlists": [
+        {
+          "name": "test.m3u",
+          "url": "/prefix/playlists/at:%2Ftest.m3u"
+        }
+      ],
+      "topLevel": "/prefix/dirs/at:",
+      "tracks": [
+        {
+          "name": "test-positive-gain.ogg",
+          "url": "/prefix/tracks/at:%2Ftest-positive-gain.ogg"
+        },
+        {
+          "name": "test.flac",
+          "url": "/prefix/tracks/at:%2Ftest.flac"
+        },
+        {
+          "name": "test.flac.1.txt",
+          "url": "/prefix/tracks/at:%2Ftest.flac.1.txt"
+        },
+        {
+          "name": "test.flac.2.txt",
+          "url": "/prefix/tracks/at:%2Ftest.flac.2.txt"
+        },
+        {
+          "name": "test.flac.3.txt",
+          "url": "/prefix/tracks/at:%2Ftest.flac.3.txt"
+        },
+        {
+          "name": "test.mka",
+          "url": "/prefix/tracks/at:%2Ftest.mka"
+        },
+        {
+          "name": "test.mp3",
+          "url": "/prefix/tracks/at:%2Ftest.mp3"
+        },
+        {
+          "name": "test.ogg",
+          "url": "/prefix/tracks/at:%2Ftest.ogg"
+        },
+        {
+          "name": "test.wav",
+          "url": "/prefix/tracks/at:%2Ftest.wav"
+        }
+      ]
+    },
+    "StreamHashes": null
+  },
+  "foo/another directory/test.m4a": {
+    "Info": {
+      "attachedImages": [
+        {
+          "mimeType": "image/png",
+          "size": 7494
+        }
+      ],
+      "bitRate": 127912,
+      "dir": "/prefix/dirs/at:foo%2Fanother%20directory",
+      "duration": 12.599002,
+      "favorite": false,
+      "name": "test.m4a",
+      "replayGainAlbum": 0.9885530946569387,
+      "replayGainTrack": 0.9885530946569387,
+      "sampleFormat": "fltp",
+      "sampleRate": 44100,
+      "tags": {
+        "album": "Aurelius Test Data Greatest Hits",
+        "artist": "Aurelius",
+        "comment": "Testing",
+        "compatible_brands": "isomiso2",
+        "date": "2020",
+        "genre": "Test Data",
+        "handler_name": "SoundHandler",
+        "language": "und",
+        "major_brand": "M4A ",
+        "minor_version": "512",
+        "replaygain_track_gain": "-0.10 dB",
+        "replaygain_track_peak": "0.921441",
+        "title": "Aurelius Test Data",
+        "track": "1",
+        "vendor_id": "[0][0][0][0]"
+      }
+    },
+    "StreamHashes": {
+      "": "3cca8087dacf6dc639717d01345e3f1f85026e07ecb1f4b2532cca680d439d87"
+    }
+  },
   "test-positive-gain.ogg": {
-    "TrackInfo": null,
+    "Info": null,
     "StreamHashes": {
       "?replayGain=album\u0026preventClipping=false": "725b49fbbf28b24a2639435411274027ab5cc940d3fcc582772be24a512c539a",
       "?replayGain=album\u0026preventClipping=true": "7a7e476988bc5691a94f00d6e1bcc5847da5147423b14f2dadd0e5c4b647b375",
@@ -11,7 +140,7 @@
     }
   },
   "test.flac": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/png",
@@ -35,6 +164,7 @@
         }
       ],
       "bitRate": 0,
+      "dir": "/prefix/dirs/at:",
       "duration": 12.59932,
       "favorite": false,
       "name": "test.flac",
@@ -167,7 +297,7 @@
     }
   },
   "test.flac.1.txt": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/png",
@@ -191,6 +321,7 @@
         }
       ],
       "bitRate": 0,
+      "dir": "/prefix/dirs/at:",
       "duration": 3,
       "favorite": false,
       "name": "test.flac.1.txt",
@@ -219,7 +350,7 @@
     }
   },
   "test.flac.2.txt": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/png",
@@ -243,6 +374,7 @@
         }
       ],
       "bitRate": 0,
+      "dir": "/prefix/dirs/at:",
       "duration": 10.59932,
       "favorite": false,
       "name": "test.flac.2.txt",
@@ -271,7 +403,7 @@
     }
   },
   "test.flac.3.txt": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/png",
@@ -295,6 +427,7 @@
         }
       ],
       "bitRate": 0,
+      "dir": "/prefix/dirs/at:",
       "duration": 5,
       "favorite": false,
       "name": "test.flac.3.txt",
@@ -322,54 +455,8 @@
       "": "aeb74e36f99f08e1ed193d0e737f5f1bb269618cc7e3bbd824f25d4405f59400"
     }
   },
-  "test.m4a": {
-    "TrackInfo": {
-      "attachedImages": [
-        {
-          "mimeType": "image/png",
-          "size": 7494
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 139632
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 199870
-        }
-      ],
-      "bitRate": 127912,
-      "duration": 12.599002,
-      "favorite": false,
-      "name": "test.m4a",
-      "replayGainAlbum": 0.9885530946569387,
-      "replayGainTrack": 0.9885530946569387,
-      "sampleFormat": "fltp",
-      "sampleRate": 44100,
-      "tags": {
-        "album": "Aurelius Test Data Greatest Hits",
-        "artist": "Aurelius",
-        "comment": "Testing",
-        "compatible_brands": "isomiso2",
-        "date": "2020",
-        "genre": "Test Data",
-        "handler_name": "SoundHandler",
-        "language": "und",
-        "major_brand": "M4A ",
-        "minor_version": "512",
-        "replaygain_track_gain": "-0.10 dB",
-        "replaygain_track_peak": "0.921441",
-        "title": "Aurelius Test Data",
-        "track": "1",
-        "vendor_id": "[0][0][0][0]"
-      }
-    },
-    "StreamHashes": {
-      "": "3cca8087dacf6dc639717d01345e3f1f85026e07ecb1f4b2532cca680d439d87"
-    }
-  },
   "test.mka": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/png",
@@ -385,6 +472,7 @@
         }
       ],
       "bitRate": 0,
+      "dir": "/prefix/dirs/at:",
       "duration": 12.602,
       "favorite": false,
       "name": "test.mka",
@@ -410,7 +498,7 @@
     }
   },
   "test.mp3": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/jpeg",
@@ -426,6 +514,7 @@
         }
       ],
       "bitRate": 49330,
+      "dir": "/prefix/dirs/at:",
       "duration": 12.669388,
       "favorite": false,
       "name": "test.mp3",
@@ -449,7 +538,7 @@
     }
   },
   "test.ogg": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/jpeg",
@@ -465,6 +554,7 @@
         }
       ],
       "bitRate": 80000,
+      "dir": "/prefix/dirs/at:",
       "duration": 12.59932,
       "favorite": false,
       "name": "test.ogg",
@@ -492,7 +582,7 @@
     }
   },
   "test.wav": {
-    "TrackInfo": {
+    "Info": {
       "attachedImages": [
         {
           "mimeType": "image/jpeg",
@@ -504,6 +594,7 @@
         }
       ],
       "bitRate": 1411200,
+      "dir": "/prefix/dirs/at:",
       "duration": 12.59932,
       "favorite": false,
       "name": "test.wav",

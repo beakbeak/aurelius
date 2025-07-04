@@ -10,9 +10,9 @@ function MakeTestPlayer(): Player {
     return new Player({ enableStallDetection: false });
 }
 
-const localPlaylistDir = `${host}/media/tree/`;
-const remotePlaylistUrl = `${host}/media/tree/test.m3u`;
-const trackUrl = `${host}/media/tree/test.flac`;
+const localPlaylistDir = `${host}/media/dirs/at:${encodeURIComponent(`/`)}`;
+const remotePlaylistUrl = `${host}/media/playlists/at:${encodeURIComponent(`test.m3u`)}`;
+const trackUrl = `${host}/media/tracks/at:test.flac`;
 
 describe("Player", function () {
     it("toggles favorite status", async function () {

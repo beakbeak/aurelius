@@ -3,7 +3,6 @@ package media_test
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -40,7 +40,7 @@ var (
 		"test.ogg",
 		"test.wav",
 		"test.mka",
-		"test.m4a",
+		"foo/another directory/test.m4a",
 		"test.flac.1.txt",
 		"test.flac.2.txt",
 		"test.flac.3.txt",
@@ -50,7 +50,7 @@ var (
 // Baselines ///////////////////////////////////////////////////////////////////
 
 type Baseline struct {
-	TrackInfo    map[string]interface{} // result of "/info" request
+	Info         map[string]interface{} // result of info request
 	StreamHashes map[string]string      // query string -> stream checksum
 }
 
@@ -107,13 +107,10 @@ func simpleRequestWithStatus(
 	path string,
 	requestBody string,
 ) ([]byte, int) {
+	t.Helper()
+	t.Log(method, path)
 	w := httptest.NewRecorder()
-	if !ml.ServeHTTP(
-		context.Background(), w,
-		httptest.NewRequest(method, path, strings.NewReader(requestBody)),
-	) {
-		t.Fatal("ServeHTTP() returned false")
-	}
+	ml.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(requestBody)))
 	response := w.Result()
 	defer response.Body.Close()
 
@@ -131,6 +128,7 @@ func simpleRequest(
 	path string,
 	requestBody string,
 ) []byte {
+	t.Helper()
 	responseBody, statusCode := simpleRequestWithStatus(t, ml, method, path, requestBody)
 	if statusCode != http.StatusOK {
 		t.Fatalf("%s '%s' failed with code %v:\n%v", method, path, statusCode, string(responseBody))
@@ -145,6 +143,7 @@ func simpleRequestShouldFail(
 	path string,
 	requestBody string,
 ) {
+	t.Helper()
 	responseBody, statusCode := simpleRequestWithStatus(t, ml, method, path, requestBody)
 	if statusCode == http.StatusOK {
 		t.Fatalf("%s '%s' succeeded but should have failed:\n%v", method, path, responseBody)
@@ -156,6 +155,7 @@ func writeStringToFile(
 	path string,
 	contents string,
 ) {
+	t.Helper()
 	file, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("os.Create(\"%s\") failed: %v", path, err)
@@ -226,6 +226,7 @@ func jsonEqual(
 	s1 []byte,
 	s2 []byte,
 ) bool {
+	t.Helper()
 	var buf1, buf2 bytes.Buffer
 	var err error
 
@@ -246,6 +247,7 @@ func indentJson(
 	t *testing.T,
 	s []byte,
 ) string {
+	t.Helper()
 	var buf bytes.Buffer
 	err := json.Indent(&buf, s, "", "    ")
 	if err != nil {
@@ -259,9 +261,10 @@ func unmarshalJson(
 	data []byte,
 	v interface{},
 ) {
+	t.Helper()
 	err := json.Unmarshal(data, v)
 	if err != nil {
-		t.Fatalf("json.Unmarshal() failed: %v\n%s", err, string(data))
+		t.Fatalf("json.Unmarshal(%q) failed: %v\n", string(data), err)
 	}
 }
 
@@ -291,6 +294,7 @@ func removeJsonElement(
 // Library utilities ///////////////////////////////////////////////////////////
 
 func createDefaultLibrary(t *testing.T) *media.Library {
+	t.Helper()
 	clearStorage(t)
 
 	mlConfig := media.NewLibraryConfig()
@@ -307,14 +311,24 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	return ml
 }
 
-func apiPath(elements ...string) string {
+func api(elements ...string) string {
 	return path.Join(apiPrefix, path.Join(elements...))
 }
-func treePath(elements ...string) string {
-	return apiPath("tree", path.Join(elements...))
+func atPath(elements ...string) string {
+	return "at:" + url.PathEscape(path.Join(elements...))
+}
+func dirAt(path string, elements ...string) string {
+	return api(append([]string{"dirs", atPath(path)}, elements...)...)
+}
+func trackAt(path string, elements ...string) string {
+	return api(append([]string{"tracks", atPath(path)}, elements...)...)
+}
+func playlistAt(path string, elements ...string) string {
+	return api(append([]string{"playlists", atPath(path)}, elements...)...)
 }
 
 func clearStorage(t *testing.T) {
+	t.Helper()
 	switch _, err := os.Stat(testStoragePath); {
 	case os.IsNotExist(err):
 		return
@@ -332,7 +346,8 @@ func isFavorite(
 	ml *media.Library,
 	path string,
 ) bool {
-	jsonBytes := simpleRequest(t, ml, "GET", treePath(path, "info"), "")
+	t.Helper()
+	jsonBytes := simpleRequest(t, ml, "GET", trackAt(path), "")
 
 	var track struct{ Favorite bool }
 	unmarshalJson(t, jsonBytes, &track)
@@ -351,7 +366,8 @@ func getPlaylistEntry(
 	path string,
 	pos int,
 ) PlaylistEntry {
-	url := fmt.Sprintf("%s/%v", path, pos)
+	t.Helper()
+	url := fmt.Sprintf("%s/tracks/%v", path, pos)
 	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
 	var entry PlaylistEntry
@@ -365,7 +381,8 @@ func getPlaylistEntryShouldFail(
 	path string,
 	pos int,
 ) {
-	url := fmt.Sprintf("%s/%v", path, pos)
+	t.Helper()
+	url := fmt.Sprintf("%s/tracks/%v", path, pos)
 	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
 	if !jsonEqual(t, jsonBytes, []byte("null")) {
@@ -376,9 +393,10 @@ func getPlaylistEntryShouldFail(
 func getPlaylistLength(
 	t *testing.T,
 	ml *media.Library,
-	libraryPath string,
+	apiPath string,
 ) int {
-	jsonBytes := simpleRequest(t, ml, "GET", libraryPath+"/info", "")
+	t.Helper()
+	jsonBytes := simpleRequest(t, ml, "GET", apiPath, "")
 
 	var info struct{ Length int }
 	unmarshalJson(t, jsonBytes, &info)
@@ -391,6 +409,7 @@ type PathUrl struct {
 }
 
 type DirInfo struct {
+	Path                    string
 	Dirs, Playlists, Tracks []PathUrl
 }
 
@@ -399,7 +418,8 @@ func getDirInfo(
 	ml *media.Library,
 	path string,
 ) DirInfo {
-	jsonBytes := simpleRequest(t, ml, "GET", path+"/?info", "")
+	t.Helper()
+	jsonBytes := simpleRequest(t, ml, "GET", path, "")
 
 	var info DirInfo
 	unmarshalJson(t, jsonBytes, &info)
@@ -411,7 +431,7 @@ func getDirInfo(
 func TestTrackInfo(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "GET", treePath("nonexistent.mp3", "info"), "")
+	simpleRequestShouldFail(t, ml, "GET", trackAt("nonexistent.mp3"), "")
 
 	baselines := readBaselines()
 
@@ -423,7 +443,7 @@ func TestTrackInfo(t *testing.T) {
 				t.Parallel()
 			}
 
-			body := simpleRequest(t, ml, "GET", treePath(path, "info"), "")
+			body := simpleRequest(t, ml, "GET", trackAt(path), "")
 
 			var trackInfo map[string]interface{}
 			if err := json.Unmarshal(body, &trackInfo); err != nil {
@@ -436,12 +456,12 @@ func TestTrackInfo(t *testing.T) {
 			baseline := baselines[path]
 
 			if updateBaselines {
-				baseline.TrackInfo = trackInfo
+				baseline.Info = trackInfo
 				baselines[path] = baseline
 				return
 			}
 
-			if !reflect.DeepEqual(trackInfo, baseline.TrackInfo) {
+			if !reflect.DeepEqual(trackInfo, baseline.Info) {
 				t.Fatalf("unexpected JSON: %v", indentJson(t, body))
 			}
 		})
@@ -455,24 +475,24 @@ func TestTrackInfo(t *testing.T) {
 func TestFavorite(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "POST", treePath("nonexistent.mp3", "favorite"), "")
-	simpleRequestShouldFail(t, ml, "POST", treePath("nonexistent.mp3", "unfavorite"), "")
+	simpleRequestShouldFail(t, ml, "POST", trackAt("nonexistent.mp3", "favorite"), "")
+	simpleRequestShouldFail(t, ml, "POST", trackAt("nonexistent.mp3", "unfavorite"), "")
 
 	path := testFiles[0]
 
-	simpleRequest(t, ml, "POST", treePath(path, "unfavorite"), "")
+	simpleRequest(t, ml, "POST", trackAt(path, "unfavorite"), "")
 
 	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
 
-	simpleRequest(t, ml, "POST", treePath(path, "favorite"), "")
+	simpleRequest(t, ml, "POST", trackAt(path, "favorite"), "")
 
 	if !isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
 	}
 
-	simpleRequest(t, ml, "POST", treePath(path, "unfavorite"), "")
+	simpleRequest(t, ml, "POST", trackAt(path, "unfavorite"), "")
 
 	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
@@ -482,15 +502,15 @@ func TestFavorite(t *testing.T) {
 func TestFavoritesLength(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "GET", apiPath("favorites", "info"), "")
+	simpleRequestShouldFail(t, ml, "GET", api("playlists", "favorites"), "")
 
 	for i := 0; i < 2; i++ {
 		for _, path := range testFiles {
-			simpleRequest(t, ml, "POST", treePath(path, "favorite"), "")
+			simpleRequest(t, ml, "POST", trackAt(path, "favorite"), "")
 		}
 	}
 
-	length := getPlaylistLength(t, ml, apiPath("favorites"))
+	length := getPlaylistLength(t, ml, api("playlists", "favorites"))
 	expectedLength := len(testFiles)
 	if length != expectedLength {
 		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
@@ -568,7 +588,7 @@ func TestWithSymlinks(t *testing.T) {
 
 	playlistName := "temp-playlist.m3u"
 	playlistFilePath := filepath.Join(testMediaPath, playlistName)
-	playlistLibraryPath := treePath(playlistName)
+	playlistLibraryPath := playlistAt(playlistName)
 
 	writeStringToFile(t, playlistFilePath, strings.Join(playlist, "\n"))
 	defer (func() {
@@ -594,12 +614,12 @@ func TestWithSymlinks(t *testing.T) {
 			var trackInfo struct {
 				Name string
 			}
-			jsonBytes := simpleRequest(t, ml, "GET", entry.Path+"/info", "")
+			jsonBytes := simpleRequest(t, ml, "GET", entry.Path, "")
 			unmarshalJson(t, jsonBytes, &trackInfo)
 
 			expectedName := path.Base(playlist[i])
 			if trackInfo.Name != expectedName {
-				t.Fatalf(
+				t.Errorf(
 					"expected track name to be \"%s\", got \"%s\"", expectedName, trackInfo.Name)
 			}
 		}
@@ -610,6 +630,9 @@ func TestWithSymlinks(t *testing.T) {
 
 		testDir = func(path string) {
 			info := getDirInfo(t, ml, path)
+			if info.Path == "" {
+				t.Errorf("want non-empty path, got %q", path)
+			}
 
 			for _, playlistUrl := range info.Playlists {
 				getPlaylistLength(t, ml, playlistUrl.Url)
@@ -619,12 +642,12 @@ func TestWithSymlinks(t *testing.T) {
 				var trackInfo struct {
 					Name string
 				}
-				jsonBytes := simpleRequest(t, ml, "GET", trackUrl.Url+"/info", "")
+				jsonBytes := simpleRequest(t, ml, "GET", trackUrl.Url, "")
 				unmarshalJson(t, jsonBytes, &trackInfo)
 
 				expectedName := trackUrl.Name
 				if trackInfo.Name != expectedName {
-					t.Fatalf(
+					t.Errorf(
 						"expected track name to be \"%s\", got \"%s\"",
 						expectedName, trackInfo.Name)
 				}
@@ -635,7 +658,7 @@ func TestWithSymlinks(t *testing.T) {
 			}
 		}
 
-		testDir(treePath())
+		testDir(dirAt("/"))
 	})
 }
 
@@ -722,7 +745,7 @@ func TestStream(t *testing.T) {
 						t.Parallel()
 					}
 
-					uri := treePath(path, "stream") + query
+					uri := trackAt(path, "stream") + query
 					body, statusCode := simpleRequestWithStatus(t, ml, "GET", uri, "")
 
 					baselineHash := baselineHashes[query]
@@ -766,18 +789,18 @@ func TestTrackImages(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
 	// Test non-existent file
-	simpleRequestShouldFail(t, ml, "GET", treePath("nonexistent.mp3", "images", "0"), "")
+	simpleRequestShouldFail(t, ml, "GET", trackAt("nonexistent.mp3", "images", "0"), "")
 
 	// Test file with no images
-	simpleRequestShouldFail(t, ml, "GET", treePath("test.wav", "images", "9"), "")
+	simpleRequestShouldFail(t, ml, "GET", trackAt("test.wav", "images", "9"), "")
 
 	// Test invalid index
-	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "-1"), "")
-	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "abc"), "")
-	simpleRequestShouldFail(t, ml, "GET", treePath("test.flac", "images", "99"), "")
+	simpleRequestShouldFail(t, ml, "GET", trackAt("test.flac", "images", "-1"), "")
+	simpleRequestShouldFail(t, ml, "GET", trackAt("test.flac", "images", "abc"), "")
+	simpleRequestShouldFail(t, ml, "GET", trackAt("test.flac", "images", "99"), "")
 
 	// Test file with images - fetch track info first
-	infoBody := simpleRequest(t, ml, "GET", treePath("test.flac", "info"), "")
+	infoBody := simpleRequest(t, ml, "GET", trackAt("test.flac"), "")
 
 	type AttachedImageInfo struct {
 		MimeType string `json:"mimeType"`
@@ -798,7 +821,7 @@ func TestTrackImages(t *testing.T) {
 	// Test each image index
 	for i, imageInfo := range trackInfo.AttachedImages {
 		t.Run(fmt.Sprintf("image_%d", i), func(t *testing.T) {
-			uri := treePath("test.flac", "images", fmt.Sprintf("%d", i))
+			uri := trackAt("test.flac", "images", fmt.Sprintf("%d", i))
 			body, statusCode := simpleRequestWithStatus(t, ml, "GET", uri, "")
 
 			if statusCode != http.StatusOK {
@@ -814,11 +837,7 @@ func TestTrackImages(t *testing.T) {
 
 			// Check content type
 			w := httptest.NewRecorder()
-			if !ml.ServeHTTP(
-				context.Background(), w, httptest.NewRequest("GET", uri, nil),
-			) {
-				t.Fatal("ServeHTTP() returned false")
-			}
+			ml.ServeHTTP(w, httptest.NewRequest("GET", uri, nil))
 
 			contentType := w.Header().Get("Content-Type")
 			if contentType != imageInfo.MimeType {
@@ -832,7 +851,7 @@ func TestTrackImageETag(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
 	// Get track info to find images
-	infoBody := simpleRequest(t, ml, "GET", treePath("test.flac", "info"), "")
+	infoBody := simpleRequest(t, ml, "GET", trackAt("test.flac"), "")
 
 	type AttachedImageInfo struct {
 		Size int `json:"size"`
@@ -850,14 +869,12 @@ func TestTrackImageETag(t *testing.T) {
 	}
 
 	imageIndex := 0
-	uri := treePath("test.flac", "images", fmt.Sprintf("%d", imageIndex))
+	uri := trackAt("test.flac", "images", fmt.Sprintf("%d", imageIndex))
 	expectedSize := trackInfo.AttachedImages[imageIndex].Size
 
 	// First request - should return image with ETag
 	w1 := httptest.NewRecorder()
-	if !ml.ServeHTTP(context.Background(), w1, httptest.NewRequest("GET", uri, nil)) {
-		t.Fatal("ServeHTTP() returned false")
-	}
+	ml.ServeHTTP(w1, httptest.NewRequest("GET", uri, nil))
 
 	if w1.Code != http.StatusOK {
 		t.Fatalf("First request failed with status %d", w1.Code)
@@ -873,9 +890,7 @@ func TestTrackImageETag(t *testing.T) {
 	req2 := httptest.NewRequest("GET", uri, nil)
 	req2.Header.Set("If-None-Match", etag)
 	w2 := httptest.NewRecorder()
-	if !ml.ServeHTTP(context.Background(), w2, req2) {
-		t.Fatal("ServeHTTP() returned false")
-	}
+	ml.ServeHTTP(w2, req2)
 
 	if w2.Code != http.StatusNotModified {
 		t.Fatalf("Expected 304 Not Modified, got %d", w2.Code)
@@ -885,11 +900,77 @@ func TestTrackImageETag(t *testing.T) {
 	req3 := httptest.NewRequest("GET", uri, nil)
 	req3.Header.Set("If-None-Match", "\"different-etag\"")
 	w3 := httptest.NewRecorder()
-	if !ml.ServeHTTP(context.Background(), w3, req3) {
-		t.Fatal("ServeHTTP() returned false")
-	}
+	ml.ServeHTTP(w3, req3)
 
 	if w3.Code != http.StatusOK {
 		t.Fatalf("Third request failed with status %d", w3.Code)
+	}
+}
+
+func TestDirInfo(t *testing.T) {
+	ml := createDefaultLibrary(t)
+	baselines := readBaselines()
+
+	tests := []struct {
+		name     string
+		path     string
+		baseline string
+	}{
+		{"root directory", "/", "dirs.root"},
+		{"subdirectory foo", "/foo", "dirs.foo"},
+		{"nested subdirectory", "/foo/another directory", "dirs.foo-another-directory"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			responseBody := simpleRequest(t, ml, "GET", dirAt(test.path), "")
+
+			type PathUrl struct {
+				Name string `json:"name"`
+				Url  string `json:"url"`
+			}
+			type DirInfo struct {
+				TopLevel  string    `json:"topLevel"`
+				Parent    string    `json:"parent"`
+				Path      string    `json:"path"`
+				Dirs      []PathUrl `json:"dirs"`
+				Playlists []PathUrl `json:"playlists"`
+				Tracks    []PathUrl `json:"tracks"`
+			}
+
+			var dirInfo DirInfo
+			if err := json.Unmarshal(responseBody, &dirInfo); err != nil {
+				t.Fatalf("failed to decode dir info JSON: %v", err)
+			}
+
+			// Verify basic structure
+			if dirInfo.Path != test.path {
+				t.Errorf("expected path %q, got %q", test.path, dirInfo.Path)
+			}
+
+			// Check baseline
+			baseline, ok := baselines[test.baseline]
+			if !ok && !updateBaselines {
+				t.Fatalf("baseline %q not found", test.baseline)
+			}
+
+			expectedDirInfo := make(map[string]interface{})
+			if err := json.Unmarshal(responseBody, &expectedDirInfo); err != nil {
+				t.Fatalf("failed to decode response as map: %v", err)
+			}
+
+			if updateBaselines {
+				baseline.Info = expectedDirInfo
+				baselines[test.baseline] = baseline
+			} else if !reflect.DeepEqual(expectedDirInfo, baseline.Info) {
+				t.Errorf("response doesn't match baseline for %q", test.baseline)
+				t.Errorf("Expected: %+v", baseline.Info)
+				t.Errorf("Got: %+v", expectedDirInfo)
+			}
+		})
+	}
+
+	if updateBaselines {
+		writeBaselines(baselines)
 	}
 }

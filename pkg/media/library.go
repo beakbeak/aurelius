@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -67,16 +67,9 @@ func NewLibraryConfig() *LibraryConfig {
 // A Library provides an HTTP API for exploring and streaming a library of audio
 // media files.
 type Library struct {
-	config LibraryConfig
-
+	config        LibraryConfig
 	playlistCache *textcache.TextCache
-
-	reRootPath         *regexp.Regexp
-	reDirPath          *regexp.Regexp
-	reFileResourcePath *regexp.Regexp
-	reFileImagePath    *regexp.Regexp
-	rePlaylistPath     *regexp.Regexp
-	reFavoritesPath    *regexp.Regexp
+	handler       http.Handler
 }
 
 // NewLibrary creates a new Library object.
@@ -103,73 +96,124 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		return nil, fmt.Errorf("failed to create StoragePath: %v", err)
 	}
 
-	quotedPrefix := regexp.QuoteMeta(config.Prefix)
-	quotedTreePrefix := regexp.QuoteMeta(path.Join(config.Prefix, treePrefix))
-
 	ml := Library{
-		config: *config,
-
+		config:        *config,
 		playlistCache: textcache.New(),
-
-		reRootPath:         regexp.MustCompile(`^(` + quotedPrefix + `/?|` + quotedTreePrefix + `)$`),
-		reDirPath:          regexp.MustCompile(`^` + quotedTreePrefix + `/((.*?)/)?$`),
-		reFileResourcePath: regexp.MustCompile(`^` + quotedTreePrefix + `/(.+?)/([^/]+)$`),
-		reFileImagePath:    regexp.MustCompile(`^` + quotedTreePrefix + `/(.+?)/images/([0-9]+)$`),
-		rePlaylistPath:     regexp.MustCompile(`^(?i).+?\.m3u$`),
-		reFavoritesPath:    regexp.MustCompile(`^` + quotedPrefix + `/favorites/([^/]+)$`),
 	}
+	ml.setupHandler()
 
 	slog.Info("media library opened", "prefix", config.Prefix, "root", config.RootPath)
 
 	return &ml, nil
 }
 
-// ServeHTTP handles an HTTP request. It returns true if the request was
-// handled, and false if a directory was requested without a query string. In
-// this case, the caller should handle the request by serving HTML for the user
-// interface.
+// ServeHTTP handles an HTTP request.
 func (ml *Library) ServeHTTP(
-	ctx context.Context,
 	w http.ResponseWriter,
-	req *http.Request,
-) bool {
-	if ml.reRootPath.MatchString(req.URL.Path) {
-		http.Redirect(w, req, ml.libraryToUrlPath("")+"/", http.StatusFound)
-		return true
+	r *http.Request,
+) {
+	ml.handler.ServeHTTP(w, r)
+}
+
+func (ml *Library) setupHandler() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /dirs/{dir}", makeHandler(ml, handleDirWrapper))
+	mux.HandleFunc("GET /playlists/{playlist}", makeHandler(ml, handlePlaylistWrapper))
+	mux.HandleFunc("GET /playlists/{playlist}/tracks/{track}", makeHandler(ml, handlePlaylistTrackWrapper))
+	mux.HandleFunc("GET /tracks/{track}", makeHandler(ml, handleTrackWrapper))
+	mux.HandleFunc("GET /tracks/{track}/stream", makeHandler(ml, handleTrackStreamWrapper))
+	mux.HandleFunc("GET /tracks/{track}/images/{image}", makeHandler(ml, handleTrackImageWrapper))
+	mux.HandleFunc("POST /tracks/{track}/favorite", makeHandler(ml, handleTrackFavoriteWrapper))
+	mux.HandleFunc("POST /tracks/{track}/unfavorite", makeHandler(ml, handleTrackUnfavoriteWrapper))
+	ml.handler = http.StripPrefix(ml.config.Prefix, mux)
+}
+
+func makeHandler(ml *Library, handlerFunc func(*Library, http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		handlerFunc(ml, w, r)
 	}
+}
 
-	if matches := ml.reDirPath.FindStringSubmatch(req.URL.Path); matches != nil {
-		libraryPath := matches[2]
+var reAt = regexp.MustCompile(`^at:(.*)$`)
 
-		return ml.handleDirRequest(ctx, libraryPath, w, req)
-	}
-	if matches := ml.reFileImagePath.FindStringSubmatch(req.URL.Path); matches != nil {
-		libraryPath := matches[1]
-		imageIndex := matches[2]
-
-		ml.handleTrackImageRequest(ctx, libraryPath, imageIndex, w, req)
-		return true
-	}
-	if matches := ml.reFileResourcePath.FindStringSubmatch(req.URL.Path); matches != nil {
-		libraryPath := matches[1]
-		resource := matches[2]
-
-		if ml.rePlaylistPath.FindStringSubmatch(libraryPath) != nil {
-			ml.handlePlaylistRequest(ctx, libraryPath, resource, w, req)
-			return true
+func parseAt(s string) (string, bool) {
+	matches := reAt.FindStringSubmatch(s)
+	if len(matches) > 0 {
+		if path, err := url.PathUnescape(matches[1]); err == nil {
+			return path, true
 		}
-		ml.handleTrackRequest(ctx, libraryPath, resource, w, req)
-		return true
 	}
-	if matches := ml.reFavoritesPath.FindStringSubmatch(req.URL.Path); matches != nil {
-		resource := matches[1]
+	return "", false
+}
 
-		ml.handleFavoritesRequest(ctx, resource, w, req)
-		return true
+func handleDirWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	if path, ok := parseAt(r.PathValue("dir")); ok {
+		ml.handleDirInfoRequest(r.Context(), path, w)
+	} else {
+		http.NotFound(w, r)
 	}
+}
 
-	http.NotFound(w, req)
-	return true
+func handlePlaylistWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("playlist")
+	if id == "favorites" {
+		ml.handleFavoritesRequest(r.Context(), "info", w, r)
+	} else if path, ok := parseAt(id); ok {
+		ml.handlePlaylistRequest(r.Context(), path, "info", w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("playlist")
+	if id == "favorites" {
+		ml.handleFavoritesRequest(r.Context(), r.PathValue("track"), w, r)
+	} else if path, ok := parseAt(id); ok {
+		ml.handlePlaylistRequest(r.Context(), path, r.PathValue("track"), w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handleTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	if path, ok := parseAt(r.PathValue("track")); ok {
+		ml.handleTrackRequest(r.Context(), path, "info", w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handleTrackStreamWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	if path, ok := parseAt(r.PathValue("track")); ok {
+		ml.handleTrackRequest(r.Context(), path, "stream", w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handleTrackImageWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	if path, ok := parseAt(r.PathValue("track")); ok {
+		ml.handleTrackImageRequest(r.Context(), path, r.PathValue("image"), w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handleTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	if path, ok := parseAt(r.PathValue("track")); ok {
+		ml.handleTrackRequest(r.Context(), path, "favorite", w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	if path, ok := parseAt(r.PathValue("track")); ok {
+		ml.handleTrackRequest(r.Context(), path, "unfavorite", w, r)
+	} else {
+		http.NotFound(w, r)
+	}
 }
 
 func writeJson(
