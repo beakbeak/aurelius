@@ -32,7 +32,10 @@ describe("directory listing", function () {
 describe("URL conversion functions", function () {
     it("converts tree URL to dir URL", function () {
         strictEqual(dirUrlFromTreeUrl(`${host}/media/tree/`), `/media/dirs/at:`);
-        strictEqual(dirUrlFromTreeUrl(`${host}/media/tree/foo/bar/`), `/media/dirs/at:foo%2Fbar`);
+        strictEqual(
+            dirUrlFromTreeUrl(`${host}/media/tree/foo/bar%20baz/`),
+            `/media/dirs/at:foo%2Fbar%20baz`,
+        );
     });
 
     it("converts DirInfo to tree URL", function () {

@@ -140,26 +140,28 @@ so use of HTTPS is recommended.`)
 		return true
 	}
 
-	router := http.NewServeMux()
-
-	router.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		if loginIfUnauthorized(w, req) {
-			return
+	requireAuth := func(handler http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, req *http.Request) {
+			if loginIfUnauthorized(w, req) {
+				return
+			}
+			handler(w, req)
 		}
+	}
+
+	rootHandler := func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, mlConfig.Prefix+"/tree/", http.StatusFound)
-	})
+	}
 
-	router.Handle("/static/", fileOnlyServer{assetsDir})
-
-	router.HandleFunc("GET /login", func(w http.ResponseWriter, req *http.Request) {
+	loginGetHandler := func(w http.ResponseWriter, req *http.Request) {
 		if *passphrase == "" {
 			http.NotFound(w, req)
 			return
 		}
 		http.ServeFile(w, req, htmlPath("login.html"))
-	})
+	}
 
-	router.HandleFunc("POST /login", func(w http.ResponseWriter, req *http.Request) {
+	loginPostHandler := func(w http.ResponseWriter, req *http.Request) {
 		if *passphrase == "" {
 			http.NotFound(w, req)
 			return
@@ -193,25 +195,28 @@ so use of HTTPS is recommended.`)
 			fromUrl = "/"
 		}
 		http.Redirect(w, req, fromUrl, http.StatusFound)
-	})
+	}
 
-	router.HandleFunc("/logout", func(w http.ResponseWriter, req *http.Request) {
+	logoutHandler := func(w http.ResponseWriter, req *http.Request) {
 		trySaveSessionValues(w, req, "valid", false)
-	})
+	}
 
-	router.HandleFunc(mlConfig.Prefix+"/tree/", func(w http.ResponseWriter, req *http.Request) {
-		if loginIfUnauthorized(w, req) {
-			return
-		}
+	mainPageHandler := func(w http.ResponseWriter, req *http.Request) {
 		http.ServeFile(w, req, htmlPath("main.html"))
-	})
+	}
 
-	router.HandleFunc(mlConfig.Prefix+"/", func(w http.ResponseWriter, req *http.Request) {
-		if loginIfUnauthorized(w, req) {
-			return
-		}
+	mediaHandler := func(w http.ResponseWriter, req *http.Request) {
 		ml.ServeHTTP(w, req)
-	})
+	}
+
+	router := http.NewServeMux()
+	router.Handle("/static/", fileOnlyServer{assetsDir})
+	router.HandleFunc("GET /login", loginGetHandler)
+	router.HandleFunc("POST /login", loginPostHandler)
+	router.HandleFunc("/logout", logoutHandler)
+	router.HandleFunc("/", requireAuth(rootHandler))
+	router.HandleFunc(mlConfig.Prefix+"/tree/", requireAuth(mainPageHandler))
+	router.HandleFunc(mlConfig.Prefix+"/", requireAuth(mediaHandler))
 
 	http.Handle("/", withRequestID(router))
 

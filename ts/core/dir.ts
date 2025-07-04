@@ -23,7 +23,7 @@ export function treeUrlFromDirInfo(info: DirInfo): string {
 }
 
 export function dirUrlFromTreeUrl(treeUrl: string): string {
-    const treePath = new URL(treeUrl).pathname;
+    const treePath = decodeURIComponent(new URL(treeUrl).pathname);
     const dirPath = encodeURIComponent(treePath.replace(/^\/media\/tree\/|\/+$/g, ``));
     return `/media/dirs/at:${dirPath}`;
 }
