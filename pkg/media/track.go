@@ -254,13 +254,7 @@ func (ml *Library) isFavorite(path string) (bool, error) {
 	case err != nil:
 		return false, err
 	}
-
-	for _, line := range favorites.Lines() {
-		if line == path {
-			return true, nil
-		}
-	}
-	return false, nil
+	return favorites.LineSet()[path], nil
 }
 
 func (ml *Library) setFavorite(

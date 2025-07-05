@@ -18,11 +18,23 @@ type TextCache struct {
 type CachedFile struct {
 	modTime time.Time
 	lines   []string
+	lineSet map[string]bool
 }
 
 // Lines returns the cached file contents as an array of lines.
 func (cf *CachedFile) Lines() []string {
 	return cf.lines
+}
+
+// LineSet returns the cached file contents as a set for efficient lookups.
+func (cf *CachedFile) LineSet() map[string]bool {
+	if cf.lineSet == nil {
+		cf.lineSet = make(map[string]bool, len(cf.lines))
+		for _, line := range cf.lines {
+			cf.lineSet[line] = true
+		}
+	}
+	return cf.lineSet
 }
 
 // New creates a new TextCache.
@@ -66,7 +78,7 @@ func (c *TextCache) unsafeGetWithInfo(
 	}
 	defer file.Close()
 
-	cached := CachedFile{modTime: info.ModTime(), lines: []string{}}
+	cached := CachedFile{modTime: info.ModTime(), lines: []string{}, lineSet: nil}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cached.lines = append(cached.lines, scanner.Text())
@@ -120,7 +132,7 @@ func (c *TextCache) unsafeWrite(
 		return err
 	}
 
-	cached := CachedFile{modTime: info.ModTime(), lines: lines}
+	cached := CachedFile{modTime: info.ModTime(), lines: lines, lineSet: nil}
 	c.files[path] = &cached
 	return nil
 }
