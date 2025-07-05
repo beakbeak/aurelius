@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -16,9 +17,10 @@ type TextCache struct {
 }
 
 type CachedFile struct {
-	modTime time.Time
-	lines   []string
-	lineSet map[string]bool
+	modTime         time.Time
+	lines           []string
+	lineSet         map[string]bool
+	linesWithPrefix map[string][]string
 }
 
 // Lines returns the cached file contents as an array of lines.
@@ -35,6 +37,27 @@ func (cf *CachedFile) LineSet() map[string]bool {
 		}
 	}
 	return cf.lineSet
+}
+
+// LinesWithPrefix returns all lines that start with the given prefix.
+func (cf *CachedFile) LinesWithPrefix(prefix string) []string {
+	if cf.linesWithPrefix == nil {
+		cf.linesWithPrefix = make(map[string][]string)
+	}
+
+	if result, exists := cf.linesWithPrefix[prefix]; exists {
+		return result
+	}
+
+	var result []string
+	for _, line := range cf.lines {
+		if strings.HasPrefix(line, prefix) {
+			result = append(result, line)
+		}
+	}
+
+	cf.linesWithPrefix[prefix] = result
+	return result
 }
 
 // New creates a new TextCache.
@@ -78,7 +101,7 @@ func (c *TextCache) unsafeGetWithInfo(
 	}
 	defer file.Close()
 
-	cached := CachedFile{modTime: info.ModTime(), lines: []string{}, lineSet: nil}
+	cached := CachedFile{modTime: info.ModTime(), lines: []string{}, lineSet: nil, linesWithPrefix: nil}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cached.lines = append(cached.lines, scanner.Text())
@@ -132,7 +155,7 @@ func (c *TextCache) unsafeWrite(
 		return err
 	}
 
-	cached := CachedFile{modTime: info.ModTime(), lines: lines, lineSet: nil}
+	cached := CachedFile{modTime: info.ModTime(), lines: lines, lineSet: nil, linesWithPrefix: nil}
 	c.files[path] = &cached
 	return nil
 }

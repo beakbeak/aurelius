@@ -375,6 +375,22 @@ func getPlaylistEntry(
 	return entry
 }
 
+func getPlaylistEntryWithPrefix(
+	t *testing.T,
+	ml *media.Library,
+	basePath string,
+	pos int,
+	prefix string,
+) PlaylistEntry {
+	t.Helper()
+	url := fmt.Sprintf("%s/tracks/%v?prefix=%s", basePath, pos, prefix)
+	jsonBytes := simpleRequest(t, ml, "GET", url, "")
+
+	var entry PlaylistEntry
+	unmarshalJson(t, jsonBytes, &entry)
+	return entry
+}
+
 func getPlaylistEntryShouldFail(
 	t *testing.T,
 	ml *media.Library,
@@ -383,6 +399,22 @@ func getPlaylistEntryShouldFail(
 ) {
 	t.Helper()
 	url := fmt.Sprintf("%s/tracks/%v", path, pos)
+	jsonBytes := simpleRequest(t, ml, "GET", url, "")
+
+	if !jsonEqual(t, jsonBytes, []byte("null")) {
+		t.Fatalf("expected %s to be null, got %v", url, string(jsonBytes))
+	}
+}
+
+func getPlaylistEntryShouldFailWithPrefix(
+	t *testing.T,
+	ml *media.Library,
+	basePath string,
+	pos int,
+	prefix string,
+) {
+	t.Helper()
+	url := fmt.Sprintf("%s/tracks/%v?prefix=%s", basePath, pos, prefix)
 	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
 	if !jsonEqual(t, jsonBytes, []byte("null")) {
@@ -540,6 +572,50 @@ func TestFavoritePaths(t *testing.T) {
 			t.Errorf("path mismatch at index %v: expected %q, got %q", i, expectedPath, actualPaths[i])
 		}
 	}
+
+	// Test prefix filtering
+	t.Run("PrefixFiltering", func(t *testing.T) {
+		// Test with "test.flac" prefix - should match test.flac and test.flac.*.txt files
+		prefixLength := getPlaylistLength(t, ml, api("playlists", "favorites")+"?prefix=test.flac")
+		expectedPrefixLength := 4 // test.flac + test.flac.1.txt + test.flac.2.txt + test.flac.3.txt
+		if prefixLength != expectedPrefixLength {
+			t.Errorf("expected prefix 'test.flac' to match %v entries, got %v", expectedPrefixLength, prefixLength)
+		}
+
+		// Test with "foo/" prefix - should match foo/another directory/test.m4a
+		prefixLength = getPlaylistLength(t, ml, api("playlists", "favorites")+"?prefix=foo/")
+		expectedPrefixLength = 1
+		if prefixLength != expectedPrefixLength {
+			t.Errorf("expected prefix 'foo/' to match %v entries, got %v", expectedPrefixLength, prefixLength)
+		}
+
+		// Test with non-matching prefix
+		prefixLength = getPlaylistLength(t, ml, api("playlists", "favorites")+"?prefix=nonexistent")
+		expectedPrefixLength = 0
+		if prefixLength != expectedPrefixLength {
+			t.Errorf("expected prefix 'nonexistent' to match %v entries, got %v", expectedPrefixLength, prefixLength)
+		}
+
+		// Test fetching specific entries with prefix
+		testPrefix := "test.flac"
+		basePath := api("playlists", "favorites")
+		prefixPath := basePath + "?prefix=" + testPrefix
+		prefixLength = getPlaylistLength(t, ml, prefixPath)
+
+		// Verify we can fetch each entry in the filtered list
+		for i := 0; i < prefixLength; i++ {
+			entry := getPlaylistEntryWithPrefix(t, ml, basePath, i, testPrefix)
+			if entry.Path == "" {
+				t.Errorf("expected non-empty path for prefix entry %d", i)
+			}
+			if entry.Pos != i {
+				t.Errorf("expected position %d for prefix entry, got %d", i, entry.Pos)
+			}
+		}
+
+		// Test that positions beyond the filtered length return null
+		getPlaylistEntryShouldFailWithPrefix(t, ml, basePath, prefixLength, testPrefix)
+	})
 }
 
 func TestWithSymlinks(t *testing.T) {
@@ -646,6 +722,34 @@ func TestWithSymlinks(t *testing.T) {
 			if trackInfo.Name != expectedName {
 				t.Errorf(
 					"expected track name to be \"%s\", got \"%s\"", expectedName, trackInfo.Name)
+			}
+		}
+	})
+
+	// Test prefix filtering for M3U playlists
+	t.Run("PlaylistPrefixFiltering", func(t *testing.T) {
+		testPrefix := "test.f"
+
+		// Test with "test.flac" prefix
+		prefixLength := getPlaylistLength(t, ml, playlistLibraryPath+"?prefix="+testPrefix)
+		expectedCount := 0
+		for _, item := range playlist {
+			if strings.HasPrefix(item, "test.flac") {
+				expectedCount++
+			}
+		}
+		if prefixLength != expectedCount {
+			t.Errorf("expected prefix 'test.flac' to match %v entries, got %v", expectedCount, prefixLength)
+		}
+
+		// Test fetching entries with prefix
+		for i := 0; i < prefixLength; i++ {
+			entry := getPlaylistEntryWithPrefix(t, ml, playlistLibraryPath, i, testPrefix)
+			if entry.Path == "" {
+				t.Errorf("expected non-empty path for prefix entry %d", i)
+			}
+			if entry.Pos != i {
+				t.Errorf("expected position %d for prefix entry, got %d", i, entry.Pos)
 			}
 		}
 	})

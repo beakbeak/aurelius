@@ -3,11 +3,13 @@ package media
 import (
 	"net/http"
 	"path"
+
+	"github.com/beakbeak/aurelius/pkg/textcache"
 )
 
 type playlist struct {
 	fsPath, libraryDir string
-	lines              []string
+	data               *textcache.CachedFile
 }
 
 func (ml *Library) loadFavorites() (*playlist, error) {
@@ -33,11 +35,11 @@ func (ml *Library) loadPlaylist(libraryPath string) (*playlist, error) {
 }
 
 func (p *playlist) load(ml *Library) error {
-	file, err := ml.playlistCache.Get(p.fsPath)
+	data, err := ml.playlistCache.Get(p.fsPath)
 	if err != nil {
 		return err
 	}
-	p.lines = file.Lines()
+	p.data = data
 	return nil
 }
 
@@ -50,8 +52,15 @@ func (ml *Library) handlePlaylistInfo(
 		Length int `json:"length"`
 	}
 
+	var lines []string
+	if prefix := req.URL.Query().Get("prefix"); prefix != "" {
+		lines = p.data.LinesWithPrefix(prefix)
+	} else {
+		lines = p.data.Lines()
+	}
+
 	writeJson(req.Context(), w, Result{
-		Length: len(p.lines),
+		Length: len(lines),
 	})
 }
 
@@ -62,11 +71,19 @@ func (ml *Library) handlePlaylistTrack(
 	req *http.Request,
 ) {
 	ctx := req.Context()
-	if len(p.lines) < 1 {
+
+	var lines []string
+	if prefix := req.URL.Query().Get("prefix"); prefix != "" {
+		lines = p.data.LinesWithPrefix(prefix)
+	} else {
+		lines = p.data.Lines()
+	}
+
+	if len(lines) < 1 {
 		writeJson(ctx, w, nil)
 		return
 	}
-	if pos < 0 || pos >= len(p.lines) {
+	if pos < 0 || pos >= len(lines) {
 		writeJson(ctx, w, nil)
 		return
 	}
@@ -78,6 +95,6 @@ func (ml *Library) handlePlaylistTrack(
 
 	writeJson(ctx, w, Result{
 		Pos:  pos,
-		Path: ml.libraryToUrlPath("tracks", path.Join(p.libraryDir, p.lines[pos])),
+		Path: ml.libraryToUrlPath("tracks", path.Join(p.libraryDir, lines[pos])),
 	})
 }
