@@ -20,7 +20,8 @@
   "scripts": {
     "build": "rollup --config",
     "build-debug": "rollup --config --configDebug",
-    "test": "mocha --require mocha-suppress-logs",
+    "mocha": "mocha --require mocha-suppress-logs",
+    "test": "killall aurelius; go run ./cmd/aurelius -log error -media test/media -storage test/storage & npm run mocha; killall aurelius",
     "coverage": "nyc --reporter=lcov --reporter=text mocha"
   },
   "mocha": {

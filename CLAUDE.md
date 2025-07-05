@@ -30,7 +30,7 @@ go build
 - Go lint: `golangci-lint run`
 - Go tests: `go test -asan ./...`
 - Update baselines for Go tests (**ONLY IF** baselines are expected to change): `UPDATE_BASELINES=1 go test -asan ./...`
-- TypeScript tests: `killall aurelius; go run ./cmd/aurelius -log error -media test/media -storage test/storage & npm run test; killall aurelius`
+- TypeScript tests: `npm run test`
 
 # Architecture
 
