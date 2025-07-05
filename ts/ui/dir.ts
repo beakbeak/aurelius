@@ -1,6 +1,6 @@
 import { Player } from "../core/player";
 import { DirInfo, dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "../core/dir";
-import { ReplayGainMode } from "../core/track";
+import { ReplayGainMode, fetchTrackInfo } from "../core/track";
 import { Class } from "./class";
 import { closestAncestorWithClass } from "./dom";
 
@@ -127,8 +127,14 @@ async function loadCurrentDir(): Promise<void> {
     const url = window.location.href;
     const urlObj = new URL(url);
     const pathParam = urlObj.searchParams.get("dir");
+    const playParam = urlObj.searchParams.get("play");
 
-    if (pathParam) {
+    if (playParam) {
+        player.playTrack(playParam); // ignore Promise
+        const trackInfo = await fetchTrackInfo(playParam);
+        const info = await loadDir(trackInfo.dir, /*addHistory=*/ false);
+        window.history.replaceState({}, "", treeUrlFromDirInfo(info));
+    } else if (pathParam) {
         const info = await loadDir(pathParam, /*addHistory=*/ false);
         window.history.replaceState({}, "", treeUrlFromDirInfo(info));
     } else {
@@ -277,8 +283,12 @@ function populateTracks(info: DirInfo): void {
             //
             `<li class="${Class.DirEntry}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">music_note</i>
-                <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}">play_arrow</i>
-                <a class="${Class.DirLink}" href="#" data-url="${track.url}">${track.name}</a>
+                <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}"
+                >play_arrow</i>
+                <a class="${Class.DirLink}"
+                    href="/media/tree/?play=${encodeURIComponent(track.url)}"
+                    data-url="${track.url}"
+                >${track.name}</a>
             </li>`;
     }
     trackList.innerHTML = html;
