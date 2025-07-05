@@ -120,7 +120,6 @@ async function loadCurrentDir(): Promise<void> {
  */
 export async function loadDir(url: string, addHistory = true): Promise<void> {
     const info = await fetchDirInfo(url);
-    console.debug(treeUrlFromDirInfo(info));
     if (addHistory) {
         window.history.pushState({}, "", treeUrlFromDirInfo(info));
     }
