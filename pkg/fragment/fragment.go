@@ -46,6 +46,16 @@ func IsFragment(path string) bool {
 	return reFragment.MatchString(path)
 }
 
+// GetSourceFile returns the source audio file path for a fragment file.
+// Returns empty string if the path is not a fragment file.
+func GetSourceFile(path string) string {
+	matches := reFragment.FindStringSubmatch(path)
+	if matches == nil {
+		return ""
+	}
+	return matches[1]
+}
+
 // New creates a new Fragment from the descriptor specified by path.
 func New(path string) (*Fragment, error) {
 	f := Fragment{startTime: -1, endTime: -1}

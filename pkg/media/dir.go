@@ -8,6 +8,8 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+
+	"github.com/beakbeak/aurelius/pkg/fragment"
 )
 
 var (
@@ -79,6 +81,15 @@ func (ml *Library) handleDirInfo(
 		Tracks:    make([]PathUrl, 0),
 	}
 
+	fragmentSourceFiles := make(map[string]bool)
+	for _, entry := range entries {
+		if entry.Type().IsRegular() && fragment.IsFragment(entry.Name()) {
+			if sourceFile := fragment.GetSourceFile(entry.Name()); sourceFile != "" {
+				fragmentSourceFiles[sourceFile] = true
+			}
+		}
+	}
+
 	for _, entry := range entries {
 		info, err := entry.Info()
 		if err != nil {
@@ -116,6 +127,9 @@ func (ml *Library) handleDirInfo(
 
 		case mode.IsRegular():
 			if reDirIgnore.MatchString(entry.Name()) && !reDirUnignore.MatchString(entry.Name()) {
+				continue
+			}
+			if fragmentSourceFiles[entry.Name()] {
 				continue
 			}
 			if rePlaylist.MatchString(entry.Name()) {

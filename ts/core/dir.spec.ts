@@ -16,12 +16,12 @@ function dirInfoFromPath(path: string): DirInfo {
 }
 
 describe("directory listing", function () {
-    it("succeeds and contains 'test.flac'", async function () {
+    it("succeeds and contains 'test.mp3'", async function () {
         const dir = await fetchDirInfo(dirUrlFromTreeUrl(`${host}/media/tree/`));
 
         let found = false;
         for (const track of dir.tracks) {
-            if (track.name === "test.flac") {
+            if (track.name === "test.mp3") {
                 found = true;
             }
         }

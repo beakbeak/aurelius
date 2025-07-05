@@ -54,10 +54,6 @@
           "url": "/prefix/tracks/at:%2Ftest-positive-gain.ogg"
         },
         {
-          "name": "test.flac",
-          "url": "/prefix/tracks/at:%2Ftest.flac"
-        },
-        {
           "name": "test.flac.1.txt",
           "url": "/prefix/tracks/at:%2Ftest.flac.1.txt"
         },
