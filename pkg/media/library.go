@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/beakbeak/aurelius/pkg/textcache"
@@ -117,10 +118,10 @@ func (ml *Library) ServeHTTP(
 
 func (ml *Library) setupHandler() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /dirs/{dir}", makeHandler(ml, handleDirWrapper))
-	mux.HandleFunc("GET /playlists/{playlist}", makeHandler(ml, handlePlaylistWrapper))
+	mux.HandleFunc("GET /dirs/{dir}", makeHandler(ml, handleDirInfoWrapper))
+	mux.HandleFunc("GET /playlists/{playlist}", makeHandler(ml, handlePlaylistInfoWrapper))
 	mux.HandleFunc("GET /playlists/{playlist}/tracks/{track}", makeHandler(ml, handlePlaylistTrackWrapper))
-	mux.HandleFunc("GET /tracks/{track}", makeHandler(ml, handleTrackWrapper))
+	mux.HandleFunc("GET /tracks/{track}", makeHandler(ml, handleTrackInfoWrapper))
 	mux.HandleFunc("GET /tracks/{track}/stream", makeHandler(ml, handleTrackStreamWrapper))
 	mux.HandleFunc("GET /tracks/{track}/images/{image}", makeHandler(ml, handleTrackImageWrapper))
 	mux.HandleFunc("POST /tracks/{track}/favorite", makeHandler(ml, handleTrackFavoriteWrapper))
@@ -146,39 +147,64 @@ func parseAt(s string) (string, bool) {
 	return "", false
 }
 
-func handleDirWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleDirInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("dir")); ok {
-		ml.handleDirInfoRequest(r.Context(), path, w)
+		ml.handleDirInfo(r.Context(), path, w)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handlePlaylistWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handlePlaylistInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("playlist")
+	var playlist *playlist
+	var err error
 	if id == "favorites" {
-		ml.handleFavoritesRequest(r.Context(), "info", w, r)
+		playlist, err = ml.loadFavorites()
 	} else if path, ok := parseAt(id); ok {
-		ml.handlePlaylistRequest(r.Context(), path, "info", w, r)
+		playlist, err = ml.loadPlaylist(path)
 	} else {
 		http.NotFound(w, r)
+		return
 	}
+	if err != nil {
+		http.NotFound(w, r)
+		slog.ErrorContext(r.Context(), "loadPlaylist failed", "id", id, "error", err)
+		return
+	}
+	ml.handlePlaylistInfo(playlist, w, r)
 }
 
 func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	posStr := r.PathValue("track")
+	pos, err := strconv.Atoi(posStr)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to parse playlist position", "position", posStr, "error", err)
+		writeJson(r.Context(), w, nil)
+		return
+	}
+
 	id := r.PathValue("playlist")
+	var playlist *playlist
 	if id == "favorites" {
-		ml.handleFavoritesRequest(r.Context(), r.PathValue("track"), w, r)
+		playlist, err = ml.loadFavorites()
 	} else if path, ok := parseAt(id); ok {
-		ml.handlePlaylistRequest(r.Context(), path, r.PathValue("track"), w, r)
+		playlist, err = ml.loadPlaylist(path)
 	} else {
 		http.NotFound(w, r)
+		return
 	}
+	if err != nil {
+		http.NotFound(w, r)
+		slog.ErrorContext(r.Context(), "loadPlaylist failed", "id", id, "error", err)
+		return
+	}
+	ml.handlePlaylistTrack(playlist, pos, w, r)
 }
 
-func handleTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleTrackInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackRequest(r.Context(), path, "info", w, r)
+		ml.handleTrackInfo(path, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
@@ -186,7 +212,8 @@ func handleTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 
 func handleTrackStreamWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackRequest(r.Context(), path, "stream", w, r)
+		slog.InfoContext(r.Context(), "stream", "path", path)
+		ml.handleTrackStream(ml.libraryToFsPath(path), w, r)
 	} else {
 		http.NotFound(w, r)
 	}
@@ -194,7 +221,7 @@ func handleTrackStreamWrapper(ml *Library, w http.ResponseWriter, r *http.Reques
 
 func handleTrackImageWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackImageRequest(r.Context(), path, r.PathValue("image"), w, r)
+		ml.handleTrackImage(path, r.PathValue("image"), w, r)
 	} else {
 		http.NotFound(w, r)
 	}
@@ -202,7 +229,7 @@ func handleTrackImageWrapper(ml *Library, w http.ResponseWriter, r *http.Request
 
 func handleTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackRequest(r.Context(), path, "favorite", w, r)
+		ml.handleTrackFavorite(path, true, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
@@ -210,7 +237,7 @@ func handleTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Requ
 
 func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackRequest(r.Context(), path, "unfavorite", w, r)
+		ml.handleTrackFavorite(path, false, w, r)
 	} else {
 		http.NotFound(w, r)
 	}

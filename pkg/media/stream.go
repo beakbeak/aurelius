@@ -1,7 +1,6 @@
 package media
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -10,12 +9,12 @@ import (
 	"github.com/beakbeak/aurelius/pkg/aurelib"
 )
 
-func (ml *Library) handleTrackStreamRequest(
-	ctx context.Context,
+func (ml *Library) handleTrackStream(
 	fsPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
+	ctx := req.Context()
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)
 		slog.ErrorContext(ctx, format, args...)

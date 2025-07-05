@@ -16,7 +16,7 @@ var (
 	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
 )
 
-func (ml *Library) handleDirInfoRequest(
+func (ml *Library) handleDirInfo(
 	ctx context.Context,
 	dirLibraryPath string,
 	w http.ResponseWriter,

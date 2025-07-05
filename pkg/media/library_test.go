@@ -499,7 +499,7 @@ func TestFavorite(t *testing.T) {
 	}
 }
 
-func TestFavoritesLength(t *testing.T) {
+func TestFavoritePaths(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
 	simpleRequestShouldFail(t, ml, "GET", api("playlists", "favorites"), "")
@@ -514,6 +514,31 @@ func TestFavoritesLength(t *testing.T) {
 	expectedLength := len(testFiles)
 	if length != expectedLength {
 		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
+	}
+
+	// Fetch and compare the paths of favorites
+	favoritesPath := api("playlists", "favorites")
+	var actualPaths []string
+	for i := 0; i < length; i++ {
+		entry := getPlaylistEntry(t, ml, favoritesPath, i)
+		actualPaths = append(actualPaths, entry.Path)
+	}
+
+	// Build expected paths
+	var expectedPaths []string
+	for _, path := range testFiles {
+		expectedPaths = append(expectedPaths, trackAt(path))
+	}
+
+	// Compare paths
+	if len(actualPaths) != len(expectedPaths) {
+		t.Fatalf("expected %v paths, got %v", len(expectedPaths), len(actualPaths))
+	}
+
+	for i, expectedPath := range expectedPaths {
+		if actualPaths[i] != expectedPath {
+			t.Errorf("path mismatch at index %v: expected %q, got %q", i, expectedPath, actualPaths[i])
+		}
 	}
 }
 
