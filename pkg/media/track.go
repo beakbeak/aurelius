@@ -255,7 +255,7 @@ func (ml *Library) isFavorite(path string) (bool, error) {
 		return false, err
 	}
 
-	for _, line := range favorites {
+	for _, line := range favorites.Lines() {
 		if line == path {
 			return true, nil
 		}

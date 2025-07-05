@@ -12,29 +12,33 @@ import (
 
 type TextCache struct {
 	mutex sync.Mutex
-	files map[string]*cachedFile
+	files map[string]*CachedFile
 }
 
-type cachedFile struct {
-	ModTime time.Time
-	Lines   []string
+type CachedFile struct {
+	modTime time.Time
+	lines   []string
+}
+
+// Lines returns the cached file contents as an array of lines.
+func (cf *CachedFile) Lines() []string {
+	return cf.lines
 }
 
 // New creates a new TextCache.
 func New() *TextCache {
-	return &TextCache{files: make(map[string]*cachedFile)}
+	return &TextCache{files: make(map[string]*CachedFile)}
 }
 
-// Get returns the contents of a file as an array of lines.
-// Newline characters are stripped.
-func (c *TextCache) Get(path string) ([]string, error) {
+// Get returns the cached file contents including metadata.
+func (c *TextCache) Get(path string) (*CachedFile, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	return c.unsafeGet(path)
 }
 
-func (c *TextCache) unsafeGet(path string) ([]string, error) {
+func (c *TextCache) unsafeGet(path string) (*CachedFile, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, err // not reformatting because caller may call os.IsNotExist(err)
@@ -46,10 +50,10 @@ func (c *TextCache) unsafeGet(path string) ([]string, error) {
 func (c *TextCache) unsafeGetWithInfo(
 	path string,
 	info os.FileInfo,
-) ([]string, error) {
+) (*CachedFile, error) {
 	if cached, ok := c.files[path]; ok {
-		if cached.ModTime.Equal(info.ModTime()) || cached.ModTime.After(info.ModTime()) {
-			return cached.Lines, nil
+		if cached.modTime.Equal(info.ModTime()) || cached.modTime.After(info.ModTime()) {
+			return cached, nil
 		}
 	}
 	if !info.Mode().IsRegular() {
@@ -62,17 +66,17 @@ func (c *TextCache) unsafeGetWithInfo(
 	}
 	defer file.Close()
 
-	cached := cachedFile{ModTime: info.ModTime(), Lines: []string{}}
+	cached := CachedFile{modTime: info.ModTime(), lines: []string{}}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		cached.Lines = append(cached.Lines, scanner.Text())
+		cached.lines = append(cached.lines, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scan failed: %v", err)
 	}
 
 	c.files[path] = &cached
-	return cached.Lines, nil
+	return &cached, nil
 }
 
 // Write joins lines with "\n" and writes them to the file specified by path.
@@ -116,7 +120,7 @@ func (c *TextCache) unsafeWrite(
 		return err
 	}
 
-	cached := cachedFile{ModTime: info.ModTime(), Lines: lines}
+	cached := CachedFile{modTime: info.ModTime(), lines: lines}
 	c.files[path] = &cached
 	return nil
 }
@@ -134,12 +138,12 @@ func (c *TextCache) Modify(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	lines, err := c.unsafeGet(path)
+	cached, err := c.unsafeGet(path)
 	if err != nil {
 		return err
 	}
 
-	return c.modifyImpl(path, modifier, lines)
+	return c.modifyImpl(path, modifier, cached.Lines())
 }
 
 // CreateOrModify performs the same operation as Modify, but will create the
@@ -159,8 +163,10 @@ func (c *TextCache) CreateOrModify(
 
 	info, err := os.Stat(path)
 	if err == nil {
-		if lines, err = c.unsafeGetWithInfo(path, info); err != nil {
+		if cached, err := c.unsafeGetWithInfo(path, info); err != nil {
 			return err
+		} else {
+			lines = cached.Lines()
 		}
 	} else {
 		// XXX some error types should cause a `return err` here

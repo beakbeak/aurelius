@@ -33,10 +33,11 @@ func (ml *Library) loadPlaylist(libraryPath string) (*playlist, error) {
 }
 
 func (p *playlist) load(ml *Library) error {
-	var err error
-	if p.lines, err = ml.playlistCache.Get(p.fsPath); err != nil {
+	file, err := ml.playlistCache.Get(p.fsPath)
+	if err != nil {
 		return err
 	}
+	p.lines = file.Lines()
 	return nil
 }
 
