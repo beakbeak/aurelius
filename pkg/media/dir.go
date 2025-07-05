@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/beakbeak/aurelius/pkg/fragment"
 )
@@ -91,6 +92,9 @@ func (ml *Library) handleDirInfo(
 	}
 
 	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
 		info, err := entry.Info()
 		if err != nil {
 			slog.ErrorContext(ctx, "entry.Info() failed", "entry", entry.Name(), "error", err)
