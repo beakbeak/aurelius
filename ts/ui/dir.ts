@@ -126,7 +126,7 @@ function setPlayingClass(element: HTMLAnchorElement | undefined): void {
 async function loadCurrentDir(): Promise<void> {
     const url = window.location.href;
     const urlObj = new URL(url);
-    const pathParam = urlObj.searchParams.get("path");
+    const pathParam = urlObj.searchParams.get("dir");
 
     if (pathParam) {
         const info = await loadDir(pathParam, /*addHistory=*/ false);
@@ -186,14 +186,14 @@ function populateNavigation(info: DirInfo): void {
         `<li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">vertical_align_top</i>
             <a class="${Class.DirLink}"
-                href="/media/tree/?path=${encodeURIComponent(info.topLevel)}"
+                href="/media/tree/?dir=${encodeURIComponent(info.topLevel)}"
                 data-url="${info.topLevel}"
             >Top level</a>
         </li>
         <li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
             <a class="${Class.DirLink}"
-                href="/media/tree/?path=${encodeURIComponent(info.parent)}"
+                href="/media/tree/?dir=${encodeURIComponent(info.parent)}"
                 data-url="${info.parent}"
             >Parent directory</a>
         </li>`;
@@ -209,7 +209,7 @@ function populateDirs(info: DirInfo): void {
             `<li class="${Class.DirEntry}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
                 <a class="${Class.DirLink}"
-                    href="/media/tree/?path=${encodeURIComponent(dir.url)}"
+                    href="/media/tree/?dir=${encodeURIComponent(dir.url)}"
                     data-url="${dir.url}"
                 >${dir.name}/</a>
             </li>`;
