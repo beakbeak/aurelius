@@ -57,19 +57,30 @@ export default async function setupDirUi(inPlayer: Player) {
     await loadCurrentDir();
 }
 
-function populateSpecial(): void {
+function populateSpecial(info?: DirInfo): void {
+    let favoritesText = "Favorites";
+    let prefix: string | undefined;
+
+    if (info && info.path !== "/") {
+        // Extract directory name from path (e.g., "/foo/bar" -> "bar")
+        const pathParts = info.path.replace(/\/$/, "").split("/");
+        const dirName = pathParts[pathParts.length - 1];
+        favoritesText = `Favorites in ${dirName}/`;
+        prefix = info.path;
+    }
+
     specialList.innerHTML =
         //
         `<li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">favorite_border</i>
-            <a class="${Class.DirLink}" href="#">Favorites</a>
+            <a class="${Class.DirLink}" href="#">${favoritesText}</a>
         </li>`;
 
     const favoritesLink = specialList.querySelector("a")!;
 
     favoritesLink.onclick = (e) => {
         e.preventDefault();
-        player.playList("/media/playlists/favorites", { random: true });
+        player.playList("/media/playlists/favorites", { random: true, prefix });
     };
 
     specialList.classList.remove(Class.Hidden);
@@ -124,6 +135,7 @@ export async function loadDir(url: string, addHistory = true): Promise<void> {
         window.history.pushState({}, "", treeUrlFromDirInfo(info));
     }
     setDocumentTitleFromPath(info.path);
+    populateSpecial(info);
     populateNavigation(info);
     populateDirs(info);
     populatePlaylists(info);

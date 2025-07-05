@@ -55,18 +55,23 @@ export class RemotePlaylist implements Playlist {
     public readonly url: string;
 
     private readonly _length: number;
+    private readonly _prefix?: string;
 
-    private constructor(url: string, length: number) {
+    private constructor(url: string, length: number, prefix?: string) {
         this.url = url;
         this._length = length;
+        this._prefix = prefix;
     }
 
-    public static async fetch(url: string): Promise<RemotePlaylist> {
+    public static async fetch(url: string, prefix?: string): Promise<RemotePlaylist> {
         interface Info {
             length: number;
         }
-        const info = await fetchJson<Info>(url);
-        return new RemotePlaylist(url, info.length);
+        
+        // Add prefix to the info fetch URL if provided
+        const fetchUrl = prefix ? `${url}?prefix=${encodeURIComponent(prefix)}` : url;
+        const info = await fetchJson<Info>(fetchUrl);
+        return new RemotePlaylist(url, info.length, prefix);
     }
 
     public length(): number {
@@ -74,15 +79,17 @@ export class RemotePlaylist implements Playlist {
     }
 
     public async at(pos: number): Promise<PlaylistItem | undefined> {
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(`${this.url}/tracks/${pos}`));
+        const baseUrl = `${this.url}/tracks/${pos}`;
+        const fetchUrl = this._prefix ? `${baseUrl}?prefix=${encodeURIComponent(this._prefix)}` : baseUrl;
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(fetchUrl));
     }
 
     public async random(): Promise<PlaylistItem | undefined> {
         if (this._length < 1) {
             return Promise.resolve(undefined);
         }
-        return nullToUndefined(
-            await fetchJson<PlaylistItem | null>(`${this.url}/tracks/${randomInt(0, this._length)}`),
-        );
+        const baseUrl = `${this.url}/tracks/${randomInt(0, this._length)}`;
+        const fetchUrl = this._prefix ? `${baseUrl}?prefix=${encodeURIComponent(this._prefix)}` : baseUrl;
+        return nullToUndefined(await fetchJson<PlaylistItem | null>(fetchUrl));
     }
 }

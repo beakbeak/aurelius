@@ -188,6 +188,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             random?: boolean;
             startPos?: number;
             replayGainHint?: ReplayGainMode;
+            prefix?: string;
         },
     ): Promise<boolean> {
         const config = {
@@ -199,7 +200,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
         if (typeof playlistUrlOrTrackUrls === "string") {
             const url = playlistUrlOrTrackUrls;
-            this.playlist = await RemotePlaylist.fetch(url);
+            this.playlist = await RemotePlaylist.fetch(url, config.prefix);
         } else {
             const trackUrls = playlistUrlOrTrackUrls;
             this.playlist = new LocalPlaylist(trackUrls);
