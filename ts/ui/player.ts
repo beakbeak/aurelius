@@ -82,8 +82,9 @@ export default function setupPlayerUi(inPlayer: Player) {
 
     marquee.onclick = (e) => {
         e.preventDefault();
-        if (marquee.href) {
-            loadDir(marquee.href);
+        const dirUrl = marquee.getAttribute("data-url");
+        if (dirUrl) {
+            loadDir(dirUrl);
         }
     };
 
@@ -138,7 +139,8 @@ export default function setupPlayerUi(inPlayer: Player) {
 
 function setMarquee(text: string, url: string): void {
     marquee.textContent = text;
-    marquee.href = url;
+    marquee.href = `/media/tree/?path=${encodeURIComponent(url)}`;
+    marquee.setAttribute("data-url", url);
 
     if (marquee.clientWidth >= marquee.scrollWidth) {
         marquee.style.animation = "";

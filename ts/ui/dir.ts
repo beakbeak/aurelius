@@ -109,7 +109,11 @@ function isPlaying(element: HTMLAnchorElement): boolean {
     if (player.track === undefined) {
         return false;
     }
-    return player.track.url.endsWith(element.pathname);
+    const trackUrl = element.getAttribute("data-url");
+    if (!trackUrl) {
+        return false;
+    }
+    return player.track.url.endsWith(trackUrl);
 }
 
 function setPlayingClass(element: HTMLAnchorElement | undefined): void {
@@ -121,15 +125,22 @@ function setPlayingClass(element: HTMLAnchorElement | undefined): void {
 
 async function loadCurrentDir(): Promise<void> {
     const url = window.location.href;
-    window.history.replaceState({}, "");
-    await loadDir(dirUrlFromTreeUrl(url), /*addHistory=*/ false);
+    const urlObj = new URL(url);
+    const pathParam = urlObj.searchParams.get("path");
+
+    if (pathParam) {
+        const info = await loadDir(pathParam, /*addHistory=*/ false);
+        window.history.replaceState({}, "", treeUrlFromDirInfo(info));
+    } else {
+        await loadDir(dirUrlFromTreeUrl(url), /*addHistory=*/ false);
+    }
 }
 
 /**
  * Populate directory listing with the contents at the given URL and update
  * history. If `url` is `undefined`, the window's current URL is used.
  */
-export async function loadDir(url: string, addHistory = true): Promise<void> {
+export async function loadDir(url: string, addHistory = true): Promise<DirInfo> {
     const info = await fetchDirInfo(url);
     if (addHistory) {
         window.history.pushState({}, "", treeUrlFromDirInfo(info));
@@ -140,6 +151,7 @@ export async function loadDir(url: string, addHistory = true): Promise<void> {
     populateDirs(info);
     populatePlaylists(info);
     populateTracks(info);
+    return info;
 }
 
 function setDocumentTitleFromPath(path: string) {
@@ -160,7 +172,10 @@ function activateDirLinks(list: HTMLElement): void {
 
         link.onclick = (e) => {
             e.preventDefault();
-            loadDir(link.href); // ignore Promise
+            const dirUrl = link.getAttribute("data-url");
+            if (dirUrl !== null) {
+                loadDir(dirUrl); // ignore Promise
+            }
         };
     }
 }
@@ -170,11 +185,17 @@ function populateNavigation(info: DirInfo): void {
         //
         `<li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">vertical_align_top</i>
-            <a class="${Class.DirLink}" href="${info.topLevel}">Top level</a>
+            <a class="${Class.DirLink}"
+                href="/media/tree/?path=${encodeURIComponent(info.topLevel)}"
+                data-url="${info.topLevel}"
+            >Top level</a>
         </li>
         <li class="${Class.DirEntry}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
-            <a class="${Class.DirLink}" href="${info.parent}">Parent directory</a>
+            <a class="${Class.DirLink}"
+                href="/media/tree/?path=${encodeURIComponent(info.parent)}"
+                data-url="${info.parent}"
+            >Parent directory</a>
         </li>`;
     activateDirLinks(navigationList);
     navigationList.classList.remove(Class.Hidden);
@@ -187,7 +208,10 @@ function populateDirs(info: DirInfo): void {
             //
             `<li class="${Class.DirEntry}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
-                <a class="${Class.DirLink}" href="${dir.url}">${dir.name}/</a>
+                <a class="${Class.DirLink}"
+                    href="/media/tree/?path=${encodeURIComponent(dir.url)}"
+                    data-url="${dir.url}"
+                >${dir.name}/</a>
             </li>`;
     }
     dirList.innerHTML = html;
@@ -209,8 +233,8 @@ function populatePlaylists(info: DirInfo): void {
             //
             `<li class="${Class.DirEntry}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">playlist_play</i>
-                <a class="${Class.DirLink}" href="${playlist.url}">${playlist.name}</a>
-                <a class="${Class.DirLink} ${Class.DirLink_Aux}" href="${playlist.url}">random</a>
+                <a class="${Class.DirLink}" href="#" data-url="${playlist.url}">${playlist.name}</a>
+                <a class="${Class.DirLink} ${Class.DirLink_Aux}" href="#" data-url="${playlist.url}">random</a>
             </li>`;
     }
     playlistList.innerHTML = html;
@@ -222,11 +246,17 @@ function populatePlaylists(info: DirInfo): void {
 
         link.onclick = (e) => {
             e.preventDefault();
-            player.playList(link.href);
+            const playlistUrl = link.getAttribute("data-url");
+            if (playlistUrl) {
+                player.playList(playlistUrl);
+            }
         };
         randomLink.onclick = (e) => {
             e.preventDefault();
-            player.playList(link.href, { random: true });
+            const playlistUrl = randomLink.getAttribute("data-url");
+            if (playlistUrl) {
+                player.playList(playlistUrl, { random: true });
+            }
         };
     }
 
@@ -248,7 +278,7 @@ function populateTracks(info: DirInfo): void {
             `<li class="${Class.DirEntry}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">music_note</i>
                 <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}">play_arrow</i>
-                <a class="${Class.DirLink}" href="${track.url}">${track.name}</a>
+                <a class="${Class.DirLink}" href="#" data-url="${track.url}">${track.name}</a>
             </li>`;
     }
     trackList.innerHTML = html;
