@@ -4,6 +4,7 @@ import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
 import { AttachedImageInfo, StreamCodec } from "../core/track";
+import { getSettings } from "./settings";
 
 const defaultTrackImageUrl = "/static/img/aurelius.svgz";
 const maxImageSize = 256 * 1024;
@@ -28,6 +29,7 @@ let unfavoriteButton: HTMLElement;
 
 // [0..1]
 let _seekSliderPosition: number | undefined;
+let _notificationData: { title: string; body: string; icon?: string } | undefined;
 
 export function setupPlayerUi(inPlayer: Player) {
     player = inPlayer;
@@ -120,6 +122,8 @@ export function setupPlayerUi(inPlayer: Player) {
     player.addEventListener("pause", updateAll);
     player.addEventListener("unpause", updateAll);
 
+    player.addEventListener("autoNext", showDesktopNotification);
+
     navigator.mediaSession?.setActionHandler("previoustrack", () => {
         player.previous();
     });
@@ -138,6 +142,31 @@ export function openTrackImageInNewTab(): void {
     if (trackImage.src && !trackImage.src.endsWith(defaultTrackImageUrl)) {
         window.open(trackImage.src, "_blank");
     }
+}
+
+function showDesktopNotification(data = _notificationData): void {
+    if (
+        !(
+            data &&
+            "Notification" in window &&
+            Notification.permission === "granted" &&
+            document.visibilityState === "hidden" &&
+            getSettings().desktopNotifications
+        )
+    ) {
+        return;
+    }
+
+    const notification = new Notification(data.title, {
+        body: data.body,
+        icon: data.icon,
+        silent: true,
+    });
+
+    notification.onclick = () => {
+        window.focus();
+        notification.close();
+    };
 }
 
 function setMarquee(text: string, url: string): void {
@@ -241,6 +270,7 @@ function updateStatus(): void {
         marquee.textContent = "";
         trackImage.src = defaultTrackImageUrl;
         trackImage.style.cursor = "default";
+        _notificationData = undefined;
         return;
     }
 
@@ -262,11 +292,22 @@ function updateStatus(): void {
 
     setMarquee(`${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`, info.dir);
 
+    // Store notification data for later use
+    _notificationData = {
+        title: title,
+        body: `${artist}${album ? ` / ${album}` : ""}`,
+        icon: undefined, // Will be set below
+    };
+
     const filteredImages = filterTrackImages(info.attachedImages);
     let newTrackImageUrl = "";
     if (filteredImages.length > 0) {
         newTrackImageUrl = `${track.url}/images/${filteredImages[0].originalIndex}`;
         trackImage.style.cursor = "pointer";
+        // Set notification icon
+        if (_notificationData) {
+            _notificationData.icon = newTrackImageUrl;
+        }
     } else {
         newTrackImageUrl = defaultTrackImageUrl;
         trackImage.style.cursor = "default";

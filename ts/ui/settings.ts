@@ -6,6 +6,7 @@ const SettingsStorageKey = "settings";
 
 export interface Settings {
     streamConfig: PlayerStreamConfig;
+    desktopNotifications?: boolean;
 }
 
 export function newSettings(): Settings {
@@ -21,6 +22,7 @@ function defaultSettings(): Settings {
             quality: 8,
             preventClipping: false,
         },
+        desktopNotifications: false,
     };
 }
 

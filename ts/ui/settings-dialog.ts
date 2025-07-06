@@ -23,6 +23,15 @@ export function showSettingsDialog(onApply: (settings: Settings) => void): void 
 
         const settings = gatherSettings();
         saveSettings(settings);
+
+        if (
+            settings.desktopNotifications &&
+            "Notification" in window &&
+            Notification.permission !== "granted"
+        ) {
+            Notification.requestPermission();
+        }
+
         onApply(settings);
     };
 }
@@ -58,6 +67,7 @@ function ensureElements() {
     settingsElements.push(new TargetMetricElement(codecElement));
     settingsElements.push(new ReplayGainElement());
     settingsElements.push(new PreventClippingElement());
+    settingsElements.push(new DesktopNotificationsElement());
 }
 
 function createOption(value: string, text = value): HTMLOptionElement {
@@ -73,7 +83,7 @@ function populateSelectWithEnumValues<EnumType extends object>(
 ): void {
     for (const keyString of Object.keys(enumObject)) {
         const key = keyString as keyof EnumType;
-        const valueString = (enumObject[key] as unknown) as string;
+        const valueString = enumObject[key] as unknown as string;
 
         const option = createOption(valueString);
         select.appendChild(option);
@@ -271,5 +281,23 @@ class TargetMetricElement implements SettingsElement {
                 settings.streamConfig.kbitRate = value;
             }
         }
+    }
+}
+
+class DesktopNotificationsElement implements SettingsElement {
+    public readonly element = document.getElementById(
+        "settings-desktop-notifications",
+    ) as HTMLInputElement;
+
+    public value(): boolean {
+        return this.element.checked.valueOf();
+    }
+
+    public fromSettings(settings: Settings): void {
+        this.element.checked = !!settings.desktopNotifications;
+    }
+
+    public toSettings(settings: Settings): void {
+        settings.desktopNotifications = this.value();
     }
 }
