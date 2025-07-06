@@ -13,6 +13,7 @@ export interface PlayerEventMap {
     unpause: () => void;
     favorite: () => void;
     unfavorite: () => void;
+    autoNext: () => void;
 }
 export type PlayerEvent = keyof PlayerEventMap;
 
@@ -140,7 +141,10 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
         track.addEventListener("ended", async () => {
             this._stopStallDetection();
-            if (!(await this.next())) {
+            const advanced = await this.next();
+            if (advanced) {
+                this.dispatchEvent("autoNext");
+            } else {
                 if (this.track !== undefined) {
                     this.track.destroy();
                     delete this.track;
