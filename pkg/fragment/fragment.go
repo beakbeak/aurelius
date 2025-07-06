@@ -25,11 +25,14 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/beakbeak/aurelius/internal/maputil"
 	"github.com/beakbeak/aurelius/pkg/aurelib"
 )
 
 var (
 	reFragment = regexp.MustCompile(`(?i)^(.+?)\.([0-9]+)\.txt$`)
+	reField    = regexp.MustCompile(`^\s*([^\s]+)\s+(.+?)\s*$`)
+	reBlank    = regexp.MustCompile(`^\s*$`)
 )
 
 // A Fragment is an aurelib.Source that streams a subsection of an audio file.
@@ -38,6 +41,7 @@ type Fragment struct {
 
 	startTime time.Duration
 	endTime   time.Duration
+	tags      map[string]string
 }
 
 // IsFragment returns true if the path is in the format used by fragment
@@ -65,10 +69,7 @@ func New(path string) (*Fragment, error) {
 	if matches == nil {
 		return &f, fmt.Errorf("invalid filename: %v", filepath.Base(path))
 	}
-
-	if err := f.parse(path); err != nil {
-		return &f, err
-	}
+	fragmentIndex := matches[2]
 
 	src, err := aurelib.NewFileSource(matches[1])
 	if err != nil {
@@ -79,6 +80,13 @@ func New(path string) (*Fragment, error) {
 			src.Destroy()
 		}
 	}()
+
+	f.tags = maputil.LowerCaseKeys(src.Tags())
+	f.tags["track"] = fmt.Sprintf("%v.%v", f.tags["track"], fragmentIndex)
+
+	if err := f.parse(path); err != nil {
+		return &f, err
+	}
 
 	duration := src.Duration()
 	if f.startTime < 0 {
@@ -103,9 +111,6 @@ func New(path string) (*Fragment, error) {
 		}
 	}
 
-	tags := src.Tags()
-	tags["track"] = fmt.Sprintf("%v.%v", tags["track"], matches[2])
-
 	f.FileSource = src
 	success = true
 	return &f, nil
@@ -119,48 +124,44 @@ func (f *Fragment) parse(path string) error {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanWords)
-
-StatementLoop:
-	for {
-		const tokenCount = 2
-		var tokens [tokenCount]string
-		for i := 0; i < tokenCount; i++ {
-			if !scanner.Scan() {
-				if err := scanner.Err(); err != nil {
-					return err
-				}
-				if i == 0 {
-					break StatementLoop
-				}
-			}
-			tokens[i] = scanner.Text()
+	for scanner.Scan() {
+		line := scanner.Text()
+		if reBlank.MatchString(line) {
+			continue
 		}
+		matches := reField.FindStringSubmatch(line)
+		if matches == nil {
+			return fmt.Errorf("invalid line format: %v", line)
+		}
+		field := matches[1]
+		value := matches[2]
 
-		var offset time.Duration
-		switch tokens[0] {
-		case "start":
-			fallthrough
-		case "end":
-			var err error
-			if offset, err = time.ParseDuration(tokens[1]); err != nil {
-				return fmt.Errorf("invalid value for '%v': %v (%v)", tokens[0], tokens[1], err)
+		switch field {
+		case "start", "end":
+			var offset time.Duration
+			if offset, err = time.ParseDuration(value); err != nil {
+				return fmt.Errorf("invalid value for '%v': %v (%v)", field, value, err)
 			}
 			if offset < 0 {
-				return fmt.Errorf("invalid value for '%v': %v", tokens[0], tokens[1])
+				return fmt.Errorf("invalid value for '%v': %v", field, value)
 			}
+			if field == "start" {
+				f.startTime = offset
+			} else {
+				f.endTime = offset
+			}
+		case "artist", "title":
+			f.tags[field] = value
 		default:
-			return fmt.Errorf("invalid key: %v", tokens[0])
-		}
-
-		switch tokens[0] {
-		case "start":
-			f.startTime = offset
-		case "end":
-			f.endTime = offset
+			return fmt.Errorf("unknown field: %v", field)
 		}
 	}
-	return nil
+	return scanner.Err()
+}
+
+// See aurelib.Source.Tags.
+func (f *Fragment) Tags() map[string]string {
+	return f.tags
 }
 
 // See aurelib.Source.Duration.

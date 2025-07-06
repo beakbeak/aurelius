@@ -380,7 +380,7 @@
       "sampleRate": 44100,
       "tags": {
         "album": "Aurelius Test Data Greatest Hits",
-        "artist": "Aurelius",
+        "artist": "Foo and the Bars",
         "comment": "Testing",
         "composer": "J. S. Bach",
         "date": "2020",
@@ -390,7 +390,7 @@
         "replaygain_reference_loudness": "89.0 dB",
         "replaygain_track_gain": "-2.49 dB",
         "replaygain_track_peak": "0.89123535",
-        "title": "Aurelius Test Data",
+        "title": "Baz All Night",
         "track": "1.2"
       }
     },
