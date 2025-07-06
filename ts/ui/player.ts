@@ -279,6 +279,7 @@ function updateStatus(): void {
 
     const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
     const title = info.tags["title"] ?? info.name;
+    const favoriteIcon = info.favorite ? "♥︎" : "♡";
 
     let album = "";
     if (info.tags["album"] !== undefined) {
@@ -294,7 +295,7 @@ function updateStatus(): void {
 
     // Store notification data for later use
     _notificationData = {
-        title: title,
+        title: `${favoriteIcon} ${title}`,
         body: `${artist}${album ? ` / ${album}` : ""}`,
         icon: undefined, // Will be set below
     };
@@ -328,7 +329,7 @@ function updateStatus(): void {
 
         navigator.mediaSession.metadata = new MediaMetadata({
             artist,
-            title,
+            title: `${favoriteIcon} ${title}`,
             album,
             artwork,
         });
