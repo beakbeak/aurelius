@@ -81,7 +81,7 @@ function populateSpecial(info?: DirInfo): void {
 
     favoritesLink.onclick = (e) => {
         e.preventDefault();
-        player.playList("/media/playlists/favorites", { random: true, prefix });
+        playFavorites(prefix);
     };
 
     specialList.classList.remove(Class.Hidden);
@@ -341,4 +341,11 @@ export async function navigateToTopLevel(): Promise<void> {
     if (currentDirInfo) {
         await loadDir(currentDirInfo.topLevel);
     }
+}
+
+export function playFavorites(prefix?: string): void {
+    if (prefix === undefined && currentDirInfo && currentDirInfo.path !== "/") {
+        prefix = currentDirInfo.path;
+    }
+    player.playList("/media/playlists/favorites", { random: true, prefix });
 }

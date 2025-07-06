@@ -1,6 +1,6 @@
 import { Player } from "./core/player";
 import setupPlayerUi from "./ui/player";
-import { setupDirUi, playTrackByIndex, navigateToParent, navigateToTopLevel } from "./ui/dir";
+import { setupDirUi, playTrackByIndex, navigateToParent, navigateToTopLevel, playFavorites } from "./ui/dir";
 import { getSettings } from "./ui/settings";
 import { showSettingsDialog } from "./ui/settings-dialog";
 import { showModalDialog } from "./ui/modal";
@@ -110,6 +110,11 @@ window.onload = () => {
                     const currentTime = player.track.currentTime();
                     player.seekTo(Math.max(0, currentTime - 10));
                 }
+                break;
+            case "=":
+            case "`":
+                e.preventDefault();
+                playFavorites();
                 break;
         }
     });
