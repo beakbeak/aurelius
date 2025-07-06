@@ -6,6 +6,7 @@ import {
     navigateToParent,
     navigateToTopLevel,
     playFavorites,
+    loadDir,
 } from "./ui/dir";
 import { getSettings } from "./ui/settings";
 import { showSettingsDialog } from "./ui/settings-dialog";
@@ -125,6 +126,12 @@ window.onload = () => {
             case "c":
                 e.preventDefault();
                 openTrackImageInNewTab();
+                break;
+            case "g":
+                e.preventDefault();
+                if (player.track) {
+                    loadDir(player.track.info.dir);
+                }
                 break;
         }
     });
