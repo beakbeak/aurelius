@@ -27,7 +27,7 @@ window.onload = () => {
     document.getElementById("settings-button")!.onclick = showAndApplySettings;
 
     document.addEventListener("keydown", (e) => {
-        if (isTypingInInput(e.target)) {
+        if (isTypingInInput(e.target) || e.metaKey || e.ctrlKey || e.altKey) {
             return;
         }
 
@@ -76,10 +76,8 @@ window.onload = () => {
             case "8":
             case "9":
             case "0":
-                if (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-                    e.preventDefault();
-                    playTrackByIndex(e.key === "0" ? 9 : parseInt(e.key) - 1);
-                }
+                e.preventDefault();
+                playTrackByIndex(e.key === "0" ? 9 : parseInt(e.key) - 1);
                 break;
             case "f":
                 e.preventDefault();
