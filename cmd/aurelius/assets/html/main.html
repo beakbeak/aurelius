@@ -87,6 +87,9 @@
 			<i id="settings-button" class="menu__button material-icons" title="Settings">
 				settings
 			</i>
+			<i id="search-button" class="menu__button material-icons" title="Search">
+				search
+			</i>
 		</aside>
 
 		<div id="settings-dialog" class="ui modal dialog hidden">
@@ -155,6 +158,22 @@
 			</div>
 
 			<button id="settings-save" class="ui__button" type="button">Save</button>
+		</div>
+
+		<div id="search-dialog" class="ui modal dialog hidden">
+			<div class="ui__section-header">Search</div>
+			<div class="ui__section-body">
+				<input
+					id="search-input"
+					class="search__input ui__entry-input"
+					type="text"
+					placeholder="Type to search..."
+					autocomplete="off"
+				/>
+			</div>
+			<div class="ui__section-body ui__section-body--scroll">
+				<div id="search-results" class="search__results dir__listing"></div>
+			</div>
 		</div>
 
 		<div id="keyboard-shortcuts-dialog" class="ui modal dialog hidden">
@@ -232,6 +251,10 @@
 					<tr>
 						<td><strong>Other</strong></td>
 						<td></td>
+					</tr>
+					<tr>
+						<td><kbd>/</kbd></td>
+						<td>Open search dialog</td>
 					</tr>
 					<tr>
 						<td><kbd>t</kbd></td>

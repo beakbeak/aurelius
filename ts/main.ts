@@ -11,6 +11,7 @@ import {
 import { getSettings } from "./ui/settings";
 import { showSettingsDialog } from "./ui/settings-dialog";
 import { showModalDialog } from "./ui/modal";
+import { showSearchDialog } from "./ui/search-dialog";
 import { LogLevel, serverLog } from "./core/log";
 
 window.onload = () => {
@@ -40,6 +41,7 @@ window.onload = () => {
         });
     };
 
+    document.getElementById("search-button")!.onclick = showSearchDialog;
     document.getElementById("settings-button")!.onclick = showAndApplySettings;
 
     document.addEventListener("keydown", (e) => {
@@ -48,6 +50,10 @@ window.onload = () => {
         }
 
         switch (e.key) {
+            case "/":
+                e.preventDefault();
+                showSearchDialog();
+                break;
             case " ":
                 e.preventDefault();
                 if (player.track && player.track.isPaused()) {

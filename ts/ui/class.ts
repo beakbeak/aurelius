@@ -12,5 +12,9 @@ export const enum Class {
     MainDir = "main__dir",
     MaterialIcons = "material-icons",
     ModalOverlay = "modal-overlay",
+    SearchInput = "search__input",
+    SearchResults = "search__results",
+    SearchResult = "search__result",
+    SearchResult_Focused = "search__result--focused",
     UiEntryInput_Error = "ui__entry-input--error",
 }
