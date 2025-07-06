@@ -13,8 +13,9 @@ let playlistList: HTMLElement;
 let trackList: HTMLElement;
 
 let lastPlaying: HTMLElement | undefined;
+let currentDirInfo: DirInfo | undefined;
 
-export default async function setupDirUi(inPlayer: Player) {
+export async function setupDirUi(inPlayer: Player) {
     const container = document.querySelector(`.${Class.MainDir}`);
     if (container === null) {
         throw new Error("invalid container");
@@ -130,10 +131,10 @@ async function loadCurrentDir(): Promise<void> {
     const playParam = urlObj.searchParams.get("play");
 
     if (playParam) {
-        player.playTrack(playParam); // ignore Promise
-        const trackInfo = await fetchTrackInfo(playParam);
-        const info = await loadDir(trackInfo.dir, /*addHistory=*/ false);
-        window.history.replaceState({}, "", treeUrlFromDirInfo(info));
+        await playTrackByUrl(playParam, /*addHistory=*/ false);
+        if (currentDirInfo !== undefined) {
+            window.history.replaceState({}, "", treeUrlFromDirInfo(currentDirInfo));
+        }
     } else if (pathParam) {
         const info = await loadDir(pathParam, /*addHistory=*/ false);
         window.history.replaceState({}, "", treeUrlFromDirInfo(info));
@@ -148,6 +149,7 @@ async function loadCurrentDir(): Promise<void> {
  */
 export async function loadDir(url: string, addHistory = true): Promise<DirInfo> {
     const info = await fetchDirInfo(url);
+    currentDirInfo = info;
     if (addHistory) {
         window.history.pushState({}, "", treeUrlFromDirInfo(info));
     }
@@ -293,8 +295,6 @@ function populateTracks(info: DirInfo): void {
     }
     trackList.innerHTML = html;
 
-    const trackUrls = info.tracks.map((pathUrl) => pathUrl.url);
-
     const links = trackList.getElementsByTagName("a");
     for (let i = 0; i < links.length; ++i) {
         const link = links[i];
@@ -305,9 +305,40 @@ function populateTracks(info: DirInfo): void {
 
         link.onclick = (e) => {
             e.preventDefault();
-            player.playList(trackUrls, { startPos: i, replayGainHint: ReplayGainMode.Album });
+            playTrackByIndex(i, info);
         };
     }
 
     trackList.classList.remove(Class.Hidden);
+}
+
+export async function playTrackByUrl(url: string, addHistory = true): Promise<void> {
+    const trackInfo = await fetchTrackInfo(url);
+    const dirInfo = await loadDir(trackInfo.dir, addHistory);
+    const index = dirInfo.tracks.findIndex((t) => t.url === url);
+    if (index >= 0) {
+        await playTrackByIndex(index, dirInfo);
+    } else {
+        await player.playTrack(url);
+    }
+}
+
+export async function playTrackByIndex(index: number, dirInfo = currentDirInfo): Promise<void> {
+    if (!dirInfo || !dirInfo.tracks || index >= dirInfo.tracks.length) {
+        return;
+    }
+    const trackUrls = dirInfo.tracks.map((track) => track.url);
+    await player.playList(trackUrls, { startPos: index, replayGainHint: ReplayGainMode.Album });
+}
+
+export async function navigateToParent(): Promise<void> {
+    if (currentDirInfo) {
+        await loadDir(currentDirInfo.parent);
+    }
+}
+
+export async function navigateToTopLevel(): Promise<void> {
+    if (currentDirInfo) {
+        await loadDir(currentDirInfo.topLevel);
+    }
 }

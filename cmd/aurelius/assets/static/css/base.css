@@ -120,6 +120,16 @@ body {
 	text-decoration: underline;
 }
 
+.ui kbd {
+	background-color: hsl(0, 0%, 25%);
+	border: 1px solid hsl(0, 0%, 15%);
+	border-radius: 0.25em;
+	padding: 0.2em 0.5em;
+	font-family: monospace;
+	font-size: 0.9em;
+	color: white;
+}
+
 /* Playback controls **********************************************************/
 .controls {
 	background-color: hsl(0, 0%, 33%);

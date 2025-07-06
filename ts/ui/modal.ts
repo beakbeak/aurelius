@@ -15,6 +15,12 @@ function ensureElements() {
     overlay.classList.add(Class.ModalOverlay, Class.Hidden);
     overlay.onclick = hideModalDialog;
     document.body.appendChild(overlay);
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && currentDialog !== undefined) {
+            hideModalDialog();
+        }
+    });
 }
 
 export function showModalDialog(dialog: HTMLElement): void {
