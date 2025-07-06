@@ -1,6 +1,12 @@
 import { Player } from "./core/player";
-import setupPlayerUi from "./ui/player";
-import { setupDirUi, playTrackByIndex, navigateToParent, navigateToTopLevel, playFavorites } from "./ui/dir";
+import { setupPlayerUi, openTrackImageInNewTab } from "./ui/player";
+import {
+    setupDirUi,
+    playTrackByIndex,
+    navigateToParent,
+    navigateToTopLevel,
+    playFavorites,
+} from "./ui/dir";
 import { getSettings } from "./ui/settings";
 import { showSettingsDialog } from "./ui/settings-dialog";
 import { showModalDialog } from "./ui/modal";
@@ -115,6 +121,10 @@ window.onload = () => {
             case "`":
                 e.preventDefault();
                 playFavorites();
+                break;
+            case "c":
+                e.preventDefault();
+                openTrackImageInNewTab();
                 break;
         }
     });

@@ -29,7 +29,7 @@ let unfavoriteButton: HTMLElement;
 // [0..1]
 let _seekSliderPosition: number | undefined;
 
-export default function setupPlayerUi(inPlayer: Player) {
+export function setupPlayerUi(inPlayer: Player) {
     player = inPlayer;
 
     aboutButton = document.getElementById("about-button")!;
@@ -74,11 +74,7 @@ export default function setupPlayerUi(inPlayer: Player) {
         showModalDialog(aboutDialog);
     };
 
-    trackImage.onclick = () => {
-        if (trackImage.src && !trackImage.src.endsWith(defaultTrackImageUrl)) {
-            window.open(trackImage.src, "_blank");
-        }
-    };
+    trackImage.onclick = openTrackImageInNewTab;
 
     marquee.onclick = (e) => {
         e.preventDefault();
@@ -135,6 +131,13 @@ export default function setupPlayerUi(inPlayer: Player) {
             player.seekTo(args.seekTime);
         }
     });
+}
+
+export function openTrackImageInNewTab(): void {
+    const trackImage = document.getElementById("track-image") as HTMLImageElement;
+    if (trackImage.src && !trackImage.src.endsWith(defaultTrackImageUrl)) {
+        window.open(trackImage.src, "_blank");
+    }
 }
 
 function setMarquee(text: string, url: string): void {
