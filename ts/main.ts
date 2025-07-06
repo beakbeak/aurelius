@@ -34,10 +34,12 @@ window.onload = () => {
                 }
                 break;
             case "]":
+            case "w":
                 e.preventDefault();
                 player.next();
                 break;
             case "[":
+            case "q":
                 e.preventDefault();
                 player.previous();
                 break;
@@ -86,11 +88,12 @@ window.onload = () => {
                 e.preventDefault();
                 showModalDialog(document.getElementById("keyboard-shortcuts-dialog")!);
                 break;
-            case "s":
+            case "t":
                 e.preventDefault();
                 showAndApplySettings();
                 break;
             case "'":
+            case "s":
                 e.preventDefault();
                 if (player.track) {
                     const currentTime = player.track.currentTime();
@@ -101,6 +104,7 @@ window.onload = () => {
                 }
                 break;
             case ";":
+            case "a":
                 e.preventDefault();
                 if (player.track) {
                     const currentTime = player.track.currentTime();
