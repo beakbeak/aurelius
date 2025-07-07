@@ -112,9 +112,11 @@ export function setupPlayerUi(inPlayer: Player) {
     });
     player.addEventListener("favorite", () => {
         updateButtons();
+        updateStatus(); // update favorite indicator in MediaSession
     });
     player.addEventListener("unfavorite", () => {
         updateButtons();
+        updateStatus(); // update favorite indicator in MediaSession
     });
 
     player.addEventListener("play", updateAll);
