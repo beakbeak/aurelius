@@ -4,6 +4,8 @@ package aurelib
 #cgo pkg-config: libavutil
 
 #include <libavutil/avutil.h>
+
+typedef const char ConstChar;
 */
 import "C"
 
@@ -114,7 +116,7 @@ func toLogLevel(avLevel C.int) (LogLevel, bool /*ok*/) {
 //export logMessage
 func logMessage(
 	avLevel C.int,
-	cMessage *C.char,
+	cMessage *C.ConstChar,
 ) {
 	if logger == nil {
 		return

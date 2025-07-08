@@ -22,7 +22,10 @@ package aurelib
 
 #define LOG_BUFFER_SIZE 2048
 
-extern void logMessage(int level, char const* buffer);
+typedef const char ConstChar;
+
+extern void logMessage(int level, ConstChar* buffer);
+extern void addInputExtensions(ConstChar* extensions);
 
 static void
 avRegisterAll() {
@@ -49,17 +52,39 @@ static void
 setLogCallback() {
 	av_log_set_callback(logCallback);
 }
+
+static void
+gatherInputExtensions() {
+	const AVInputFormat* demuxer;
+	void* state = NULL;
+	for (;;) {
+		demuxer = av_demuxer_iterate(&state);
+		if (!demuxer) {
+			break;
+		}
+		if (demuxer->extensions) {
+			addInputExtensions(demuxer->extensions);
+		}
+	}
+}
 */
 import "C"
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 	"unsafe"
+)
+
+var (
+	inputExtensions []string
 )
 
 func init() {
 	C.avRegisterAll()
 	C.setLogCallback()
+	gatherInputExtensions()
 }
 
 func avErr2Str(code C.int) string {
@@ -176,4 +201,18 @@ func durationFromTimeBase(
 ) time.Duration {
 	// (duration * timeBase) * time.Second
 	return time.Duration(float64(duration) * (float64(time.Second) * float64(C.av_q2d(timeBase))))
+}
+
+func gatherInputExtensions() {
+	C.gatherInputExtensions()
+	slices.Sort(inputExtensions)
+	inputExtensions = slices.Compact(inputExtensions)
+}
+
+func InputExtensions() []string { return inputExtensions }
+
+//export addInputExtensions
+func addInputExtensions(extensionsCstr *C.ConstChar) {
+	extensionsStr := C.GoString(extensionsCstr)
+	inputExtensions = append(inputExtensions, strings.Split(extensionsStr, ",")...)
 }

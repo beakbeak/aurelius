@@ -10,13 +10,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/beakbeak/aurelius/pkg/aurelib"
 	"github.com/beakbeak/aurelius/pkg/fragment"
 )
 
 var (
-	reDirIgnore   = regexp.MustCompile(`(?i)\.(:?jpe?g|png|txt|log|cue|gif|pdf|sfv|nfo|bak)$`)
-	reDirUnignore = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
-	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
+	reFragment = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
+	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
+	reIgnore   = regexp.MustCompile(`(?i)\.(gif|txt|nfo)$`)
+	reTrack    = regexp.MustCompile(`(?i)\.(opus|m4a|wma|wmv|wav|` + strings.Join(aurelib.InputExtensions(), "|") + `)$`)
 )
 
 type fileType int
@@ -29,15 +31,18 @@ const (
 
 // getFileType determines a file's type.
 func getFileType(filename string) fileType {
-	if reDirIgnore.MatchString(filename) && !reDirUnignore.MatchString(filename) {
+	switch {
+	case reFragment.MatchString(filename):
+		return fileTypeTrack
+	case rePlaylist.MatchString(filename):
+		return fileTypePlaylist
+	case reIgnore.MatchString(filename):
+		return fileTypeIgnored
+	case reTrack.MatchString(filename):
+		return fileTypeTrack
+	default:
 		return fileTypeIgnored
 	}
-
-	if rePlaylist.MatchString(filename) {
-		return fileTypePlaylist
-	}
-
-	return fileTypeTrack
 }
 
 func (ml *Library) handleDirInfo(
