@@ -19,6 +19,27 @@ var (
 	rePlaylist    = regexp.MustCompile(`(?i)\.m3u$`)
 )
 
+type fileType int
+
+const (
+	fileTypeIgnored fileType = iota
+	fileTypePlaylist
+	fileTypeTrack
+)
+
+// getFileType determines a file's type.
+func getFileType(filename string) fileType {
+	if reDirIgnore.MatchString(filename) && !reDirUnignore.MatchString(filename) {
+		return fileTypeIgnored
+	}
+
+	if rePlaylist.MatchString(filename) {
+		return fileTypePlaylist
+	}
+
+	return fileTypeTrack
+}
+
 func (ml *Library) handleDirInfo(
 	ctx context.Context,
 	dirLibraryPath string,
@@ -139,13 +160,14 @@ func (ml *Library) handleDirInfo(
 			result.Dirs = append(result.Dirs, makePathUrl("dirs", entryLibraryPath))
 
 		case mode.IsRegular():
-			if reDirIgnore.MatchString(entry.Name()) && !reDirUnignore.MatchString(entry.Name()) {
+			fileType := getFileType(entry.Name())
+			if fileType == fileTypeIgnored {
 				continue
 			}
 			if fragmentSourceFiles[entry.Name()] {
 				continue
 			}
-			if rePlaylist.MatchString(entry.Name()) {
+			if fileType == fileTypePlaylist {
 				result.Playlists = append(result.Playlists, makePathUrl("playlists", entryLibraryPath))
 			} else {
 				trackUrl := makePathUrl("tracks", entryLibraryPath)
