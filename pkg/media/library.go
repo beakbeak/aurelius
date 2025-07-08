@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/beakbeak/aurelius/pkg/search"
 	"github.com/beakbeak/aurelius/pkg/textcache"
 )
 
@@ -53,6 +55,11 @@ type LibraryConfig struct {
 	// and muxing. It should be set to true when deterministic output is needed,
 	// such as when performing automated testing. (Default: false)
 	DeterministicStreaming bool
+
+	// SynchronousSearchIndexing controls whether search indexing is performed
+	// synchronously during library creation. If false, indexing happens in a
+	// background goroutine. This is useful for testing. (Default: false)
+	SynchronousSearchIndexing bool
 }
 
 // NewLibraryConfig creates a new LibraryConfig object with default values.
@@ -70,6 +77,7 @@ func NewLibraryConfig() *LibraryConfig {
 type Library struct {
 	config        LibraryConfig
 	playlistCache *textcache.TextCache
+	searchIndex   *search.Index
 	handler       http.Handler
 }
 
@@ -97,11 +105,28 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		return nil, fmt.Errorf("failed to create StoragePath: %v", err)
 	}
 
+	searchIndex, err := search.NewIndex(config.RootPath, isSearchable)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create search index: %w", err)
+	}
+
 	ml := Library{
 		config:        *config,
 		playlistCache: textcache.New(),
+		searchIndex:   searchIndex,
 	}
 	ml.setupHandler()
+
+	buildIndex := func() {
+		if err := ml.searchIndex.BuildIndex(); err != nil {
+			slog.Error("failed to build search index", "error", err)
+		}
+	}
+	if config.SynchronousSearchIndexing {
+		buildIndex()
+	} else {
+		go buildIndex()
+	}
 
 	slog.Info("media library opened", "prefix", config.Prefix, "root", config.RootPath)
 
@@ -126,6 +151,7 @@ func (ml *Library) setupHandler() {
 	mux.HandleFunc("GET /tracks/{track}/images/{image}", makeHandler(ml, handleTrackImageWrapper))
 	mux.HandleFunc("POST /tracks/{track}/favorite", makeHandler(ml, handleTrackFavoriteWrapper))
 	mux.HandleFunc("POST /tracks/{track}/unfavorite", makeHandler(ml, handleTrackUnfavoriteWrapper))
+	mux.HandleFunc("GET /search", makeHandler(ml, handleSearch))
 	ml.handler = http.StripPrefix(ml.config.Prefix, mux)
 }
 
@@ -241,6 +267,43 @@ func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Re
 	} else {
 		http.NotFound(w, r)
 	}
+}
+
+func isSearchable(path string, entry fs.DirEntry) bool {
+	// Always index directories
+	if entry.IsDir() {
+		return true
+	}
+	// Skip playlists and ignored files
+	fileType := getFileType(entry.Name())
+	return fileType == fileTypeTrack
+}
+
+func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		writeJson(r.Context(), w, &search.Response{Results: []search.Result{}, Total: 0})
+		return
+	}
+
+	results, err := ml.searchIndex.Search(query, 50)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "search failed", "query", query, "error", err)
+		http.Error(w, "Search failed", http.StatusInternalServerError)
+		return
+	}
+
+	// Add URLs to results
+	for i := range results.Results {
+		result := &results.Results[i]
+		if result.Type == search.DocTypeTrack {
+			result.URL = ml.libraryToUrlPath("tracks", result.Path)
+		} else if result.Type == search.DocTypeDirectory {
+			result.URL = ml.libraryToUrlPath("dirs", result.Path)
+		}
+	}
+
+	writeJson(r.Context(), w, results)
 }
 
 func writeJson(

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/beakbeak/aurelius/pkg/media"
+	"github.com/beakbeak/aurelius/pkg/search"
 )
 
 var (
@@ -304,6 +305,7 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	mlConfig.Prefix = apiPrefix
 	mlConfig.ThrottleStreaming = false
 	mlConfig.DeterministicStreaming = true
+	mlConfig.SynchronousSearchIndexing = true
 
 	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
@@ -1104,4 +1106,133 @@ func TestDirInfo(t *testing.T) {
 	if updateBaselines {
 		writeBaselines(baselines)
 	}
+}
+
+func TestSearch(t *testing.T) {
+	ml := createDefaultLibrary(t)
+
+	doSearch := func(query string) []search.Result {
+		t.Helper()
+		uri := api("search") + "?q=" + url.QueryEscape(query)
+		responseBody := simpleRequest(t, ml, "GET", uri, "")
+
+		var response search.Response
+		unmarshalJson(t, responseBody, &response)
+
+		if len(response.Results) != response.Total {
+			t.Errorf("results length (%d) doesn't match total (%d)", len(response.Results), response.Total)
+		}
+
+		return response.Results
+	}
+
+	t.Run("EmptyQuery", func(t *testing.T) {
+		results := doSearch("")
+		if len(results) != 0 {
+			t.Errorf("expected 0 results for empty query, got %d", len(results))
+		}
+	})
+
+	t.Run("SearchForTracks", func(t *testing.T) {
+		results := doSearch("test")
+		if len(results) == 0 {
+			t.Error("expected search for 'test' to return results")
+		}
+		for i, result := range results {
+			if result.Type != "track" && result.Type != "dir" {
+				t.Errorf("result %d has invalid type: %s", i, result.Type)
+			}
+			if result.Path == "" {
+				t.Errorf("result %d missing 'path' field", i)
+			}
+			if result.URL == "" {
+				t.Errorf("result %d missing 'url' field", i)
+			}
+		}
+	})
+
+	t.Run("SearchForSpecificFile", func(t *testing.T) {
+		results := doSearch("test")
+
+		found := false
+		for _, result := range results {
+			if result.Type == "track" && strings.HasSuffix(result.URL, "/tracks/at:test.flac") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("search for 'test' should find test track file")
+		}
+	})
+
+	t.Run("SearchForDirectory", func(t *testing.T) {
+		results := doSearch("foo")
+
+		found := false
+		for _, result := range results {
+			if result.Type == "dir" && strings.HasSuffix(result.URL, "/dirs/at:foo") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("search for 'foo' should find foo directory")
+		}
+	})
+
+	t.Run("SearchForNonexistent", func(t *testing.T) {
+		results := doSearch("nonexistentfilename12345")
+		if len(results) != 0 {
+			t.Errorf("expected 0 results for nonexistent search, got %d", len(results))
+		}
+	})
+
+	t.Run("CaseInsensitiveSearch", func(t *testing.T) {
+		resultsLower := doSearch("test")
+		resultsUpper := doSearch("TEST")
+		resultsMixed := doSearch("Test")
+
+		if len(resultsLower) == 0 {
+			t.Error("lowercase search should return results")
+		}
+		if len(resultsUpper) == 0 {
+			t.Error("uppercase search should return results")
+		}
+		if len(resultsMixed) == 0 {
+			t.Error("mixed case search should return results")
+		}
+	})
+
+	t.Run("PartialMatches", func(t *testing.T) {
+		results := doSearch("test*")
+		if len(results) == 0 {
+			t.Error("search for 'test*' should find files starting with 'test'")
+		}
+	})
+
+	t.Run("FuzzyMatches", func(t *testing.T) {
+		results := doSearch("tset")
+		if len(results) == 0 {
+			t.Error("search for 'tset' should find test files due to fuzzy matching")
+		}
+
+		foundTrack := false
+		for _, result := range results {
+			if result.Type == "track" && strings.Contains(result.Path, "test") {
+				foundTrack = true
+				break
+			}
+		}
+		if !foundTrack {
+			t.Error("fuzzy search should find test track files")
+		}
+	})
+
+	t.Run("SearchForToken", func(t *testing.T) {
+		results := doSearch("positive")
+		if len(results) == 0 {
+			t.Error("search for 'positive' should find test-positive-gain.ogg")
+		}
+	})
 }
