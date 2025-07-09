@@ -44,18 +44,24 @@ export async function setupDirUi(inPlayer: Player) {
 
     populateSpecial();
 
-    player.addEventListener("play", () => {
-        highlightPlayingTrack();
+    player.addEventListener("play", highlightPlayingTrack);
+    player.addEventListener("ended", unhighlightPlayingTrack);
+    player.addEventListener("favorite", () => {
+        if (currentDirInfo) {
+            loadDir(currentDirInfo.url);
+        }
     });
-    player.addEventListener("ended", () => {
-        unhighlightPlayingTrack();
+    player.addEventListener("unfavorite", () => {
+        if (currentDirInfo) {
+            loadDir(currentDirInfo.url);
+        }
     });
 
     window.onpopstate = () => {
-        loadCurrentDir();
+        loadDirFromPageUrl();
     };
 
-    await loadCurrentDir();
+    await loadDirFromPageUrl();
 }
 
 function populateSpecial(info?: DirInfo): void {
@@ -124,7 +130,7 @@ function setPlayingClass(element: HTMLAnchorElement | undefined): void {
     lastPlaying?.classList.add(Class.DirEntry_Playing);
 }
 
-async function loadCurrentDir(): Promise<void> {
+async function loadDirFromPageUrl(): Promise<void> {
     const url = window.location.href;
     const urlObj = new URL(url);
     const pathParam = urlObj.searchParams.get("dir");
@@ -281,10 +287,11 @@ function populateTracks(info: DirInfo): void {
 
     let html = ``;
     for (const track of info.tracks) {
+        const iconName = track.favorite ? "favorite_border" : "music_note";
         html +=
             //
             `<li class="${Class.DirEntry}">
-                <i class="${Class.DirIcon} ${Class.MaterialIcons}">music_note</i>
+                <i class="${Class.DirIcon} ${Class.MaterialIcons}">${iconName}</i>
                 <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}"
                 >play_arrow</i>
                 <a class="${Class.DirLink}"

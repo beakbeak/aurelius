@@ -5,6 +5,10 @@ export interface PathUrl {
     readonly url: string;
 }
 
+export type TrackPathUrl = PathUrl & {
+    readonly favorite?: boolean;
+};
+
 export interface DirInfo {
     readonly url: string;
     readonly topLevel: string;
@@ -12,7 +16,7 @@ export interface DirInfo {
     readonly path: string;
     readonly dirs: PathUrl[];
     readonly playlists: PathUrl[];
-    readonly tracks: PathUrl[];
+    readonly tracks: TrackPathUrl[];
 }
 
 export function fetchDirInfo(url: string): Promise<DirInfo> {

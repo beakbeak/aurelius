@@ -438,6 +438,7 @@ func getPlaylistLength(
 
 type PathUrl struct {
 	Name, Url string
+	Favorite  bool `json:"favorite,omitempty"`
 }
 
 type DirInfo struct {
@@ -510,25 +511,46 @@ func TestFavorite(t *testing.T) {
 	simpleRequestShouldFail(t, ml, "POST", trackAt("nonexistent.mp3", "favorite"), "")
 	simpleRequestShouldFail(t, ml, "POST", trackAt("nonexistent.mp3", "unfavorite"), "")
 
-	path := testFiles[0]
+	path := testFiles[1]
+
+	checkFavoriteInDirListing := func(expectedFavorite bool) {
+		t.Helper()
+		dirInfo := getDirInfo(t, ml, dirAt(""))
+		var foundTrack *PathUrl
+		for _, track := range dirInfo.Tracks {
+			if track.Name == path {
+				foundTrack = &track
+				break
+			}
+		}
+		if foundTrack == nil {
+			t.Fatalf("track \"%s\" not found in directory listing", path)
+		}
+		if foundTrack.Favorite != expectedFavorite {
+			t.Fatalf("expected favorite to be %t in directory listing for %q, got %t", expectedFavorite, path, foundTrack.Favorite)
+		}
+	}
 
 	simpleRequest(t, ml, "POST", trackAt(path, "unfavorite"), "")
 
 	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
+	checkFavoriteInDirListing(false)
 
 	simpleRequest(t, ml, "POST", trackAt(path, "favorite"), "")
 
 	if !isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
 	}
+	checkFavoriteInDirListing(true)
 
 	simpleRequest(t, ml, "POST", trackAt(path, "unfavorite"), "")
 
 	if isFavorite(t, ml, path) {
 		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
 	}
+	checkFavoriteInDirListing(false)
 }
 
 func TestFavoritePaths(t *testing.T) {

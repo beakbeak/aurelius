@@ -55,8 +55,9 @@ func (ml *Library) handleDirInfo(
 	}
 
 	type PathUrl struct {
-		Name string `json:"name"`
-		Url  string `json:"url"`
+		Name     string `json:"name"`
+		Url      string `json:"url"`
+		Favorite bool   `json:"favorite,omitempty"`
 	}
 
 	makePathUrl := func(collection string, libraryPath LibraryPath) PathUrl {
@@ -142,7 +143,10 @@ func (ml *Library) handleDirInfo(
 			if rePlaylist.MatchString(entry.Name()) {
 				result.Playlists = append(result.Playlists, makePathUrl("playlists", entryLibraryPath))
 			} else {
-				result.Tracks = append(result.Tracks, makePathUrl("tracks", entryLibraryPath))
+				favorite, _ := ml.isFavorite(entryLibraryPath.Path)
+				trackUrl := makePathUrl("tracks", entryLibraryPath)
+				trackUrl.Favorite = favorite
+				result.Tracks = append(result.Tracks, trackUrl)
 			}
 		}
 	}
