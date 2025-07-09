@@ -47,16 +47,8 @@ export async function setupDirUi(inPlayer: Player) {
 
     player.addEventListener("play", highlightPlayingTrack);
     player.addEventListener("ended", unhighlightPlayingTrack);
-    player.addEventListener("favorite", () => {
-        if (currentDirInfo) {
-            loadDir(currentDirInfo.url, /*addHistory=*/ false);
-        }
-    });
-    player.addEventListener("unfavorite", () => {
-        if (currentDirInfo) {
-            loadDir(currentDirInfo.url, /*addHistory=*/ false);
-        }
-    });
+    player.addEventListener("favorite", reloadCurrentDir);
+    player.addEventListener("unfavorite", reloadCurrentDir);
 
     window.onpopstate = () => {
         loadDirFromPageUrl();
@@ -152,14 +144,14 @@ async function loadDirFromPageUrl(): Promise<void> {
 
 /**
  * Populate directory listing with the contents at the given URL and update
- * history. If `url` is `undefined`, the window's current URL is used.
+ * history.
  */
 export async function loadDir(url: string, addHistory = true): Promise<DirInfo> {
     const info = await fetchDirInfo(url);
-    currentDirInfo = info;
-    if (addHistory) {
+    if (addHistory && info.url !== currentDirInfo?.url) {
         window.history.pushState({}, "", treeUrlFromDirInfo(info));
     }
+    currentDirInfo = info;
     setDocumentTitleFromPath(info.path);
     populateSpecial(info);
     populateNavigation(info);
@@ -167,6 +159,12 @@ export async function loadDir(url: string, addHistory = true): Promise<DirInfo> 
     populatePlaylists(info);
     populateTracks(info);
     return info;
+}
+
+async function reloadCurrentDir(): Promise<void> {
+    if (currentDirInfo) {
+        await loadDir(currentDirInfo.url);
+    }
 }
 
 function setDocumentTitleFromPath(path: string) {
