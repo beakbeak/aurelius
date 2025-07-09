@@ -154,8 +154,8 @@ so use of HTTPS is recommended.`)
 	}
 
 	loginGetHandler := func(w http.ResponseWriter, req *http.Request) {
-		if *passphrase == "" {
-			http.NotFound(w, req)
+		if *passphrase == "" || isAuthorized(req) {
+			redirectLogin(w, req)
 			return
 		}
 		http.ServeFile(w, req, htmlPath("login.html"))
@@ -189,12 +189,7 @@ so use of HTTPS is recommended.`)
 		}
 
 		slog.Info("login succeeded", "remote_addr", req.RemoteAddr)
-
-		fromUrl := req.URL.Query().Get("from")
-		if fromUrl == "" {
-			fromUrl = "/"
-		}
-		http.Redirect(w, req, fromUrl, http.StatusFound)
+		redirectLogin(w, req)
 	}
 
 	logoutHandler := func(w http.ResponseWriter, req *http.Request) {
@@ -268,6 +263,14 @@ func makeRequestID() string {
 		panic(fmt.Sprintf("failed to generate request ID: %v", err))
 	}
 	return fmt.Sprintf("%016x", binary.BigEndian.Uint64(buf[:]))
+}
+
+func redirectLogin(w http.ResponseWriter, req *http.Request) {
+	fromUrl := req.URL.Query().Get("from")
+	if fromUrl == "" {
+		fromUrl = "/"
+	}
+	http.Redirect(w, req, fromUrl, http.StatusFound)
 }
 
 // A fileOnlyServer serves local files from the directory tree rooted at root.
