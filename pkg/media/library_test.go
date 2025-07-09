@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -516,39 +517,33 @@ func TestFavorite(t *testing.T) {
 	checkFavoriteInDirListing := func(expectedFavorite bool) {
 		t.Helper()
 		dirInfo := getDirInfo(t, ml, dirAt(""))
-		var foundTrack *PathUrl
-		for _, track := range dirInfo.Tracks {
-			if track.Name == path {
-				foundTrack = &track
-				break
-			}
+		idx := slices.IndexFunc(dirInfo.Tracks, func(u PathUrl) bool { return u.Name == path })
+		if idx < 0 {
+			t.Fatalf("track %q not found in directory listing", path)
 		}
-		if foundTrack == nil {
-			t.Fatalf("track \"%s\" not found in directory listing", path)
-		}
-		if foundTrack.Favorite != expectedFavorite {
-			t.Fatalf("expected favorite to be %t in directory listing for %q, got %t", expectedFavorite, path, foundTrack.Favorite)
+		if dirInfo.Tracks[idx].Favorite != expectedFavorite {
+			t.Fatalf("expected favorite to be %t in directory listing for %q, got %t", expectedFavorite, path, dirInfo.Tracks[idx].Favorite)
 		}
 	}
 
 	simpleRequest(t, ml, "POST", trackAt(path, "unfavorite"), "")
 
 	if isFavorite(t, ml, path) {
-		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
+		t.Fatalf("expected 'favorite' to be false for %q", path)
 	}
 	checkFavoriteInDirListing(false)
 
 	simpleRequest(t, ml, "POST", trackAt(path, "favorite"), "")
 
 	if !isFavorite(t, ml, path) {
-		t.Fatalf("expected 'favorite' to be true for \"%s\"", path)
+		t.Fatalf("expected 'favorite' to be true for %q", path)
 	}
 	checkFavoriteInDirListing(true)
 
 	simpleRequest(t, ml, "POST", trackAt(path, "unfavorite"), "")
 
 	if isFavorite(t, ml, path) {
-		t.Fatalf("expected 'favorite' to be false for \"%s\"", path)
+		t.Fatalf("expected 'favorite' to be false for %q", path)
 	}
 	checkFavoriteInDirListing(false)
 }
