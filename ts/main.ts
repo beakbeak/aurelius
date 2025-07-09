@@ -98,22 +98,28 @@ window.onload = () => {
                 showAndApplySettings();
                 break;
             case "'":
+            case '"':
             case "s":
+            case "S":
                 e.preventDefault();
                 if (player.track) {
                     const currentTime = player.track.currentTime();
-                    const targetTime = currentTime + 10;
+                    const seekAmount = e.shiftKey ? 30 : 10;
+                    const targetTime = currentTime + seekAmount;
                     if (targetTime < player.track.info.duration) {
                         player.seekTo(targetTime);
                     }
                 }
                 break;
             case ";":
+            case ":":
             case "a":
+            case "A":
                 e.preventDefault();
                 if (player.track) {
                     const currentTime = player.track.currentTime();
-                    player.seekTo(Math.max(0, currentTime - 10));
+                    const seekAmount = e.shiftKey ? 30 : 10;
+                    player.seekTo(Math.max(0, currentTime - seekAmount));
                 }
                 break;
             case "=":
