@@ -24,9 +24,10 @@ func (ml *Library) handleDirInfo(
 	dirLibraryPath string,
 	w http.ResponseWriter,
 ) {
-	fsDirPath := ml.libraryToFsPath(dirLibraryPath)
+	dirLibraryPath = cleanLibraryPath(dirLibraryPath)
+	dirFsPath := ml.libraryToFsPath(dirLibraryPath)
 
-	entries, err := os.ReadDir(fsDirPath)
+	entries, err := os.ReadDir(dirFsPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		slog.ErrorContext(ctx, "ReadDir failed", "error", err)
@@ -46,7 +47,7 @@ func (ml *Library) handleDirInfo(
 	}
 
 	makeAbsoluteLibraryPath := func(name, fsPath string) (LibraryPath, error) {
-		libraryPath, err := ml.fsToLibraryPathWithContext(fsPath, fsDirPath)
+		libraryPath, err := ml.fsToLibraryPathWithContext(fsPath, dirFsPath)
 		if err != nil {
 			return LibraryPath{}, err
 		}
@@ -66,6 +67,7 @@ func (ml *Library) handleDirInfo(
 	}
 
 	type Result struct {
+		Url       string    `json:"url"`
 		TopLevel  string    `json:"topLevel"`
 		Parent    string    `json:"parent"`
 		Path      string    `json:"path"`
@@ -74,6 +76,7 @@ func (ml *Library) handleDirInfo(
 		Tracks    []PathUrl `json:"tracks"`
 	}
 	result := Result{
+		Url:       ml.libraryToUrlPath("dirs", dirLibraryPath),
 		TopLevel:  ml.libraryToUrlPath("dirs", ""),
 		Parent:    ml.libraryToUrlPath("dirs", cleanLibraryPath(path.Dir(dirLibraryPath))),
 		Path:      dirLibraryPath,
@@ -104,7 +107,7 @@ func (ml *Library) handleDirInfo(
 		entryLibraryPath := makeRelativeLibraryPath(entry.Name())
 
 		if (mode & os.ModeSymlink) != 0 {
-			linkPath := filepath.Join(fsDirPath, entry.Name())
+			linkPath := filepath.Join(dirFsPath, entry.Name())
 			linkedPath, err := filepath.EvalSymlinks(linkPath)
 			if err != nil {
 				slog.ErrorContext(ctx, "EvalSymlinks failed", "path", linkPath, "error", err)

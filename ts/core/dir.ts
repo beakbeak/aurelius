@@ -6,6 +6,7 @@ export interface PathUrl {
 }
 
 export interface DirInfo {
+    readonly url: string;
     readonly topLevel: string;
     readonly parent: string;
     readonly path: string;

@@ -7,6 +7,7 @@ import { ok, strictEqual } from "assert";
 function dirInfoFromPath(path: string): DirInfo {
     return {
         path,
+        url: "",
         topLevel: "",
         parent: "",
         dirs: [],

@@ -759,9 +759,6 @@ func TestWithSymlinks(t *testing.T) {
 
 		testDir = func(path string) {
 			info := getDirInfo(t, ml, path)
-			if info.Path == "" {
-				t.Errorf("want non-empty path, got %q", path)
-			}
 
 			for _, playlistUrl := range info.Playlists {
 				getPlaylistLength(t, ml, playlistUrl.Url)
@@ -1045,26 +1042,20 @@ func TestDirInfo(t *testing.T) {
 		path     string
 		baseline string
 	}{
-		{"root directory", "/", "dirs.root"},
-		{"subdirectory foo", "/foo", "dirs.foo"},
-		{"nested subdirectory", "/foo/another directory", "dirs.foo-another-directory"},
+		{"root directory", "", "dirs.root"},
+		{"subdirectory foo", "foo", "dirs.foo"},
+		{"subdirectory with leading slash", "/foo", "dirs.foo"},
+		{"subdirectory with trailing slash", "foo/", "dirs.foo"},
+		{"subdirectory with leading and trailing slash", "/foo/", "dirs.foo"},
+		{"nested subdirectory", "foo/another directory", "dirs.foo-another-directory"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			responseBody := simpleRequest(t, ml, "GET", dirAt(test.path), "")
 
-			type PathUrl struct {
-				Name string `json:"name"`
-				Url  string `json:"url"`
-			}
 			type DirInfo struct {
-				TopLevel  string    `json:"topLevel"`
-				Parent    string    `json:"parent"`
-				Path      string    `json:"path"`
-				Dirs      []PathUrl `json:"dirs"`
-				Playlists []PathUrl `json:"playlists"`
-				Tracks    []PathUrl `json:"tracks"`
+				Path string `json:"path"`
 			}
 
 			var dirInfo DirInfo
@@ -1072,12 +1063,6 @@ func TestDirInfo(t *testing.T) {
 				t.Fatalf("failed to decode dir info JSON: %v", err)
 			}
 
-			// Verify basic structure
-			if dirInfo.Path != test.path {
-				t.Errorf("expected path %q, got %q", test.path, dirInfo.Path)
-			}
-
-			// Check baseline
 			baseline, ok := baselines[test.baseline]
 			if !ok && !updateBaselines {
 				t.Fatalf("baseline %q not found", test.baseline)

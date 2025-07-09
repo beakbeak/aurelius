@@ -82,7 +82,7 @@ func (ml *Library) storageToFsPath(storagePath string) string {
 
 // cleanLibraryPath calls path.Clean() and then replaces "." with "".
 func cleanLibraryPath(libraryPath string) string {
-	cleanedPath := path.Clean(libraryPath)
+	cleanedPath := path.Clean(strings.Trim(libraryPath, "/"))
 	if cleanedPath == "." {
 		return ""
 	}

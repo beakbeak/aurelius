@@ -4,30 +4,32 @@
       "dirs": [
         {
           "name": "another directory",
-          "url": "/prefix/dirs/at:%2Ffoo%2Fanother%20directory"
+          "url": "/prefix/dirs/at:foo%2Fanother%20directory"
         }
       ],
-      "parent": "/prefix/dirs/at:%2F",
-      "path": "/foo",
+      "parent": "/prefix/dirs/at:",
+      "path": "foo",
       "playlists": [],
       "topLevel": "/prefix/dirs/at:",
-      "tracks": []
+      "tracks": [],
+      "url": "/prefix/dirs/at:foo"
     },
     "StreamHashes": null
   },
   "dirs.foo-another-directory": {
     "Info": {
       "dirs": [],
-      "parent": "/prefix/dirs/at:%2Ffoo",
-      "path": "/foo/another directory",
+      "parent": "/prefix/dirs/at:foo",
+      "path": "foo/another directory",
       "playlists": [],
       "topLevel": "/prefix/dirs/at:",
       "tracks": [
         {
           "name": "test.m4a",
-          "url": "/prefix/tracks/at:%2Ffoo%2Fanother%20directory%2Ftest.m4a"
+          "url": "/prefix/tracks/at:foo%2Fanother%20directory%2Ftest.m4a"
         }
-      ]
+      ],
+      "url": "/prefix/dirs/at:foo%2Fanother%20directory"
     },
     "StreamHashes": null
   },
@@ -36,52 +38,53 @@
       "dirs": [
         {
           "name": "foo",
-          "url": "/prefix/dirs/at:%2Ffoo"
+          "url": "/prefix/dirs/at:foo"
         }
       ],
-      "parent": "/prefix/dirs/at:%2F",
-      "path": "/",
+      "parent": "/prefix/dirs/at:",
+      "path": "",
       "playlists": [
         {
           "name": "test.m3u",
-          "url": "/prefix/playlists/at:%2Ftest.m3u"
+          "url": "/prefix/playlists/at:test.m3u"
         }
       ],
       "topLevel": "/prefix/dirs/at:",
       "tracks": [
         {
           "name": "test-positive-gain.ogg",
-          "url": "/prefix/tracks/at:%2Ftest-positive-gain.ogg"
+          "url": "/prefix/tracks/at:test-positive-gain.ogg"
         },
         {
           "name": "test.flac.1.txt",
-          "url": "/prefix/tracks/at:%2Ftest.flac.1.txt"
+          "url": "/prefix/tracks/at:test.flac.1.txt"
         },
         {
           "name": "test.flac.2.txt",
-          "url": "/prefix/tracks/at:%2Ftest.flac.2.txt"
+          "url": "/prefix/tracks/at:test.flac.2.txt"
         },
         {
           "name": "test.flac.3.txt",
-          "url": "/prefix/tracks/at:%2Ftest.flac.3.txt"
+          "url": "/prefix/tracks/at:test.flac.3.txt"
         },
         {
           "name": "test.mka",
-          "url": "/prefix/tracks/at:%2Ftest.mka"
+          "url": "/prefix/tracks/at:test.mka"
         },
         {
           "name": "test.mp3",
-          "url": "/prefix/tracks/at:%2Ftest.mp3"
+          "url": "/prefix/tracks/at:test.mp3"
         },
         {
           "name": "test.ogg",
-          "url": "/prefix/tracks/at:%2Ftest.ogg"
+          "url": "/prefix/tracks/at:test.ogg"
         },
         {
           "name": "test.wav",
-          "url": "/prefix/tracks/at:%2Ftest.wav"
+          "url": "/prefix/tracks/at:test.wav"
         }
-      ]
+      ],
+      "url": "/prefix/dirs/at:"
     },
     "StreamHashes": null
   },
