@@ -49,12 +49,12 @@ export async function setupDirUi(inPlayer: Player) {
     player.addEventListener("ended", unhighlightPlayingTrack);
     player.addEventListener("favorite", () => {
         if (currentDirInfo) {
-            loadDir(currentDirInfo.url);
+            loadDir(currentDirInfo.url, /*addHistory=*/ false);
         }
     });
     player.addEventListener("unfavorite", () => {
         if (currentDirInfo) {
-            loadDir(currentDirInfo.url);
+            loadDir(currentDirInfo.url, /*addHistory=*/ false);
         }
     });
 
