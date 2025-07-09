@@ -3,6 +3,7 @@ import { DirInfo, dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "..
 import { ReplayGainMode, fetchTrackInfo } from "../core/track";
 import { Class } from "./class";
 import { closestAncestorWithClass } from "./dom";
+import { RemotePlaylist } from "../core/playlist";
 
 let player: Player;
 
@@ -350,9 +351,19 @@ export async function navigateToTopLevel(): Promise<void> {
     }
 }
 
-export function playFavorites(prefix?: string): void {
-    if (prefix === undefined && currentDirInfo && currentDirInfo.path !== "/") {
-        prefix = currentDirInfo.path;
+export async function playFavorites(prefix = currentDirInfo?.path): Promise<void> {
+    const favoritesUrl = "/media/playlists/favorites";
+    // If we're in a leaf directory, play favorites in listed order instead of randomly
+    if (prefix !== undefined && prefix === currentDirInfo?.path) {
+        const allFavoritesWithPrefix = await RemotePlaylist.fetch(favoritesUrl, prefix);
+        const currentDirFavorites = currentDirInfo.tracks.filter((track) => !!track.favorite);
+        if (currentDirFavorites.length === allFavoritesWithPrefix.length()) {
+            await player.playList(
+                currentDirFavorites.map((track) => track.url),
+                { replayGainHint: ReplayGainMode.Album },
+            );
+            return;
+        }
     }
-    player.playList("/media/playlists/favorites", { random: true, prefix });
+    await player.playList(favoritesUrl, { random: true, prefix });
 }
