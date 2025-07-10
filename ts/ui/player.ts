@@ -7,7 +7,7 @@ import { AttachedImageInfo, StreamCodec } from "../core/track";
 import { getSettings } from "./settings";
 
 const defaultTrackImageUrl = "/static/img/aurelius.svgz";
-const maxImageSize = 256 * 1024;
+const maxImageSize = 300 * 1024;
 
 let player: Player;
 
