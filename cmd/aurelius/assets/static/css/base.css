@@ -259,6 +259,7 @@ body {
 	bottom: 0.5em;
 }
 
+/* Text below controls */
 .controls__bottom-left {
 	position: absolute;
 	bottom: 0.5rem;
@@ -268,6 +269,22 @@ body {
 	position: absolute;
 	bottom: 0.5rem;
 	right: 0.5rem;
+}
+
+/* Prevent text from overlapping buttons */
+@media (max-width: 530px) {
+	.controls__bottom {
+		display: flex;
+	}
+	.controls__bottom-left {
+		position: relative;
+	}
+	.controls__bottom-right {
+		position: relative;
+	}
+	.controls__bottom-center {
+		flex: 1;
+	}
 }
 
 /* Directory listing **********************************************************/
