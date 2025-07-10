@@ -285,6 +285,10 @@ body {
 	.controls__bottom-center {
 		flex: 1;
 	}
+	.controls__track-image {
+		width: 7rem;
+		height: 7rem;
+	}
 }
 
 /* Directory listing **********************************************************/
