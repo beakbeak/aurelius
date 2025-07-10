@@ -334,4 +334,5 @@ body {
 	cursor: pointer;
 	font-size: 3rem;
 	color: black;
+	text-shadow: 0 0 2px white;
 }
