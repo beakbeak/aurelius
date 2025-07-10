@@ -95,6 +95,11 @@ func (ml *Library) handleDirInfo(
 		}
 	}
 
+	favorites, err := ml.loadFavorites()
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to load favorites", "error", err)
+	}
+
 	for _, entry := range entries {
 		if strings.HasPrefix(entry.Name(), ".") {
 			continue
@@ -143,9 +148,10 @@ func (ml *Library) handleDirInfo(
 			if rePlaylist.MatchString(entry.Name()) {
 				result.Playlists = append(result.Playlists, makePathUrl("playlists", entryLibraryPath))
 			} else {
-				favorite, _ := ml.isFavorite(entryLibraryPath.Path)
 				trackUrl := makePathUrl("tracks", entryLibraryPath)
-				trackUrl.Favorite = favorite
+				if favorites != nil {
+					trackUrl.Favorite = favorites.data.LineSet()[entryLibraryPath.Path]
+				}
 				result.Tracks = append(result.Tracks, trackUrl)
 			}
 		}
