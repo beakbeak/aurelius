@@ -247,12 +247,16 @@ func (h *contextLogHandler) Handle(ctx context.Context, r slog.Record) error {
 func withRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := makeRequestID()
+		remoteAddr := r.Header.Get("x-forwarded-for")
+		if remoteAddr == "" {
+			remoteAddr = r.RemoteAddr
+		}
 		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
 		slog.InfoContext(ctx, "request",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"query", r.URL.RawQuery,
-			"remote_addr", r.RemoteAddr,
+			"remote_addr", remoteAddr,
 		)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
