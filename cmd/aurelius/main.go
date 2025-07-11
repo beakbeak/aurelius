@@ -205,13 +205,15 @@ so use of HTTPS is recommended.`)
 	}
 
 	router := http.NewServeMux()
-	router.Handle("/static/", fileOnlyServer{assetsDir})
+	router.Handle("GET /static/", fileOnlyServer{assetsDir})
 	router.HandleFunc("GET /login", loginGetHandler)
 	router.HandleFunc("POST /login", loginPostHandler)
-	router.HandleFunc("/logout", logoutHandler)
-	router.HandleFunc("/", requireAuth(rootHandler))
-	router.HandleFunc(mlConfig.Prefix+"/tree/", requireAuth(mainPageHandler))
-	router.HandleFunc(mlConfig.Prefix+"/", requireAuth(mediaHandler))
+	router.HandleFunc("GET /logout", logoutHandler)
+	router.HandleFunc("POST /logout", logoutHandler)
+	router.HandleFunc("GET /", requireAuth(rootHandler))
+	router.HandleFunc("GET "+mlConfig.Prefix+"/tree/", requireAuth(mainPageHandler))
+	router.HandleFunc("GET "+mlConfig.Prefix+"/", requireAuth(mediaHandler))
+	router.HandleFunc("POST "+mlConfig.Prefix+"/", requireAuth(mediaHandler))
 
 	http.Handle("/", withRequestID(router))
 
