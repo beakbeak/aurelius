@@ -117,14 +117,6 @@ so use of HTTPS is recommended.`)
 		return false
 	}
 
-	loginIfUnauthorized := func(w http.ResponseWriter, req *http.Request) bool {
-		if isAuthorized(req) {
-			return false
-		}
-		http.Redirect(w, req, "/login?from="+url.QueryEscape(req.URL.String()), http.StatusFound)
-		return true
-	}
-
 	trySaveSessionValues := func(w http.ResponseWriter, req *http.Request, values ...interface{}) bool {
 		session, _ := sessionStore.Get(req, sessionName)
 
@@ -140,9 +132,20 @@ so use of HTTPS is recommended.`)
 		return true
 	}
 
-	requireAuth := func(handler http.HandlerFunc) http.HandlerFunc {
+	loginIfNoAuth := func(handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, req *http.Request) {
-			if loginIfUnauthorized(w, req) {
+			if !isAuthorized(req) {
+				http.Redirect(w, req, "/login?from="+url.QueryEscape(req.URL.String()), http.StatusFound)
+				return
+			}
+			handler(w, req)
+		}
+	}
+
+	failIfNoAuth := func(handler http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, req *http.Request) {
+			if !isAuthorized(req) {
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 			handler(w, req)
@@ -210,10 +213,10 @@ so use of HTTPS is recommended.`)
 	router.HandleFunc("POST /login", loginPostHandler)
 	router.HandleFunc("GET /logout", logoutHandler)
 	router.HandleFunc("POST /logout", logoutHandler)
-	router.HandleFunc("GET /", requireAuth(rootHandler))
-	router.HandleFunc("GET "+mlConfig.Prefix+"/tree/", requireAuth(mainPageHandler))
-	router.HandleFunc("GET "+mlConfig.Prefix+"/", requireAuth(mediaHandler))
-	router.HandleFunc("POST "+mlConfig.Prefix+"/", requireAuth(mediaHandler))
+	router.HandleFunc("GET /", loginIfNoAuth(rootHandler))
+	router.HandleFunc("GET "+mlConfig.Prefix+"/tree/", loginIfNoAuth(mainPageHandler))
+	router.HandleFunc("GET "+mlConfig.Prefix+"/", failIfNoAuth(mediaHandler))
+	router.HandleFunc("POST "+mlConfig.Prefix+"/", failIfNoAuth(mediaHandler))
 
 	http.Handle("/", withRequestID(router))
 
