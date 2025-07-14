@@ -5,15 +5,15 @@ import EventDispatcher from "./eventdispatcher";
 import { copyJson } from "./json";
 
 export interface PlayerEventMap {
-    play: () => void;
-    progress: () => void;
-    timeupdate: () => void;
-    ended: () => void;
-    pause: () => void;
-    unpause: () => void;
-    favorite: () => void;
-    unfavorite: () => void;
-    autoNext: () => void;
+    play: (track: Track) => void;
+    progress: (track: Track) => void;
+    timeupdate: (track: Track) => void;
+    ended: (track: Track) => void;
+    pause: (track: Track) => void;
+    unpause: (track: Track) => void;
+    favorite: (track: Track) => void;
+    unfavorite: (track: Track) => void;
+    autoNext: (track: Track) => void;
 }
 export type PlayerEvent = keyof PlayerEventMap;
 
@@ -120,36 +120,36 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         track.addEventListener("pause", () => {
             this._stopStallDetection();
             wasPaused = true;
-            this.dispatchEvent("pause");
+            this.dispatchEvent("pause", track);
         });
         track.addEventListener("play", () => {
             this._startStallDetection();
             // Don't dispatch "unpause" in response to initial "play" event
             if (wasPaused) {
-                this.dispatchEvent("unpause");
+                this.dispatchEvent("unpause", track);
             }
             wasPaused = false;
         });
 
         track.addEventListener("progress", () => {
-            this.dispatchEvent("progress");
+            this.dispatchEvent("progress", track);
         });
         track.addEventListener("timeupdate", () => {
             this._lastStallCheck = { timeMs: Date.now(), seekPos: this.track?.currentTime() || 0 };
-            this.dispatchEvent("timeupdate");
+            this.dispatchEvent("timeupdate", track);
         });
 
         track.addEventListener("ended", async () => {
             this._stopStallDetection();
             const advanced = await this.next();
             if (advanced) {
-                this.dispatchEvent("autoNext");
+                this.dispatchEvent("autoNext", track);
             } else {
                 if (this.track !== undefined) {
                     this.track.destroy();
                     delete this.track;
                 }
-                this.dispatchEvent("ended");
+                this.dispatchEvent("ended", track);
             }
         });
 
@@ -162,7 +162,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
         await track.play();
         this._startStallDetection();
-        this.dispatchEvent("play");
+        this.dispatchEvent("play", track);
     }
 
     public seekTo(seconds: number): Promise<void> {
@@ -290,7 +290,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         }
         this._stopStallDetection();
         this.track.pause();
-        this.dispatchEvent("pause");
+        this.dispatchEvent("pause", this.track);
     }
 
     public unpause(): void {
@@ -299,7 +299,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         }
         this.track.play();
         this._startStallDetection();
-        this.dispatchEvent("unpause");
+        this.dispatchEvent("unpause", this.track);
     }
 
     public async favorite(): Promise<void> {
@@ -307,7 +307,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         await this.track.favorite();
-        this.dispatchEvent("favorite");
+        this.dispatchEvent("favorite", this.track);
     }
 
     public async unfavorite(): Promise<void> {
@@ -315,6 +315,6 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         await this.track.unfavorite();
-        this.dispatchEvent("unfavorite");
+        this.dispatchEvent("unfavorite", this.track);
     }
 }

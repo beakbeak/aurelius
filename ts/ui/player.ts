@@ -124,7 +124,9 @@ export function setupPlayerUi(inPlayer: Player) {
     player.addEventListener("pause", updateAll);
     player.addEventListener("unpause", updateAll);
 
-    player.addEventListener("autoNext", showDesktopNotification);
+    player.addEventListener("autoNext", () => {
+        showDesktopNotification();
+    });
 
     navigator.mediaSession?.setActionHandler("previoustrack", () => {
         player.previous();
