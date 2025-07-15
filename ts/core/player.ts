@@ -3,6 +3,7 @@ import { Playlist, LocalPlaylist, RemotePlaylist } from "./playlist";
 import { PlayHistory } from "./history";
 import EventDispatcher from "./eventdispatcher";
 import { copyJson } from "./json";
+import { LogLevel, serverLog } from "./log";
 
 export interface PlayerEventMap {
     play: (track: Track) => void;
@@ -58,6 +59,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             return;
         }
         this._stopStallDetection();
+        serverLog(LogLevel.Info, "start stall detection");
         this._lastStallCheck = { timeMs: Date.now(), seekPos: this.track?.currentTime() || 0 };
         this._stallDetectionTimer = window.setInterval(() => {
             this._restartIfStalled();
@@ -65,10 +67,12 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     private _stopStallDetection(): void {
-        if (this._stallDetectionTimer !== undefined) {
-            clearInterval(this._stallDetectionTimer);
-            this._stallDetectionTimer = undefined;
+        if (this._stallDetectionTimer === undefined) {
+            return;
         }
+        serverLog(LogLevel.Info, "stop stall detection");
+        clearInterval(this._stallDetectionTimer);
+        this._stallDetectionTimer = undefined;
     }
 
     // Check if playback has stalled without triggering a 'stalled' event.
@@ -84,9 +88,10 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         if (currentTime === this._lastStallCheck.seekPos) {
             const stallDuration = now - this._lastStallCheck.timeMs;
             if (stallDuration >= this._stallThresholdMs) {
-                console.warn(
-                    new Date().toISOString(),
-                    `Player: Playback stalled for ${stallDuration / 1000}s; restarting`,
+                serverLog(
+                    LogLevel.Warn,
+                    `playback stalled for ${stallDuration / 1000}s; restarting`,
+                    { track: this.track?.info.name },
                 );
                 this._isRestarting = true;
                 this._play(this.track.url, currentTime).finally(() => {
@@ -118,11 +123,13 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         let wasPaused = false;
 
         track.addEventListener("pause", () => {
+            serverLog(LogLevel.Info, "track: pause", { track: track.info.name });
             this._stopStallDetection();
             wasPaused = true;
             this.dispatchEvent("pause", track);
         });
         track.addEventListener("play", () => {
+            serverLog(LogLevel.Info, "track: play", { track: track.info.name });
             this._startStallDetection();
             // Don't dispatch "unpause" in response to initial "play" event
             if (wasPaused) {
@@ -140,6 +147,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         });
 
         track.addEventListener("ended", async () => {
+            serverLog(LogLevel.Info, "track: ended", { track: track.info.name });
             this._stopStallDetection();
             const advanced = await this.next();
             if (advanced) {
@@ -154,7 +162,8 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         });
 
         track.addEventListener("stalled", () => {
-            if (this.track === undefined || this.track.isPaused()) {
+            serverLog(LogLevel.Info, "track: stalled", { track: track.info.name });
+            if (this.track !== track || this.track.isPaused()) {
                 return;
             }
             this._play(this.track.url, this.track.currentTime());
@@ -239,6 +248,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     public async next(): Promise<boolean> {
+        serverLog(LogLevel.Info, "player: next", { track: this.track?.info.name });
         let item = this._history.next();
         if (item === undefined) {
             if (this.playlist === undefined || this.playlist.length() < 1) {
@@ -262,6 +272,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     }
 
     public async previous(): Promise<boolean> {
+        serverLog(LogLevel.Info, "player: previous", { track: this.track?.info.name });
         let item = this._history.previous();
         if (item === undefined) {
             if (

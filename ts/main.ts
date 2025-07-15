@@ -11,9 +11,25 @@ import {
 import { getSettings } from "./ui/settings";
 import { showSettingsDialog } from "./ui/settings-dialog";
 import { showModalDialog } from "./ui/modal";
+import { LogLevel, serverLog } from "./core/log";
 
 window.onload = () => {
     const player = new Player({ streamConfig: getSettings().streamConfig });
+
+    const eventNames = [
+        "play",
+        "ended",
+        "pause",
+        "unpause",
+        "favorite",
+        "unfavorite",
+        "autoNext",
+    ] as const;
+    eventNames.forEach((eventName) => {
+        player.addEventListener(eventName, (track) =>
+            serverLog(LogLevel.Info, `player: ${eventName}`, { track: track.info.name }),
+        );
+    });
 
     setupDirUi(player);
     setupPlayerUi(player);
