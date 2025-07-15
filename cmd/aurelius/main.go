@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 )
 
 const sessionName = "aurelius"
+const maxClientLogSize = 1024
 
 func main() {
 	var (
@@ -58,17 +61,8 @@ so use of HTTPS is recommended.`)
 
 	iniflags.Parse()
 
-	var level slog.Level
-	switch strings.ToLower(*logLevel) {
-	case "debug":
-		level = slog.LevelDebug
-	case "info":
-		level = slog.LevelInfo
-	case "warn":
-		level = slog.LevelWarn
-	case "error":
-		level = slog.LevelError
-	default:
+	level, ok := parseLogLevel(*logLevel)
+	if !ok {
 		log.Fatalf("invalid log level: %s", *logLevel)
 	}
 
@@ -203,6 +197,49 @@ so use of HTTPS is recommended.`)
 		ml.ServeHTTP(w, req)
 	})
 
+	clientLogHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		req.Body = http.MaxBytesReader(w, req.Body, maxClientLogSize)
+		defer req.Body.Close()
+
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		var rawData map[string]interface{}
+		if err := json.Unmarshal(body, &rawData); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		msg, ok := rawData["msg"].(string)
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		levelStr, ok := rawData["level"].(string)
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		level, ok := parseLogLevel(levelStr)
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		attrs := make([]slog.Attr, 0, len(rawData))
+		for k, v := range rawData {
+			if k != "msg" && k != "level" {
+				attrs = append(attrs, slog.Any(k, v))
+			}
+		}
+		slog.LogAttrs(req.Context(), level, "client log: "+msg, attrs...)
+
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := w.Write([]byte("{}")); err != nil {
+			slog.ErrorContext(req.Context(), "failed to write response", "error", err)
+		}
+	})
+
 	router := http.NewServeMux()
 	router.Handle("GET /static/", fileOnlyServer{assetsDir})
 	router.Handle("GET /login", loginGetHandler)
@@ -213,6 +250,7 @@ so use of HTTPS is recommended.`)
 	router.Handle("GET "+mlConfig.Prefix+"/tree/", loginIfNoAuth(mainPageHandler))
 	router.Handle("GET "+mlConfig.Prefix+"/", failIfNoAuth(withLog(mediaHandler)))
 	router.Handle("POST "+mlConfig.Prefix+"/", failIfNoAuth(withLog(mediaHandler)))
+	router.Handle("POST /log", failIfNoAuth(clientLogHandler))
 
 	http.Handle("/", withRequestIDAndAddress(router))
 
@@ -288,6 +326,21 @@ func redirectLogin(w http.ResponseWriter, req *http.Request) {
 		fromUrl = "/"
 	}
 	http.Redirect(w, req, fromUrl, http.StatusFound)
+}
+
+func parseLogLevel(levelStr string) (slog.Level, bool) {
+	switch levelStr {
+	case "debug":
+		return slog.LevelDebug, true
+	case "info":
+		return slog.LevelInfo, true
+	case "warn":
+		return slog.LevelWarn, true
+	case "error":
+		return slog.LevelError, true
+	default:
+		return slog.LevelInfo, false
+	}
 }
 
 // A fileOnlyServer serves local files from the directory tree rooted at root.
