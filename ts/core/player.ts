@@ -290,7 +290,6 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         }
         this._stopStallDetection();
         this.track.pause();
-        this.dispatchEvent("pause", this.track);
     }
 
     public unpause(): void {
@@ -299,7 +298,6 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         }
         this.track.play();
         this._startStallDetection();
-        this.dispatchEvent("unpause", this.track);
     }
 
     public async favorite(): Promise<void> {
