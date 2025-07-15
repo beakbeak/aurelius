@@ -132,39 +132,39 @@ so use of HTTPS is recommended.`)
 		return true
 	}
 
-	loginIfNoAuth := func(handler http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, req *http.Request) {
+	loginIfNoAuth := func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if !isAuthorized(req) {
 				http.Redirect(w, req, "/login?from="+url.QueryEscape(req.URL.String()), http.StatusFound)
 				return
 			}
-			handler(w, req)
-		}
+			handler.ServeHTTP(w, req)
+		})
 	}
 
-	failIfNoAuth := func(handler http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, req *http.Request) {
+	failIfNoAuth := func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if !isAuthorized(req) {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			handler(w, req)
-		}
+			handler.ServeHTTP(w, req)
+		})
 	}
 
-	rootHandler := func(w http.ResponseWriter, req *http.Request) {
+	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, mlConfig.Prefix+"/tree/", http.StatusFound)
-	}
+	})
 
-	loginGetHandler := func(w http.ResponseWriter, req *http.Request) {
+	loginGetHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if *passphrase == "" || isAuthorized(req) {
 			redirectLogin(w, req)
 			return
 		}
 		http.ServeFile(w, req, htmlPath("login.html"))
-	}
+	})
 
-	loginPostHandler := func(w http.ResponseWriter, req *http.Request) {
+	loginPostHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if *passphrase == "" {
 			http.NotFound(w, req)
 			return
@@ -193,32 +193,32 @@ so use of HTTPS is recommended.`)
 
 		slog.Info("login succeeded", "remote_addr", req.RemoteAddr)
 		redirectLogin(w, req)
-	}
+	})
 
-	logoutHandler := func(w http.ResponseWriter, req *http.Request) {
+	logoutHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		trySaveSessionValues(w, req, "valid", false)
-	}
+	})
 
-	mainPageHandler := func(w http.ResponseWriter, req *http.Request) {
+	mainPageHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.ServeFile(w, req, htmlPath("main.html"))
-	}
+	})
 
-	mediaHandler := func(w http.ResponseWriter, req *http.Request) {
+	mediaHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ml.ServeHTTP(w, req)
-	}
+	})
 
 	router := http.NewServeMux()
 	router.Handle("GET /static/", fileOnlyServer{assetsDir})
-	router.HandleFunc("GET /login", loginGetHandler)
-	router.HandleFunc("POST /login", loginPostHandler)
-	router.HandleFunc("GET /logout", logoutHandler)
-	router.HandleFunc("POST /logout", logoutHandler)
-	router.HandleFunc("GET /", loginIfNoAuth(rootHandler))
-	router.HandleFunc("GET "+mlConfig.Prefix+"/tree/", loginIfNoAuth(mainPageHandler))
-	router.HandleFunc("GET "+mlConfig.Prefix+"/", failIfNoAuth(mediaHandler))
-	router.HandleFunc("POST "+mlConfig.Prefix+"/", failIfNoAuth(mediaHandler))
+	router.Handle("GET /login", loginGetHandler)
+	router.Handle("POST /login", loginPostHandler)
+	router.Handle("GET /logout", logoutHandler)
+	router.Handle("POST /logout", logoutHandler)
+	router.Handle("GET /", loginIfNoAuth(rootHandler))
+	router.Handle("GET "+mlConfig.Prefix+"/tree/", loginIfNoAuth(mainPageHandler))
+	router.Handle("GET "+mlConfig.Prefix+"/", failIfNoAuth(withLog(mediaHandler)))
+	router.Handle("POST "+mlConfig.Prefix+"/", failIfNoAuth(withLog(mediaHandler)))
 
-	http.Handle("/", withRequestID(router))
+	http.Handle("/", withRequestIDAndAddress(router))
 
 	log.Printf("listening on %s\n", *listen)
 	if len(*tlsCert) > 0 || len(*tlsKey) > 0 {
@@ -232,7 +232,10 @@ so use of HTTPS is recommended.`)
 
 type contextKey int
 
-const requestIDKey contextKey = 0
+const (
+	requestIDKey contextKey = iota
+	remoteAddressKey
+)
 
 // contextLogHandler is a custom slog handler that includes request ID from context.
 type contextLogHandler struct {
@@ -243,25 +246,34 @@ func (h *contextLogHandler) Handle(ctx context.Context, r slog.Record) error {
 	if requestID, ok := ctx.Value(requestIDKey).(string); ok {
 		r.Add("reqID", requestID)
 	}
+	if remoteAddr, ok := ctx.Value(remoteAddressKey).(string); ok {
+		r.Add("addr", remoteAddr)
+	}
 	return h.Handler.Handle(ctx, r)
 }
 
-// withRequestID is middleware that adds a 64-bit ID to the request context and logs request details.
-func withRequestID(next http.Handler) http.Handler {
+func withRequestIDAndAddress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := makeRequestID()
 		remoteAddr := r.Header.Get("x-forwarded-for")
 		if remoteAddr == "" {
 			remoteAddr = r.RemoteAddr
 		}
-		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
-		slog.InfoContext(ctx, "request",
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, requestIDKey, requestID)
+		ctx = context.WithValue(ctx, remoteAddressKey, remoteAddr)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func withLog(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slog.InfoContext(r.Context(), "request",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"query", r.URL.RawQuery,
-			"remote_addr", remoteAddr,
 		)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
 }
 
