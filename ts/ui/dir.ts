@@ -184,6 +184,9 @@ function activateDirLinks(list: HTMLElement): void {
         const link = links[i];
 
         link.onclick = (e) => {
+            if (e.metaKey || e.ctrlKey) {
+                return;
+            }
             e.preventDefault();
             const dirUrl = link.getAttribute("data-url");
             if (dirUrl !== null) {
@@ -310,6 +313,9 @@ function populateTracks(info: DirInfo): void {
         }
 
         link.onclick = (e) => {
+            if (e.metaKey || e.ctrlKey) {
+                return;
+            }
             e.preventDefault();
             playTrackByIndex(i, info);
         };
