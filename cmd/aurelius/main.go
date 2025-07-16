@@ -169,29 +169,25 @@ so use of HTTPS is recommended.`)
 			http.NotFound(w, req)
 			return
 		}
-
 		if err := req.ParseForm(); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		if req.PostForm.Get("passphrase") != *passphrase {
-			slog.Info("login attempt failed", "remote_addr", req.RemoteAddr)
+			slog.InfoContext(req.Context(), "login attempt failed")
 
 			query := url.Values{}
 			query.Set("from", req.URL.Query().Get("from"))
 			query.Set("failed", "")
 
 			loginUrl := url.URL{Path: "/login", RawQuery: query.Encode()}
-
 			http.Redirect(w, req, loginUrl.String(), http.StatusFound)
 			return
 		}
-
 		if !trySaveSessionValues(w, req, "valid", true) {
 			return
 		}
-
-		slog.Info("login succeeded", "remote_addr", req.RemoteAddr)
+		slog.InfoContext(req.Context(), "login succeeded")
 		redirectLogin(w, req)
 	})
 
