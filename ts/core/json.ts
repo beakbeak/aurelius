@@ -13,6 +13,8 @@ export function sendJsonRequest<Response>(
             }
             if (req.status === 200) {
                 resolve(JSON.parse(req.responseText));
+            } else if (req.status === 401) {
+                window.location.href = `/login?from=${encodeURIComponent(window.location.pathname)}`;
             } else {
                 reject(new Error(`request failed (${req.status}): ${url}`));
             }
