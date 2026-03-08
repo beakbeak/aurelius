@@ -77,6 +77,10 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - Docker support with multiple Dockerfiles for different platforms
 - Native development possible with npm, Go, FFmpeg, and pkg-config
 
+# Code Style
+
+- Go doc comments must end with a period.
+
 # Commit Guidelines
 
 - Commit messages should follow best practices.
