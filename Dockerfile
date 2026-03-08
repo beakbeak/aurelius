@@ -4,7 +4,7 @@
 
 # Shared base stage ############################################################
 
-ARG ALPINE_VER=latest
+ARG ALPINE_VER=3.22
 FROM alpine:$ALPINE_VER AS base
 
 RUN apk update && apk add --no-cache \
