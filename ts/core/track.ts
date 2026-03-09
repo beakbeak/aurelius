@@ -97,11 +97,23 @@ export class Track {
         startTime = 0,
     ): Promise<Track> {
         streamConfig = copyJson(streamConfig);
-
         const info = await fetchTrackInfo(url);
-
         const audio = new Audio();
-        audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
+        let gain = 1;
+        switch (streamConfig.replayGain) {
+            case ReplayGainMode.Track:
+                gain = info.replayGainTrack;
+                break;
+            case ReplayGainMode.Album:
+                gain = info.replayGainAlbum;
+                break;
+            default:
+                break;
+        }
+        if (gain > 1) {
+            gain = 1; // Gain >1 is applied server-side because audio.volume cannot be set >1.
+        }
+        audio.volume = gain;
 
         const playablePromise = new Promise<void>((resolve, reject) => {
             audio.src = `${url}/stream${streamQueryString(streamConfig, startTime)}`;
