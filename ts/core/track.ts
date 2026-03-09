@@ -95,20 +95,12 @@ export class Track {
         url: string,
         streamConfig: StreamConfig,
         startTime = 0,
-        recycledTrack?: Track,
     ): Promise<Track> {
         streamConfig = copyJson(streamConfig);
 
         const info = await fetchTrackInfo(url);
 
-        let audio: HTMLAudioElement;
-        if (recycledTrack !== undefined) {
-            recycledTrack.destroy();
-            audio = recycledTrack._audio;
-        } else {
-            audio = new Audio();
-        }
-
+        const audio = new Audio();
         audio.volume = info.replayGainTrack < 1 ? info.replayGainTrack : 1;
 
         const playablePromise = new Promise<void>((resolve, reject) => {
@@ -122,6 +114,7 @@ export class Track {
 
             audio.load();
         });
+
         return new Track(url, info, streamConfig, startTime, audio, playablePromise);
     }
 

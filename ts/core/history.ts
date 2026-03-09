@@ -38,6 +38,13 @@ export class PlayHistory {
         return this._items[this._index];
     }
 
+    public peekNext(): PlaylistItem | undefined {
+        if (this._index >= this._items.length - 1) {
+            return undefined;
+        }
+        return this._items[this._index + 1];
+    }
+
     public next(): PlaylistItem | undefined {
         if (this._index >= this._items.length - 1) {
             return undefined;
