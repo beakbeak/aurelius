@@ -80,6 +80,7 @@ type Library struct {
 	playlistCache *textcache.TextCache
 	searchIndex   *search.Index
 	db            *mediadb.DB
+	watcher       *mediadb.Watcher
 	handler       http.Handler
 }
 
@@ -143,9 +144,34 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		go buildIndex()
 	}
 
+	watcher, err := mediadb.NewWatcher(scanner, config.RootPath, mediadb.WatcherConfig{
+		OnBatchApplied: func() {
+			go buildIndex()
+		},
+	})
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to start filesystem watcher: %w", err)
+	}
+	ml.watcher = watcher
+
 	slog.Info("media library opened", "prefix", config.Prefix, "root", config.RootPath)
 
 	return &ml, nil
+}
+
+// Close stops the filesystem watcher and closes the database.
+func (ml *Library) Close() error {
+	var firstErr error
+	if ml.watcher != nil {
+		if err := ml.watcher.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	if err := ml.db.Close(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return firstErr
 }
 
 // ServeHTTP handles an HTTP request.

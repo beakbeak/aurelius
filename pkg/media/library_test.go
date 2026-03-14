@@ -310,6 +310,7 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	if err != nil {
 		t.Fatalf("failed to create Library: %v", err)
 	}
+	t.Cleanup(func() { ml.Close() })
 	return ml
 }
 

@@ -13,8 +13,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/beakbeak/aurelius/pkg/media"
 
@@ -91,6 +93,7 @@ so use of HTTPS is recommended.`)
 	if err != nil {
 		log.Fatalf("failed to open media library: %v", err)
 	}
+	defer ml.Close()
 
 	sessionStore := sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
 
@@ -252,15 +255,32 @@ so use of HTTPS is recommended.`)
 	router.Handle("POST "+mlConfig.Prefix+"/", failIfNoAuth(withLog(mediaHandler)))
 	router.Handle("POST /log", failIfNoAuth(clientLogHandler))
 
-	http.Handle("/", withRequestIDAndAddress(router))
+	srv := &http.Server{
+		Addr:    *listen,
+		Handler: withRequestIDAndAddress(router),
+	}
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-sigCh
+		slog.Info("received signal, shutting down", "signal", sig)
+		if err := srv.Shutdown(context.Background()); err != nil {
+			slog.Error("server shutdown error", "error", err)
+		}
+	}()
 
 	log.Printf("listening on %s\n", *listen)
 	if len(*tlsCert) > 0 || len(*tlsKey) > 0 {
 		log.Printf("using HTTPS")
-		log.Fatal(http.ListenAndServeTLS(*listen, *tlsCert, *tlsKey, nil))
+		if err := srv.ListenAndServeTLS(*tlsCert, *tlsKey); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	} else {
 		log.Printf("TLS certificate and key not provided; using HTTP")
-		log.Fatal(http.ListenAndServe(*listen, nil))
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}
 }
 
