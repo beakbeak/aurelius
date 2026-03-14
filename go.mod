@@ -5,6 +5,7 @@ go 1.23
 toolchain go1.24.1
 
 require (
+	github.com/blevesearch/bleve/v2 v2.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
@@ -13,7 +14,6 @@ require (
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.4.5 // indirect
 	github.com/bits-and-blooms/bitset v1.22.0 // indirect
-	github.com/blevesearch/bleve/v2 v2.5.2 // indirect
 	github.com/blevesearch/bleve_index_api v1.2.8 // indirect
 	github.com/blevesearch/geo v0.2.3 // indirect
 	github.com/blevesearch/go-faiss v1.0.25 // indirect
