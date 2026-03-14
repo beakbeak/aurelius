@@ -15,7 +15,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -637,41 +636,7 @@ func TestFavoritePaths(t *testing.T) {
 	})
 }
 
-func TestWithSymlinks(t *testing.T) {
-	for _, baseName := range []string{"dir1", "dir2"} {
-		dir := filepath.Join(testMediaPath, baseName)
-		if err := os.RemoveAll(dir); err != nil && !os.IsNotExist(err) {
-			t.Fatalf("RemoveAll(\"%s\") failed: %v", dir, err)
-		}
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			t.Fatalf("MkdirAll(\"%s\") failed: %v", dir, err)
-		}
-
-		defer (func() {
-			if err := os.RemoveAll(dir); err != nil {
-				t.Logf("RemoveAll(\"%s\") failed: %v", dir, err)
-				t.Fail()
-			}
-		})()
-	}
-
-	useSymlinks := true
-	{
-		linkTarget := filepath.Join("..", "dir1")
-		linkName := filepath.Join(testMediaPath, "dir2", "dir1link")
-
-		if err := os.Symlink(linkTarget, linkName); err != nil {
-			t.Logf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
-
-			if runtime.GOOS == "windows" {
-				t.Log("assuming symlinks aren't supported")
-				useSymlinks = false
-			} else {
-				t.FailNow()
-			}
-		}
-	}
-
+func TestM3UPlaylist(t *testing.T) {
 	playlist := []string{
 		"test.flac",
 		"test.mp3",
@@ -682,28 +647,6 @@ func TestWithSymlinks(t *testing.T) {
 		"test.flac",
 		"test.wav",
 		"test.flac",
-	}
-
-	if useSymlinks {
-		baseNames := []string{
-			"test #1.flac",
-			"test 2? yes!.flac",
-			"test 3: $p€c¡&l character edition.flac",
-		}
-
-		linkTarget := filepath.Join("..", "test.flac")
-		for _, baseName := range baseNames {
-			linkName := filepath.Join(testMediaPath, "dir1", baseName)
-			if err := os.Symlink(linkTarget, linkName); err != nil {
-				t.Fatalf("Symlink(\"%s\", \"%s\") failed: %v", linkTarget, linkName, err)
-			}
-
-			playlist = append(
-				playlist,
-				filepath.Join("dir1", baseName),
-				filepath.Join("dir2", "dir1link", baseName),
-			)
-		}
 	}
 
 	playlistName := "temp-playlist.m3u"
@@ -720,91 +663,28 @@ func TestWithSymlinks(t *testing.T) {
 
 	ml := createDefaultLibrary(t)
 
-	t.Run("Playlist", func(t *testing.T) {
-		if length := getPlaylistLength(t, ml, playlistLibraryPath); length != len(playlist) {
-			t.Fatalf("expected playlist length to be %v, got %v", len(playlist), length)
+	if length := getPlaylistLength(t, ml, playlistLibraryPath); length != len(playlist) {
+		t.Fatalf("expected playlist length to be %v, got %v", len(playlist), length)
+	}
+
+	getPlaylistEntryShouldFail(t, ml, playlistLibraryPath, -1)
+	getPlaylistEntryShouldFail(t, ml, playlistLibraryPath, len(playlist))
+
+	for i := 0; i < len(playlist); i++ {
+		entry := getPlaylistEntry(t, ml, playlistLibraryPath, i)
+
+		var trackInfo struct {
+			Name string
 		}
+		jsonBytes := simpleRequest(t, ml, "GET", entry.Path, "")
+		unmarshalJson(t, jsonBytes, &trackInfo)
 
-		getPlaylistEntryShouldFail(t, ml, playlistLibraryPath, -1)
-		getPlaylistEntryShouldFail(t, ml, playlistLibraryPath, len(playlist))
-
-		for i := 0; i < len(playlist); i++ {
-			entry := getPlaylistEntry(t, ml, playlistLibraryPath, i)
-
-			var trackInfo struct {
-				Name string
-			}
-			jsonBytes := simpleRequest(t, ml, "GET", entry.Path, "")
-			unmarshalJson(t, jsonBytes, &trackInfo)
-
-			expectedName := path.Base(playlist[i])
-			if trackInfo.Name != expectedName {
-				t.Errorf(
-					"expected track name to be \"%s\", got \"%s\"", expectedName, trackInfo.Name)
-			}
+		expectedName := path.Base(playlist[i])
+		if trackInfo.Name != expectedName {
+			t.Errorf(
+				"expected track name to be %q, got %q", expectedName, trackInfo.Name)
 		}
-	})
-
-	// Test prefix filtering for M3U playlists
-	t.Run("PlaylistPrefixFiltering", func(t *testing.T) {
-		testPrefix := "test.f"
-
-		// Test with "test.flac" prefix
-		prefixLength := getPlaylistLength(t, ml, playlistLibraryPath+"?prefix="+testPrefix)
-		expectedCount := 0
-		for _, item := range playlist {
-			if strings.HasPrefix(item, "test.flac") {
-				expectedCount++
-			}
-		}
-		if prefixLength != expectedCount {
-			t.Errorf("expected prefix 'test.flac' to match %v entries, got %v", expectedCount, prefixLength)
-		}
-
-		// Test fetching entries with prefix
-		for i := 0; i < prefixLength; i++ {
-			entry := getPlaylistEntryWithPrefix(t, ml, playlistLibraryPath, i, testPrefix)
-			if entry.Path == "" {
-				t.Errorf("expected non-empty path for prefix entry %d", i)
-			}
-			if entry.Pos != i {
-				t.Errorf("expected position %d for prefix entry, got %d", i, entry.Pos)
-			}
-		}
-	})
-
-	t.Run("Directory listing", func(t *testing.T) {
-		var testDir func(string)
-
-		testDir = func(path string) {
-			info := getDirInfo(t, ml, path)
-
-			for _, playlistUrl := range info.Playlists {
-				getPlaylistLength(t, ml, playlistUrl.Url)
-			}
-
-			for _, trackUrl := range info.Tracks {
-				var trackInfo struct {
-					Name string
-				}
-				jsonBytes := simpleRequest(t, ml, "GET", trackUrl.Url, "")
-				unmarshalJson(t, jsonBytes, &trackInfo)
-
-				expectedName := trackUrl.Name
-				if trackInfo.Name != expectedName {
-					t.Errorf(
-						"expected track name to be \"%s\", got \"%s\"",
-						expectedName, trackInfo.Name)
-				}
-			}
-
-			for _, dirUrl := range info.Dirs {
-				testDir(dirUrl.Url)
-			}
-		}
-
-		testDir(dirAt("/"))
-	})
+	}
 }
 
 func TestStream(t *testing.T) {

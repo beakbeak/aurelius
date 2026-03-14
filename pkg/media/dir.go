@@ -7,43 +7,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
-	"github.com/beakbeak/aurelius/pkg/aurelib"
 	"github.com/beakbeak/aurelius/pkg/fragment"
+	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
-
-var (
-	reFragment = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
-	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
-	reIgnore   = regexp.MustCompile(`(?i)\.(gif|txt|nfo)$`)
-	reTrack    = regexp.MustCompile(`(?i)\.(opus|m4a|wma|wmv|wav|` + strings.Join(aurelib.InputExtensions(), "|") + `)$`)
-)
-
-type fileType int
-
-const (
-	fileTypeIgnored fileType = iota
-	fileTypePlaylist
-	fileTypeTrack
-)
-
-// getFileType determines a file's type.
-func getFileType(filename string) fileType {
-	switch {
-	case reFragment.MatchString(filename):
-		return fileTypeTrack
-	case rePlaylist.MatchString(filename):
-		return fileTypePlaylist
-	case reIgnore.MatchString(filename):
-		return fileTypeIgnored
-	case reTrack.MatchString(filename):
-		return fileTypeTrack
-	default:
-		return fileTypeIgnored
-	}
-}
 
 func (ml *Library) handleDirInfo(
 	ctx context.Context,
@@ -51,46 +19,25 @@ func (ml *Library) handleDirInfo(
 	w http.ResponseWriter,
 ) {
 	dirLibraryPath = cleanLibraryPath(dirLibraryPath)
-	dirFsPath := ml.libraryToFsPath(dirLibraryPath)
 
-	entries, err := os.ReadDir(dirFsPath)
+	subdirs, err := ml.db.GetSubdirs(dirLibraryPath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		slog.ErrorContext(ctx, "ReadDir failed", "error", err)
+		slog.ErrorContext(ctx, "GetSubdirs failed", "error", err)
 		return
 	}
 
-	type LibraryPath struct {
-		Name string
-		Path string
-	}
-
-	makeRelativeLibraryPath := func(name string) LibraryPath {
-		return LibraryPath{
-			Name: name,
-			Path: path.Join(dirLibraryPath, name),
-		}
-	}
-
-	makeAbsoluteLibraryPath := func(name, fsPath string) (LibraryPath, error) {
-		libraryPath, err := ml.fsToLibraryPathWithContext(fsPath, dirFsPath)
-		if err != nil {
-			return LibraryPath{}, err
-		}
-		return LibraryPath{Name: name, Path: libraryPath}, nil
+	tracks, err := ml.db.GetTracksInDir(dirLibraryPath)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		slog.ErrorContext(ctx, "GetTracksInDir failed", "error", err)
+		return
 	}
 
 	type PathUrl struct {
 		Name     string `json:"name"`
 		Url      string `json:"url"`
 		Favorite bool   `json:"favorite,omitempty"`
-	}
-
-	makePathUrl := func(collection string, libraryPath LibraryPath) PathUrl {
-		return PathUrl{
-			Name: libraryPath.Name,
-			Url:  ml.libraryToUrlPath(collection, libraryPath.Path),
-		}
 	}
 
 	type Result struct {
@@ -107,15 +54,43 @@ func (ml *Library) handleDirInfo(
 		TopLevel:  ml.libraryToUrlPath("dirs", ""),
 		Parent:    ml.libraryToUrlPath("dirs", cleanLibraryPath(path.Dir(dirLibraryPath))),
 		Path:      dirLibraryPath,
-		Dirs:      make([]PathUrl, 0),
+		Dirs:      make([]PathUrl, 0, len(subdirs)),
 		Playlists: make([]PathUrl, 0),
-		Tracks:    make([]PathUrl, 0),
+		Tracks:    make([]PathUrl, 0, len(tracks)),
 	}
 
+	for _, d := range subdirs {
+		result.Dirs = append(result.Dirs, PathUrl{
+			Name: filepath.Base(d.Path),
+			Url:  ml.libraryToUrlPath("dirs", d.Path),
+		})
+	}
+
+	// Discover playlists from the filesystem (not stored in DB).
+	dirFsPath := ml.libraryToFsPath(dirLibraryPath)
+	if entries, err := os.ReadDir(dirFsPath); err == nil {
+		for _, entry := range entries {
+			if strings.HasPrefix(entry.Name(), ".") {
+				continue
+			}
+			if !entry.Type().IsRegular() {
+				continue
+			}
+			if mediadb.GetFileType(entry.Name()) == mediadb.FileTypePlaylist {
+				playlistPath := path.Join(dirLibraryPath, entry.Name())
+				result.Playlists = append(result.Playlists, PathUrl{
+					Name: entry.Name(),
+					Url:  ml.libraryToUrlPath("playlists", playlistPath),
+				})
+			}
+		}
+	}
+
+	// Build set of fragment source files to hide them from track listing.
 	fragmentSourceFiles := make(map[string]bool)
-	for _, entry := range entries {
-		if entry.Type().IsRegular() && fragment.IsFragment(entry.Name()) {
-			if sourceFile := fragment.GetSourceFile(entry.Name()); sourceFile != "" {
+	for _, t := range tracks {
+		if fragment.IsFragment(t.Name) {
+			if sourceFile := fragment.GetSourceFile(t.Name); sourceFile != "" {
 				fragmentSourceFiles[sourceFile] = true
 			}
 		}
@@ -126,62 +101,19 @@ func (ml *Library) handleDirInfo(
 		slog.ErrorContext(ctx, "failed to load favorites", "error", err)
 	}
 
-	for _, entry := range entries {
-		if strings.HasPrefix(entry.Name(), ".") {
+	for _, t := range tracks {
+		if fragmentSourceFiles[t.Name] {
 			continue
 		}
-		info, err := entry.Info()
-		if err != nil {
-			slog.ErrorContext(ctx, "entry.Info() failed", "entry", entry.Name(), "error", err)
-			continue
+		trackPath := joinLibraryPath(t.Dir, t.Name)
+		pu := PathUrl{
+			Name: t.Name,
+			Url:  ml.libraryToUrlPath("tracks", trackPath),
 		}
-		mode := info.Mode()
-		entryLibraryPath := makeRelativeLibraryPath(entry.Name())
-
-		if (mode & os.ModeSymlink) != 0 {
-			linkPath := filepath.Join(dirFsPath, entry.Name())
-			linkedPath, err := filepath.EvalSymlinks(linkPath)
-			if err != nil {
-				slog.ErrorContext(ctx, "EvalSymlinks failed", "path", linkPath, "error", err)
-				continue
-			}
-
-			linkedInfo, err := os.Stat(linkedPath)
-			if err != nil {
-				slog.ErrorContext(ctx, "stat failed", "path", linkedPath, "error", err)
-				continue
-			}
-			mode = linkedInfo.Mode()
-
-			if mode.IsDir() {
-				if absPath, err := makeAbsoluteLibraryPath(entry.Name(), linkedPath); err == nil {
-					entryLibraryPath = absPath
-				}
-			}
+		if favorites != nil {
+			pu.Favorite = favorites.data.LineSet()[trackPath]
 		}
-
-		switch {
-		case mode.IsDir():
-			result.Dirs = append(result.Dirs, makePathUrl("dirs", entryLibraryPath))
-
-		case mode.IsRegular():
-			fileType := getFileType(entry.Name())
-			if fileType == fileTypeIgnored {
-				continue
-			}
-			if fragmentSourceFiles[entry.Name()] {
-				continue
-			}
-			if fileType == fileTypePlaylist {
-				result.Playlists = append(result.Playlists, makePathUrl("playlists", entryLibraryPath))
-			} else {
-				trackUrl := makePathUrl("tracks", entryLibraryPath)
-				if favorites != nil {
-					trackUrl.Favorite = favorites.data.LineSet()[entryLibraryPath.Path]
-				}
-				result.Tracks = append(result.Tracks, trackUrl)
-			}
-		}
+		result.Tracks = append(result.Tracks, pu)
 	}
 
 	writeJson(ctx, w, result)

@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/beakbeak/aurelius/pkg/mediadb"
 	"github.com/beakbeak/aurelius/pkg/search"
 	"github.com/beakbeak/aurelius/pkg/textcache"
 )
@@ -78,6 +79,7 @@ type Library struct {
 	config        LibraryConfig
 	playlistCache *textcache.TextCache
 	searchIndex   *search.Index
+	db            *mediadb.DB
 	handler       http.Handler
 }
 
@@ -110,12 +112,25 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		return nil, fmt.Errorf("failed to create search index: %w", err)
 	}
 
+	dbPath := filepath.Join(config.StoragePath, "aurelius.db")
+	db, err := mediadb.Open(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open media database: %w", err)
+	}
+
 	ml := Library{
 		config:        *config,
 		playlistCache: textcache.New(),
 		searchIndex:   searchIndex,
+		db:            db,
 	}
 	ml.setupHandler()
+
+	scanner := mediadb.NewScanner(db, config.RootPath)
+	if err := scanner.FullScan(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to scan media library: %w", err)
+	}
 
 	buildIndex := func() {
 		if err := ml.searchIndex.BuildIndex(); err != nil {
@@ -270,13 +285,12 @@ func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Re
 }
 
 func isSearchable(path string, entry fs.DirEntry) bool {
-	// Always index directories
+	// Always index directories.
 	if entry.IsDir() {
 		return true
 	}
-	// Skip playlists and ignored files
-	fileType := getFileType(entry.Name())
-	return fileType == fileTypeTrack
+	// Skip playlists and ignored files.
+	return mediadb.GetFileType(entry.Name()) == mediadb.FileTypeTrack
 }
 
 func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {

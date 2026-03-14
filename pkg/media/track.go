@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beakbeak/aurelius/internal/maputil"
 	"github.com/beakbeak/aurelius/pkg/aurelib"
 	"github.com/beakbeak/aurelius/pkg/fragment"
 )
@@ -179,14 +178,19 @@ func (ml *Library) handleTrackInfo(
 	req *http.Request,
 ) {
 	ctx := req.Context()
-	fsPath := ml.libraryToFsPath(libraryPath)
-	src, err := newAudioSource(fsPath)
+
+	dir, name := path.Split(libraryPath)
+	dir = cleanLibraryPath(dir)
+
+	track, err := ml.db.GetTrack(dir, name)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to open source", "path", fsPath, "error", err)
+		slog.ErrorContext(ctx, "GetTrack failed", "error", err)
+	}
+
+	if track == nil {
 		http.NotFound(w, req)
 		return
 	}
-	defer src.Destroy()
 
 	type AttachedImageInfo struct {
 		MimeType string `json:"mimeType"`
@@ -207,27 +211,42 @@ func (ml *Library) handleTrackInfo(
 		Dir             string              `json:"dir"`
 	}
 
-	images := getAttachedAndDirectoryImages(src, fsPath)
-	attachedImages := make([]AttachedImageInfo, 0, len(images))
-	for _, image := range images {
-		attachedImages = append(attachedImages, AttachedImageInfo{
-			MimeType: image.Format().MimeType(),
-			Size:     image.Size(),
+	// Build attached image list from DB data + directory images.
+	images := make([]AttachedImageInfo, 0, len(track.AttachedImages))
+	for _, img := range track.AttachedImages {
+		images = append(images, AttachedImageInfo{
+			MimeType: img.MimeType,
+			Size:     img.Size,
 		})
 	}
 
-	streamInfo := src.StreamInfo()
+	// Add directory images (still discovered at request time).
+	fsPath := ml.libraryToFsPath(libraryPath)
+	for _, dirImg := range getDirectoryImages(fsPath) {
+		images = append(images, AttachedImageInfo{
+			MimeType: dirImg.format.MimeType(),
+			Size:     int(dirImg.size),
+		})
+	}
+
+	replayGainTrack := 1.0
+	replayGainAlbum := 1.0
+	if track.Metadata.ReplayGain != nil {
+		replayGainTrack = track.Metadata.ReplayGain.Track
+		replayGainAlbum = track.Metadata.ReplayGain.Album
+	}
+
 	result := Result{
-		Name:            filepath.Base(fsPath),
-		Duration:        float64(src.Duration()) / float64(time.Second),
-		ReplayGainTrack: src.ReplayGain(aurelib.ReplayGainTrack, true),
-		ReplayGainAlbum: src.ReplayGain(aurelib.ReplayGainAlbum, true),
-		Tags:            maputil.LowerCaseKeys(src.Tags()),
-		AttachedImages:  attachedImages,
-		BitRate:         src.BitRate(),
-		SampleRate:      streamInfo.SampleRate,
-		SampleFormat:    streamInfo.SampleFormat(),
-		Dir:             ml.libraryToUrlPath("dirs", cleanLibraryPath(path.Dir(libraryPath))),
+		Name:            track.Name,
+		Duration:        track.Metadata.Duration,
+		ReplayGainTrack: replayGainTrack,
+		ReplayGainAlbum: replayGainAlbum,
+		Tags:            track.Tags,
+		AttachedImages:  images,
+		BitRate:         track.Metadata.BitRate,
+		SampleRate:      track.Metadata.SampleRate,
+		SampleFormat:    track.Metadata.SampleFormat,
+		Dir:             ml.libraryToUrlPath("dirs", cleanLibraryPath(dir)),
 	}
 
 	if favorite, err := ml.isFavorite(libraryPath); err != nil {

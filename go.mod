@@ -8,6 +8,7 @@ require (
 	github.com/blevesearch/bleve/v2 v2.5.2
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
+	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
 )
 

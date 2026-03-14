@@ -40,6 +40,7 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 
 - **Main application**: `cmd/aurelius/main.go` - HTTP server with Gorilla Mux router
 - **Media library**: `pkg/media/` - Core media management, HTTP API for browsing/streaming
+- **Media database**: `pkg/mediadb/` - SQLite database for persisting track metadata, directory structure, and attached image info. Includes a scanner that walks the filesystem, diffs against the DB, detects moves via partial file hashing, and applies changes transactionally. Uses version-based migrations via `PRAGMA user_version`.
 - **Audio processing**: `pkg/aurelib/` - FFmpeg wrapper for audio decoding/encoding with CGO bindings
 - **Fragment support**: `pkg/fragment/` - Subsection playback of tracks
 - **Text caching**: `pkg/textcache/` - Playlist caching system
@@ -76,6 +77,10 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - Uses VS Code Remote Containers (`.devcontainer/`)
 - Docker support with multiple Dockerfiles for different platforms
 - Native development possible with npm, Go, FFmpeg, and pkg-config
+
+## Past Implementation Plans
+
+`docs/plans/` contains past implementation plans for reference.
 
 # Code Style
 
