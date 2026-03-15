@@ -159,8 +159,16 @@ func (ml *Library) handleTrackFavorite(
 	req *http.Request,
 ) {
 	ctx := req.Context()
-	fsPath := ml.libraryToFsPath(libraryPath)
-	if info, err := os.Stat(fsPath); err != nil || !info.Mode().IsRegular() {
+	dir, name := path.Split(libraryPath)
+	dir = cleanLibraryPath(dir)
+
+	track, err := ml.db.GetTrack(dir, name)
+	if err != nil {
+		slog.ErrorContext(ctx, "GetTrack failed", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if track == nil {
 		http.NotFound(w, req)
 		return
 	}
