@@ -78,9 +78,11 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - Docker support with multiple Dockerfiles for different platforms
 - Native development possible with npm, Go, FFmpeg, and pkg-config
 
-## Past Implementation Plans
+## Implementation Plans
 
 `docs/plans/` contains past implementation plans for reference.
+
+When in planning mode, after the user has finished giving feedback and approved the final implementation plan, write the finalized plan to `docs/plans/` **BEFORE** starting implementation. Use the naming convention `YYYY-MM-DD-<short-descriptor>.md`. Only write plans for changes that involve significant or potentially controversial design decisions, large amounts of user feedback, or specific instructions from the user. Do not write plans for trivial or obvious changes.
 
 # Code Style
 
