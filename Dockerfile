@@ -31,7 +31,7 @@ COPY --chown=aurelius:aurelius . /aurelius
 
 USER aurelius
 WORKDIR /aurelius/cmd/aurelius
-RUN go build \
+RUN go build -tags sqlite_fts5 \
     && npm install --only=prod \
     && npm run build
 

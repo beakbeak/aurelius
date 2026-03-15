@@ -15,7 +15,7 @@ CC=x86_64-w64-mingw32-gcc \
     GOARCH=amd64 \
     CGO_ENABLED=1 \
     GO111MODULE=on \
-    go build -v
+    go build -tags sqlite_fts5 -v
 
 cp \
     /usr/x86_64-w64-mingw32/sys-root/mingw/bin/libvorbis*.dll \

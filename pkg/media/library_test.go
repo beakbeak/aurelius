@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/beakbeak/aurelius/pkg/media"
-	"github.com/beakbeak/aurelius/pkg/search"
+	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
 
 var (
@@ -304,8 +304,6 @@ func createDefaultLibrary(t *testing.T) *media.Library {
 	mlConfig.Prefix = apiPrefix
 	mlConfig.ThrottleStreaming = false
 	mlConfig.DeterministicStreaming = true
-	mlConfig.SynchronousSearchIndexing = true
-
 	ml, err := media.NewLibrary(mlConfig)
 	if err != nil {
 		t.Fatalf("failed to create Library: %v", err)
@@ -990,12 +988,12 @@ func TestDirInfo(t *testing.T) {
 func TestSearch(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	doSearch := func(query string) []search.Result {
+	doSearch := func(query string) []mediadb.SearchResult {
 		t.Helper()
 		uri := api("search") + "?q=" + url.QueryEscape(query)
 		responseBody := simpleRequest(t, ml, "GET", uri, "")
 
-		var response search.Response
+		var response mediadb.SearchResponse
 		unmarshalJson(t, responseBody, &response)
 
 		if len(response.Results) != response.Total {
@@ -1087,24 +1085,6 @@ func TestSearch(t *testing.T) {
 		results := doSearch("test*")
 		if len(results) == 0 {
 			t.Error("search for 'test*' should find files starting with 'test'")
-		}
-	})
-
-	t.Run("FuzzyMatches", func(t *testing.T) {
-		results := doSearch("tset")
-		if len(results) == 0 {
-			t.Error("search for 'tset' should find test files due to fuzzy matching")
-		}
-
-		foundTrack := false
-		for _, result := range results {
-			if result.Type == "track" && strings.Contains(result.Path, "test") {
-				foundTrack = true
-				break
-			}
-		}
-		if !foundTrack {
-			t.Error("fuzzy search should find test track files")
 		}
 	})
 

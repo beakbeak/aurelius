@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Backend (Go code)
 
-Run `go build` from within `cmd/aurelius`.
+Run `go build -tags sqlite_fts5` from within `cmd/aurelius`.
 
 ## Frontend (TypeScript/JavaScript)
 
@@ -22,14 +22,14 @@ Run `go build` from within `cmd/aurelius`.
 npm install
 npm run build
 cd cmd/aurelius
-go build
+go build -tags sqlite_fts5
 ```
 
 ## Testing
 
 - Go lint: `golangci-lint run`
-- Go tests: `go test -asan ./...`
-- Update baselines for Go tests (**ONLY IF** baselines are expected to change): `UPDATE_BASELINES=1 go test -asan ./...`
+- Go tests: `go test -tags sqlite_fts5 -asan ./...`
+- Update baselines for Go tests (**ONLY IF** baselines are expected to change): `UPDATE_BASELINES=1 go test -tags sqlite_fts5 -asan ./...`
 - TypeScript tests: `npm run test`
 
 # Architecture

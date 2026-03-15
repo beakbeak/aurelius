@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -17,7 +16,6 @@ import (
 	"time"
 
 	"github.com/beakbeak/aurelius/pkg/mediadb"
-	"github.com/beakbeak/aurelius/pkg/search"
 	"github.com/beakbeak/aurelius/pkg/textcache"
 )
 
@@ -56,11 +54,6 @@ type LibraryConfig struct {
 	// and muxing. It should be set to true when deterministic output is needed,
 	// such as when performing automated testing. (Default: false)
 	DeterministicStreaming bool
-
-	// SynchronousSearchIndexing controls whether search indexing is performed
-	// synchronously during library creation. If false, indexing happens in a
-	// background goroutine. This is useful for testing. (Default: false)
-	SynchronousSearchIndexing bool
 }
 
 // NewLibraryConfig creates a new LibraryConfig object with default values.
@@ -78,7 +71,6 @@ func NewLibraryConfig() *LibraryConfig {
 type Library struct {
 	config        LibraryConfig
 	playlistCache *textcache.TextCache
-	searchIndex   *search.Index
 	db            *mediadb.DB
 	watcher       *mediadb.Watcher
 	handler       http.Handler
@@ -108,11 +100,6 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		return nil, fmt.Errorf("failed to create StoragePath: %v", err)
 	}
 
-	searchIndex, err := search.NewIndex(config.RootPath, isSearchable)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create search index: %w", err)
-	}
-
 	dbPath := filepath.Join(config.StoragePath, "aurelius.db")
 	db, err := mediadb.Open(dbPath)
 	if err != nil {
@@ -122,7 +109,6 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 	ml := Library{
 		config:        *config,
 		playlistCache: textcache.New(),
-		searchIndex:   searchIndex,
 		db:            db,
 	}
 	ml.setupHandler()
@@ -133,22 +119,7 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 		return nil, fmt.Errorf("failed to scan media library: %w", err)
 	}
 
-	buildIndex := func() {
-		if err := ml.searchIndex.BuildIndex(); err != nil {
-			slog.Error("failed to build search index", "error", err)
-		}
-	}
-	if config.SynchronousSearchIndexing {
-		buildIndex()
-	} else {
-		go buildIndex()
-	}
-
-	watcher, err := mediadb.NewWatcher(scanner, config.RootPath, mediadb.WatcherConfig{
-		OnBatchApplied: func() {
-			go buildIndex()
-		},
-	})
+	watcher, err := mediadb.NewWatcher(scanner, config.RootPath, mediadb.WatcherConfig{})
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to start filesystem watcher: %w", err)
@@ -311,35 +282,26 @@ func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Re
 	}
 }
 
-func isSearchable(path string, entry fs.DirEntry) bool {
-	// Always index directories.
-	if entry.IsDir() {
-		return true
-	}
-	// Skip playlists and ignored files.
-	return mediadb.GetFileType(entry.Name()) == mediadb.FileTypeTrack
-}
-
 func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		writeJson(r.Context(), w, &search.Response{Results: []search.Result{}, Total: 0})
+		writeJson(r.Context(), w, &mediadb.SearchResponse{Results: []mediadb.SearchResult{}, Total: 0})
 		return
 	}
 
-	results, err := ml.searchIndex.Search(query, 50)
+	results, err := ml.db.Search(query, 50)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "search failed", "query", query, "error", err)
 		http.Error(w, "Search failed", http.StatusInternalServerError)
 		return
 	}
 
-	// Add URLs to results
+	// Add URLs to results.
 	for i := range results.Results {
 		result := &results.Results[i]
-		if result.Type == search.DocTypeTrack {
+		if result.Type == mediadb.DocTypeTrack {
 			result.URL = ml.libraryToUrlPath("tracks", result.Path)
-		} else if result.Type == search.DocTypeDirectory {
+		} else if result.Type == mediadb.DocTypeDirectory {
 			result.URL = ml.libraryToUrlPath("dirs", result.Path)
 		}
 	}

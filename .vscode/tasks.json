@@ -6,7 +6,7 @@
         {
             "label": "Go build",
             "type": "shell",
-            "command": "go build",
+            "command": "go build -tags sqlite_fts5",
             "group": "build",
             "problemMatcher": [
                 "$go"
