@@ -214,6 +214,153 @@ func (db *DB) SetFavorite(libraryPath string, favorite bool) error {
 	return err
 }
 
+// ForEachM3UPlaylist iterates over all m3u playlists, calling fn for each.
+func (db *DB) ForEachM3UPlaylist(fn func(*M3UPlaylist) error) error {
+	rows, err := db.db.Query(
+		`SELECT id, dir, name, mtime FROM m3u_playlists`,
+	)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p M3UPlaylist
+		if err := rows.Scan(&p.ID, &p.Dir, &p.Name, &p.Mtime); err != nil {
+			return err
+		}
+		if err := fn(&p); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+// GetM3UPlaylist returns the m3u playlist at the given library path (dir + name).
+func (db *DB) GetM3UPlaylist(dir, name string) (*M3UPlaylist, error) {
+	var p M3UPlaylist
+	err := db.db.QueryRow(
+		`SELECT id, dir, name, mtime FROM m3u_playlists WHERE dir = ? AND name = ?`,
+		dir, name,
+	).Scan(&p.ID, &p.Dir, &p.Name, &p.Mtime)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+// GetM3UPlaylistsInDir returns playlists in the given directory that have at
+// least one resolved track (through the tracks view, excluding soft-deleted).
+func (db *DB) GetM3UPlaylistsInDir(dir string) ([]M3UPlaylist, error) {
+	rows, err := db.db.Query(
+		`SELECT p.id, p.dir, p.name, p.mtime
+		FROM m3u_playlists p
+		WHERE p.dir = ? AND EXISTS (
+			SELECT 1 FROM m3u_playlist_tracks pt
+			JOIN tracks t ON t.id = pt.track_id
+			WHERE pt.playlist_id = p.id
+		)
+		ORDER BY p.name`,
+		dir,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var playlists []M3UPlaylist
+	for rows.Next() {
+		var p M3UPlaylist
+		if err := rows.Scan(&p.ID, &p.Dir, &p.Name, &p.Mtime); err != nil {
+			return nil, err
+		}
+		playlists = append(playlists, p)
+	}
+	return playlists, rows.Err()
+}
+
+// GetM3UPlaylistsInDirIncludingEmpty returns all playlists in the given
+// directory regardless of whether they have resolved tracks.
+func (db *DB) GetM3UPlaylistsInDirIncludingEmpty(dir string) ([]M3UPlaylist, error) {
+	rows, err := db.db.Query(
+		`SELECT id, dir, name, mtime FROM m3u_playlists WHERE dir = ? ORDER BY name`,
+		dir,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var playlists []M3UPlaylist
+	for rows.Next() {
+		var p M3UPlaylist
+		if err := rows.Scan(&p.ID, &p.Dir, &p.Name, &p.Mtime); err != nil {
+			return nil, err
+		}
+		playlists = append(playlists, p)
+	}
+	return playlists, rows.Err()
+}
+
+// m3uPlaylistDirFilter returns a SQL WHERE clause fragment and args that filter
+// playlist tracks by directory prefix. If prefix is empty, no filter is applied.
+func m3uPlaylistDirFilter(prefix string) (string, []any) {
+	if prefix == "" {
+		return "", nil
+	}
+	prefix = CleanLibraryPath(prefix)
+	return `AND (t.dir = ? OR t.dir LIKE ? || '/%')`, []any{prefix, prefix}
+}
+
+// GetM3UPlaylistTrackCount returns the number of resolved tracks in a playlist.
+// Only counts tracks visible through the tracks view (not soft-deleted).
+func (db *DB) GetM3UPlaylistTrackCount(dir, name, prefix string) (int, error) {
+	filter, filterArgs := m3uPlaylistDirFilter(prefix)
+	args := []any{dir, name}
+	args = append(args, filterArgs...)
+	var count int
+	err := db.db.QueryRow(
+		`SELECT COUNT(*) FROM m3u_playlist_tracks pt
+		JOIN tracks t ON t.id = pt.track_id
+		JOIN m3u_playlists p ON p.id = pt.playlist_id
+		WHERE p.dir = ? AND p.name = ? `+filter,
+		args...,
+	).Scan(&count)
+	return count, err
+}
+
+// GetM3UPlaylistTrackAt returns the library path of the track at the given
+// position in a playlist. Only considers tracks visible through the tracks view.
+// Returns ("", nil) if pos is out of range.
+func (db *DB) GetM3UPlaylistTrackAt(dir, name string, pos int, prefix string) (string, error) {
+	if pos < 0 {
+		return "", nil
+	}
+	filter, filterArgs := m3uPlaylistDirFilter(prefix)
+	args := []any{dir, name}
+	args = append(args, filterArgs...)
+	args = append(args, pos)
+	var libraryPath string
+	err := db.db.QueryRow(
+		`SELECT CASE WHEN t.dir = '' THEN t.name
+			ELSE t.dir || '/' || t.name END
+		FROM m3u_playlist_tracks pt
+		JOIN tracks t ON t.id = pt.track_id
+		JOIN m3u_playlists p ON p.id = pt.playlist_id
+		WHERE p.dir = ? AND p.name = ? `+filter+`
+		ORDER BY pt.position
+		LIMIT 1 OFFSET ?`,
+		args...,
+	).Scan(&libraryPath)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return libraryPath, err
+}
+
 // favoriteDirFilter returns a SQL WHERE clause and args that filter favorites
 // by directory prefix. If prefix is empty, no filter is applied.
 func favoriteDirFilter(prefix string) (string, []any) {

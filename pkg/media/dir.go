@@ -4,13 +4,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/beakbeak/aurelius/pkg/fragment"
-	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
 
 func (ml *Library) handleDirInfo(
@@ -66,24 +63,17 @@ func (ml *Library) handleDirInfo(
 		})
 	}
 
-	// Discover playlists from the filesystem (not stored in DB).
-	dirFsPath := ml.libraryToFsPath(dirLibraryPath)
-	if entries, err := os.ReadDir(dirFsPath); err == nil {
-		for _, entry := range entries {
-			if strings.HasPrefix(entry.Name(), ".") {
-				continue
-			}
-			if !entry.Type().IsRegular() {
-				continue
-			}
-			if mediadb.GetFileType(entry.Name()) == mediadb.FileTypePlaylist {
-				playlistPath := path.Join(dirLibraryPath, entry.Name())
-				result.Playlists = append(result.Playlists, PathUrl{
-					Name: entry.Name(),
-					Url:  ml.libraryToUrlPath("playlists", playlistPath),
-				})
-			}
-		}
+	// Query playlists from DB (only those with resolved tracks).
+	dbPlaylists, err := ml.db.GetM3UPlaylistsInDir(dirLibraryPath)
+	if err != nil {
+		slog.ErrorContext(ctx, "GetM3UPlaylistsInDir failed", "error", err)
+	}
+	for _, p := range dbPlaylists {
+		playlistPath := joinLibraryPath(p.Dir, p.Name)
+		result.Playlists = append(result.Playlists, PathUrl{
+			Name: p.Name,
+			Url:  ml.libraryToUrlPath("playlists", playlistPath),
+		})
 	}
 
 	// Build set of fragment source files to hide them from track listing.

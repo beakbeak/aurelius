@@ -335,7 +335,9 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 
 	if len(changes.Added) == 0 && len(changes.Changed) == 0 &&
 		len(changes.Removed) == 0 && len(changes.AddedDirs) == 0 &&
-		len(changes.RemovedDirs) == 0 {
+		len(changes.RemovedDirs) == 0 &&
+		len(changes.AddedPlaylists) == 0 && len(changes.ChangedPlaylists) == 0 &&
+		len(changes.RemovedPlaylists) == 0 {
 		return
 	}
 
@@ -349,6 +351,9 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 		"moved", len(changes.Moves),
 		"addedDirs", len(changes.AddedDirs),
 		"removedDirs", len(changes.RemovedDirs),
+		"addedPlaylists", len(changes.AddedPlaylists),
+		"changedPlaylists", len(changes.ChangedPlaylists),
+		"removedPlaylists", len(changes.RemovedPlaylists),
 	)
 
 	// Collect metadata for added/changed files.
@@ -376,10 +381,17 @@ func (w *Watcher) processFileEvent(absPath string, ev *pendingEvent, changes *Ch
 		return
 	}
 
-	if GetFileType(name) != FileTypeTrack {
-		return
+	switch GetFileType(name) {
+	case FileTypeTrack:
+		w.processTrackEvent(absPath, dir, name, ev, changes)
+	case FileTypePlaylist:
+		w.processPlaylistEvent(absPath, dir, name, ev, changes)
+	case FileTypeIgnored:
 	}
+}
 
+// processTrackEvent handles a single track file event.
+func (w *Watcher) processTrackEvent(absPath, dir, name string, ev *pendingEvent, changes *ChangeSet) {
 	switch ev.kind {
 	case eventCreated:
 		info, err := os.Lstat(absPath)
@@ -426,6 +438,48 @@ func (w *Watcher) processFileEvent(absPath string, ev *pendingEvent, changes *Ch
 	}
 }
 
+// processPlaylistEvent handles a single playlist file event.
+func (w *Watcher) processPlaylistEvent(absPath, dir, name string, ev *pendingEvent, changes *ChangeSet) {
+	switch ev.kind {
+	case eventCreated:
+		info, err := os.Lstat(absPath)
+		if err != nil {
+			slog.Warn("watcher: failed to stat created playlist", "path", absPath, "error", err)
+			return
+		}
+		if !info.Mode().IsRegular() {
+			return
+		}
+		changes.AddedPlaylists = append(changes.AddedPlaylists, FSEntry{
+			Dir: dir, Name: name, Mtime: info.ModTime().Unix(),
+		})
+
+	case eventModified:
+		info, err := os.Lstat(absPath)
+		if err != nil {
+			slog.Warn("watcher: failed to stat modified playlist", "path", absPath, "error", err)
+			return
+		}
+		if !info.Mode().IsRegular() {
+			return
+		}
+		changes.ChangedPlaylists = append(changes.ChangedPlaylists, FSEntry{
+			Dir: dir, Name: name, Mtime: info.ModTime().Unix(),
+		})
+
+	case eventRemoved:
+		playlist, err := w.scanner.db.GetM3UPlaylist(dir, name)
+		if err != nil {
+			slog.Warn("watcher: failed to look up removed playlist", "dir", dir, "name", name, "error", err)
+			return
+		}
+		if playlist == nil {
+			return
+		}
+		changes.RemovedPlaylists = append(changes.RemovedPlaylists, *playlist)
+	}
+}
+
 // processDirEvent handles a single directory event in the batch.
 func (w *Watcher) processDirEvent(absPath string, ev *pendingEvent, changes *ChangeSet) {
 	libraryDir, ok := w.toLibraryDirPath(absPath)
@@ -457,8 +511,8 @@ func (w *Watcher) processDirEvent(absPath string, ev *pendingEvent, changes *Cha
 	}
 }
 
-// removeDirRecursive adds a directory, its tracks, and all subdirectories
-// to the change set as removed.
+// removeDirRecursive adds a directory, its tracks, its playlists, and all
+// subdirectories to the change set as removed.
 func (w *Watcher) removeDirRecursive(libraryDir string, changes *ChangeSet) {
 	changes.RemovedDirs = append(changes.RemovedDirs, Dir{
 		Path:   libraryDir,
@@ -472,6 +526,13 @@ func (w *Watcher) removeDirRecursive(libraryDir string, changes *ChangeSet) {
 		for _, t := range tracks {
 			changes.Removed = append(changes.Removed, t)
 		}
+	}
+
+	playlists, err := w.scanner.db.GetM3UPlaylistsInDirIncludingEmpty(libraryDir)
+	if err != nil {
+		slog.Warn("watcher: failed to look up playlists in removed dir", "dir", libraryDir, "error", err)
+	} else {
+		changes.RemovedPlaylists = append(changes.RemovedPlaylists, playlists...)
 	}
 
 	subdirs, err := w.scanner.db.GetSubdirs(libraryDir)

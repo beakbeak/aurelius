@@ -43,7 +43,6 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - **Media database**: `pkg/mediadb/` - SQLite database for persisting track metadata, directory structure, and attached image info. Includes a scanner that walks the filesystem, diffs against the DB, detects moves via partial file hashing, and applies changes transactionally. Uses version-based migrations via `PRAGMA user_version`.
 - **Audio processing**: `pkg/aurelib/` - FFmpeg wrapper for audio decoding/encoding with CGO bindings
 - **Fragment support**: `pkg/fragment/` - Subsection playback of tracks
-- **Text caching**: `pkg/textcache/` - Playlist caching system
 
 ### Key Backend Components
 

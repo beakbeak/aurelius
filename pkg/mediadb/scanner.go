@@ -1,6 +1,7 @@
 package mediadb
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -47,6 +48,16 @@ type ChangeSet struct {
 
 	AddedDirs   []Dir
 	RemovedDirs []Dir
+
+	AddedPlaylists   []FSEntry
+	ChangedPlaylists []FSEntry
+	RemovedPlaylists []M3UPlaylist
+}
+
+// ScannedPlaylist is an FSEntry enriched with resolved track library paths.
+type ScannedPlaylist struct {
+	FSEntry
+	TrackPaths []string
 }
 
 // ScannedTrack is an FSEntry enriched with metadata read from the file.
@@ -66,6 +77,10 @@ type ScanResult struct {
 	Moves         []Move
 	AddedDirs     []Dir
 	RemovedDirs   []Dir
+
+	AddedPlaylists   []ScannedPlaylist
+	ChangedPlaylists []ScannedPlaylist
+	RemovedPlaylists []M3UPlaylist
 }
 
 // Scanner coordinates filesystem scanning and database reconciliation.
@@ -91,13 +106,13 @@ func (s *Scanner) FullScan() error {
 	start := time.Now()
 
 	// Phase 1: Walk filesystem.
-	fsFiles, fsDirs, err := s.walkFilesystem()
+	fsFiles, fsDirs, fsPlaylists, err := s.walkFilesystem()
 	if err != nil {
 		return fmt.Errorf("filesystem walk failed: %w", err)
 	}
 
 	// Phase 2: Diff and detect moves.
-	changes, err := s.diffAgainstDB(fsFiles, fsDirs)
+	changes, err := s.diffAgainstDB(fsFiles, fsDirs, fsPlaylists)
 	if err != nil {
 		return fmt.Errorf("diff failed: %w", err)
 	}
@@ -110,6 +125,9 @@ func (s *Scanner) FullScan() error {
 		"moved", len(changes.Moves),
 		"addedDirs", len(changes.AddedDirs),
 		"removedDirs", len(changes.RemovedDirs),
+		"addedPlaylists", len(changes.AddedPlaylists),
+		"changedPlaylists", len(changes.ChangedPlaylists),
+		"removedPlaylists", len(changes.RemovedPlaylists),
 	)
 
 	// Phase 3: Collect metadata.
@@ -127,10 +145,11 @@ func (s *Scanner) FullScan() error {
 	return nil
 }
 
-// walkFilesystem walks the media library root and returns maps of files and directories.
-func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, error) {
+// walkFilesystem walks the media library root and returns maps of files, directories, and playlists.
+func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, map[string]FSEntry, error) {
 	fsFiles := make(map[string]FSEntry)
 	fsDirs := make(map[string]Dir)
+	fsPlaylists := make(map[string]FSEntry)
 
 	err := filepath.WalkDir(s.rootPath, func(fsPath string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -168,30 +187,34 @@ func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, error) {
 			return nil
 		}
 
-		if GetFileType(name) != FileTypeTrack {
-			return nil
-		}
-
 		info, err := d.Info()
 		if err != nil {
 			slog.Warn("failed to get file info", "path", fsPath, "error", err)
 			return nil
 		}
 
-		fsFiles[libraryPath] = FSEntry{
+		entry := FSEntry{
 			Dir:   CleanLibraryPath(path.Dir(libraryPath)),
 			Name:  name,
 			Mtime: info.ModTime().Unix(),
 		}
 
+		switch GetFileType(name) {
+		case FileTypeTrack:
+			fsFiles[libraryPath] = entry
+		case FileTypePlaylist:
+			fsPlaylists[libraryPath] = entry
+		case FileTypeIgnored:
+		}
+
 		return nil
 	})
 
-	return fsFiles, fsDirs, err
+	return fsFiles, fsDirs, fsPlaylists, err
 }
 
 // diffAgainstDB compares filesystem state against the database.
-func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Dir) (*ChangeSet, error) {
+func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Dir, fsPlaylists map[string]FSEntry) (*ChangeSet, error) {
 	changes := &ChangeSet{}
 
 	// Compare tracks.
@@ -237,6 +260,28 @@ func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Di
 	}
 	for _, dir := range dbDirs {
 		changes.RemovedDirs = append(changes.RemovedDirs, dir)
+	}
+
+	// Compare playlists.
+	err = s.db.ForEachM3UPlaylist(func(p *M3UPlaylist) error {
+		key := JoinLibraryPath(p.Dir, p.Name)
+		if fsEntry, ok := fsPlaylists[key]; ok {
+			if fsEntry.Mtime != p.Mtime {
+				changes.ChangedPlaylists = append(changes.ChangedPlaylists, fsEntry)
+			}
+			delete(fsPlaylists, key)
+		} else {
+			changes.RemovedPlaylists = append(changes.RemovedPlaylists, *p)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Remaining fsPlaylists are new.
+	for _, entry := range fsPlaylists {
+		changes.AddedPlaylists = append(changes.AddedPlaylists, entry)
 	}
 
 	return changes, nil
@@ -349,7 +394,65 @@ func (s *Scanner) collectMetadata(changes *ChangeSet) (*ScanResult, error) {
 		result.ChangedTracks = append(result.ChangedTracks, *scanned)
 	}
 
+	// Parse added playlists.
+	for _, entry := range changes.AddedPlaylists {
+		lines, err := parseM3U(s.fsPath(entry.Dir, entry.Name))
+		if err != nil {
+			slog.Warn("failed to parse added playlist", "dir", entry.Dir, "name", entry.Name, "error", err)
+			continue
+		}
+		result.AddedPlaylists = append(result.AddedPlaylists, ScannedPlaylist{
+			FSEntry:    entry,
+			TrackPaths: resolvePlaylistTracks(entry.Dir, lines),
+		})
+	}
+
+	// Parse changed playlists.
+	for _, entry := range changes.ChangedPlaylists {
+		lines, err := parseM3U(s.fsPath(entry.Dir, entry.Name))
+		if err != nil {
+			slog.Warn("failed to parse changed playlist", "dir", entry.Dir, "name", entry.Name, "error", err)
+			continue
+		}
+		result.ChangedPlaylists = append(result.ChangedPlaylists, ScannedPlaylist{
+			FSEntry:    entry,
+			TrackPaths: resolvePlaylistTracks(entry.Dir, lines),
+		})
+	}
+
+	result.RemovedPlaylists = changes.RemovedPlaylists
+
 	return result, nil
+}
+
+// parseM3U reads an .m3u file and returns the non-empty, non-comment lines.
+func parseM3U(fsPath string) ([]string, error) {
+	f, err := os.Open(fsPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		lines = append(lines, line)
+	}
+	return lines, scanner.Err()
+}
+
+// resolvePlaylistTracks converts relative M3U lines to library paths.
+func resolvePlaylistTracks(playlistDir string, lines []string) []string {
+	paths := make([]string, 0, len(lines))
+	for _, line := range lines {
+		libraryPath := CleanLibraryPath(path.Join(playlistDir, line))
+		paths = append(paths, libraryPath)
+	}
+	return paths
 }
 
 // scanFile opens an audio file and extracts metadata.
@@ -558,6 +661,102 @@ func (s *Scanner) Apply(result *ScanResult) error {
 		for _, d := range result.RemovedDirs {
 			if _, err := stmt.Exec(d.Path); err != nil {
 				return fmt.Errorf("failed to delete dir: %w", err)
+			}
+		}
+	}
+
+	// Removed playlists.
+	if len(result.RemovedPlaylists) > 0 {
+		stmt, err := tx.Prepare(`DELETE FROM m3u_playlists WHERE dir = ? AND name = ?`)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+		for _, p := range result.RemovedPlaylists {
+			if _, err := stmt.Exec(p.Dir, p.Name); err != nil {
+				return fmt.Errorf("failed to delete playlist: %w", err)
+			}
+		}
+	}
+
+	// Changed playlists.
+	if len(result.ChangedPlaylists) > 0 {
+		updateStmt, err := tx.Prepare(
+			`UPDATE m3u_playlists SET mtime = ? WHERE dir = ? AND name = ?`,
+		)
+		if err != nil {
+			return err
+		}
+		defer updateStmt.Close()
+		deleteTracksStmt, err := tx.Prepare(
+			`DELETE FROM m3u_playlist_tracks WHERE playlist_id = (
+				SELECT id FROM m3u_playlists WHERE dir = ? AND name = ?
+			)`,
+		)
+		if err != nil {
+			return err
+		}
+		defer deleteTracksStmt.Close()
+		insertTrackStmt, err := tx.Prepare(
+			`INSERT INTO m3u_playlist_tracks (playlist_id, position, track_id)
+			SELECT p.id, ?, t.id
+			FROM m3u_playlists p, tracks t
+			WHERE p.dir = ? AND p.name = ?
+			  AND t.dir = ? AND t.name = ?`,
+		)
+		if err != nil {
+			return err
+		}
+		defer insertTrackStmt.Close()
+		for i := range result.ChangedPlaylists {
+			p := &result.ChangedPlaylists[i]
+			if _, err := updateStmt.Exec(p.Mtime, p.Dir, p.Name); err != nil {
+				return fmt.Errorf("failed to update playlist: %w", err)
+			}
+			if _, err := deleteTracksStmt.Exec(p.Dir, p.Name); err != nil {
+				return fmt.Errorf("failed to delete playlist tracks: %w", err)
+			}
+			for pos, trackPath := range p.TrackPaths {
+				trackDir, trackName := SplitLibraryPath(trackPath)
+				if _, err := insertTrackStmt.Exec(pos, p.Dir, p.Name, trackDir, trackName); err != nil {
+					return fmt.Errorf("failed to insert playlist track: %w", err)
+				}
+			}
+		}
+	}
+
+	// Added playlists.
+	if len(result.AddedPlaylists) > 0 {
+		insertPlaylistStmt, err := tx.Prepare(
+			`INSERT INTO m3u_playlists (dir, name, mtime) VALUES (?, ?, ?)`,
+		)
+		if err != nil {
+			return err
+		}
+		defer insertPlaylistStmt.Close()
+		insertTrackStmt, err := tx.Prepare(
+			`INSERT INTO m3u_playlist_tracks (playlist_id, position, track_id)
+			SELECT ?, ?, t.id FROM tracks t WHERE t.dir = ? AND t.name = ?`,
+		)
+		if err != nil {
+			return err
+		}
+		defer insertTrackStmt.Close()
+		for i := range result.AddedPlaylists {
+			p := &result.AddedPlaylists[i]
+			res, err := insertPlaylistStmt.Exec(p.Dir, p.Name, p.Mtime)
+			if err != nil {
+				return fmt.Errorf("failed to insert playlist: %w", err)
+			}
+			playlistID, err := res.LastInsertId()
+			if err != nil {
+				return fmt.Errorf("failed to get playlist id: %w", err)
+			}
+			for pos, trackPath := range p.TrackPaths {
+				trackDir, trackName := SplitLibraryPath(trackPath)
+				if _, err := insertTrackStmt.Exec(playlistID, pos, trackDir, trackName); err != nil {
+					return fmt.Errorf("failed to insert playlist track: %w", err)
+				}
 			}
 		}
 	}

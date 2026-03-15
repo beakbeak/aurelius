@@ -3,77 +3,47 @@ package media
 import (
 	"log/slog"
 	"net/http"
-	"path"
 
-	"github.com/beakbeak/aurelius/pkg/textcache"
+	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
 
-type playlist struct {
-	fsPath, libraryDir string
-	data               *textcache.CachedFile
-}
-
-func (ml *Library) loadPlaylist(libraryPath string) (*playlist, error) {
-	out := playlist{
-		fsPath:     ml.libraryToFsPath(libraryPath),
-		libraryDir: path.Dir(libraryPath),
-	}
-	if err := out.load(ml); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (p *playlist) load(ml *Library) error {
-	data, err := ml.playlistCache.Get(p.fsPath)
-	if err != nil {
-		return err
-	}
-	p.data = data
-	return nil
-}
-
-func (ml *Library) handlePlaylistInfo(
-	p *playlist,
+func (ml *Library) handleM3UPlaylistInfo(
+	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
+	dir, name := mediadb.SplitLibraryPath(libraryPath)
+	prefix := req.URL.Query().Get("prefix")
+	count, err := ml.db.GetM3UPlaylistTrackCount(dir, name, prefix)
+	if err != nil {
+		slog.ErrorContext(req.Context(), "GetM3UPlaylistTrackCount failed", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	type Result struct {
 		Length int `json:"length"`
 	}
-
-	var lines []string
-	if prefix := req.URL.Query().Get("prefix"); prefix != "" {
-		lines = p.data.LinesWithPrefix(prefix)
-	} else {
-		lines = p.data.Lines()
-	}
-
-	writeJson(req.Context(), w, Result{
-		Length: len(lines),
-	})
+	writeJson(req.Context(), w, Result{Length: count})
 }
 
-func (ml *Library) handlePlaylistTrack(
-	p *playlist,
+func (ml *Library) handleM3UPlaylistTrack(
+	libraryPath string,
 	pos int,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
 	ctx := req.Context()
+	dir, name := mediadb.SplitLibraryPath(libraryPath)
+	prefix := req.URL.Query().Get("prefix")
 
-	var lines []string
-	if prefix := req.URL.Query().Get("prefix"); prefix != "" {
-		lines = p.data.LinesWithPrefix(prefix)
-	} else {
-		lines = p.data.Lines()
-	}
-
-	if len(lines) < 1 {
-		writeJson(ctx, w, nil)
+	trackPath, err := ml.db.GetM3UPlaylistTrackAt(dir, name, pos, prefix)
+	if err != nil {
+		slog.ErrorContext(ctx, "GetM3UPlaylistTrackAt failed", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if pos < 0 || pos >= len(lines) {
+	if trackPath == "" {
 		writeJson(ctx, w, nil)
 		return
 	}
@@ -82,10 +52,9 @@ func (ml *Library) handlePlaylistTrack(
 		Pos  int    `json:"pos"`
 		Path string `json:"path"`
 	}
-
 	writeJson(ctx, w, Result{
 		Pos:  pos,
-		Path: ml.libraryToUrlPath("tracks", path.Join(p.libraryDir, lines[pos])),
+		Path: ml.libraryToUrlPath("tracks", trackPath),
 	})
 }
 

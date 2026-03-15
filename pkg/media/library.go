@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/beakbeak/aurelius/pkg/mediadb"
-	"github.com/beakbeak/aurelius/pkg/textcache"
 )
 
 // LibraryConfig contains configuration parameters used by NewLibrary. It should
@@ -69,11 +68,10 @@ func NewLibraryConfig() *LibraryConfig {
 // A Library provides an HTTP API for exploring and streaming a library of audio
 // media files.
 type Library struct {
-	config        LibraryConfig
-	playlistCache *textcache.TextCache
-	db            *mediadb.DB
-	watcher       *mediadb.Watcher
-	handler       http.Handler
+	config  LibraryConfig
+	db      *mediadb.DB
+	watcher *mediadb.Watcher
+	handler http.Handler
 }
 
 // NewLibrary creates a new Library object.
@@ -107,9 +105,8 @@ func NewLibrary(config *LibraryConfig) (*Library, error) {
 	}
 
 	ml := Library{
-		config:        *config,
-		playlistCache: textcache.New(),
-		db:            db,
+		config: *config,
+		db:     db,
 	}
 	ml.setupHandler()
 
@@ -204,13 +201,7 @@ func handlePlaylistInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Reque
 		http.NotFound(w, r)
 		return
 	}
-	playlist, err := ml.loadPlaylist(path)
-	if err != nil {
-		http.NotFound(w, r)
-		slog.ErrorContext(r.Context(), "loadPlaylist failed", "id", id, "error", err)
-		return
-	}
-	ml.handlePlaylistInfo(playlist, w, r)
+	ml.handleM3UPlaylistInfo(path, w, r)
 }
 
 func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
@@ -232,13 +223,7 @@ func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Requ
 		http.NotFound(w, r)
 		return
 	}
-	playlist, err := ml.loadPlaylist(path)
-	if err != nil {
-		http.NotFound(w, r)
-		slog.ErrorContext(r.Context(), "loadPlaylist failed", "id", id, "error", err)
-		return
-	}
-	ml.handlePlaylistTrack(playlist, pos, w, r)
+	ml.handleM3UPlaylistTrack(path, pos, w, r)
 }
 
 func handleTrackInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
