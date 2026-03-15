@@ -178,3 +178,84 @@ func (db *DB) AllDirs() (map[string]Dir, error) {
 	}
 	return dirs, rows.Err()
 }
+
+// IsFavorite reports whether the track at the given library path is a favorite.
+func (db *DB) IsFavorite(libraryPath string) (bool, error) {
+	dir, name := SplitLibraryPath(libraryPath)
+	var exists bool
+	err := db.db.QueryRow(
+		`SELECT EXISTS(
+			SELECT 1 FROM favorites
+			JOIN tracks ON tracks.id = favorites.track_id
+			WHERE tracks.dir = ? AND tracks.name = ?
+		)`,
+		dir, name,
+	).Scan(&exists)
+	return exists, err
+}
+
+// SetFavorite adds or removes a favorite for the track at the given library path.
+func (db *DB) SetFavorite(libraryPath string, favorite bool) error {
+	dir, name := SplitLibraryPath(libraryPath)
+	if favorite {
+		_, err := db.db.Exec(
+			`INSERT OR IGNORE INTO favorites(track_id)
+			SELECT id FROM tracks WHERE dir = ? AND name = ?`,
+			dir, name,
+		)
+		return err
+	}
+	_, err := db.db.Exec(
+		`DELETE FROM favorites WHERE track_id = (
+			SELECT id FROM tracks WHERE dir = ? AND name = ?
+		)`,
+		dir, name,
+	)
+	return err
+}
+
+// favoriteDirFilter returns a SQL WHERE clause and args that filter favorites
+// by directory prefix. If prefix is empty, no filter is applied.
+func favoriteDirFilter(prefix string) (string, []any) {
+	if prefix == "" {
+		return "", nil
+	}
+	prefix = CleanLibraryPath(prefix)
+	return `WHERE tracks.dir = ? OR tracks.dir LIKE ? || '/%'`, []any{prefix, prefix}
+}
+
+// CountFavorites returns the number of favorite tracks. If prefix is non-empty,
+// only favorites whose directory matches the prefix are counted.
+func (db *DB) CountFavorites(prefix string) (int, error) {
+	where, args := favoriteDirFilter(prefix)
+	var count int
+	err := db.db.QueryRow(
+		`SELECT COUNT(*) FROM favorites
+		JOIN tracks ON tracks.id = favorites.track_id `+where,
+		args...,
+	).Scan(&count)
+	return count, err
+}
+
+// GetFavoriteAt returns the library path of the favorite at the given position
+// (ordered by rowid). If prefix is non-empty, only favorites whose directory
+// matches the prefix are considered. Returns ("", nil) if pos is out of range.
+func (db *DB) GetFavoriteAt(pos int, prefix string) (string, error) {
+	where, args := favoriteDirFilter(prefix)
+	args = append(args, pos)
+	var libraryPath string
+	err := db.db.QueryRow(
+		`SELECT CASE WHEN tracks.dir = '' THEN tracks.name
+			ELSE tracks.dir || '/' || tracks.name END
+		FROM favorites
+		JOIN tracks ON tracks.id = favorites.track_id
+		`+where+`
+		ORDER BY favorites.rowid
+		LIMIT 1 OFFSET ?`,
+		args...,
+	).Scan(&libraryPath)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return libraryPath, err
+}

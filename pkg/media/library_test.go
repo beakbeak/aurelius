@@ -553,7 +553,10 @@ func TestFavorite(t *testing.T) {
 func TestFavoritePaths(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	simpleRequestShouldFail(t, ml, "GET", api("playlists", "favorites"), "")
+	// Empty favorites should return length 0.
+	if length := getPlaylistLength(t, ml, api("playlists", "favorites")); length != 0 {
+		t.Fatalf("expected empty favorites to have 0 entries, got %v", length)
+	}
 
 	for i := 0; i < 2; i++ {
 		for _, path := range testFiles {
@@ -567,7 +570,7 @@ func TestFavoritePaths(t *testing.T) {
 		t.Fatalf("expected favorites to have %v entries, got %v", expectedLength, length)
 	}
 
-	// Fetch and compare the paths of favorites
+	// Fetch and compare the paths of favorites (order-independent).
 	favoritesPath := api("playlists", "favorites")
 	var actualPaths []string
 	for i := 0; i < length; i++ {
@@ -575,35 +578,30 @@ func TestFavoritePaths(t *testing.T) {
 		actualPaths = append(actualPaths, entry.Path)
 	}
 
-	// Build expected paths
+	// Build expected paths.
 	var expectedPaths []string
 	for _, path := range testFiles {
 		expectedPaths = append(expectedPaths, trackAt(path))
 	}
 
-	// Compare paths
-	if len(actualPaths) != len(expectedPaths) {
-		t.Fatalf("expected %v paths, got %v", len(expectedPaths), len(actualPaths))
+	slices.Sort(actualPaths)
+	slices.Sort(expectedPaths)
+
+	if !slices.Equal(actualPaths, expectedPaths) {
+		t.Fatalf("favorites paths mismatch:\nexpected: %v\ngot:      %v", expectedPaths, actualPaths)
 	}
 
-	for i, expectedPath := range expectedPaths {
-		if actualPaths[i] != expectedPath {
-			t.Errorf("path mismatch at index %v: expected %q, got %q", i, expectedPath, actualPaths[i])
-		}
-	}
-
-	// Test prefix filtering
+	// Test prefix filtering (directory-based).
 	t.Run("PrefixFiltering", func(t *testing.T) {
-		// Test with "test.flac" prefix - should match test.flac and test.flac.*.txt files
-		prefixLength := getPlaylistLength(t, ml, api("playlists", "favorites")+"?prefix=test.flac")
-		expectedPrefixLength := 4 // test.flac + test.flac.1.txt + test.flac.2.txt + test.flac.3.txt
+		// Test with "foo" prefix - should match foo/another directory/test.m4a
+		prefixLength := getPlaylistLength(t, ml, api("playlists", "favorites")+"?prefix=foo")
+		expectedPrefixLength := 1
 		if prefixLength != expectedPrefixLength {
-			t.Errorf("expected prefix 'test.flac' to match %v entries, got %v", expectedPrefixLength, prefixLength)
+			t.Errorf("expected prefix 'foo' to match %v entries, got %v", expectedPrefixLength, prefixLength)
 		}
 
-		// Test with "foo/" prefix - should match foo/another directory/test.m4a
+		// Test with "foo/" prefix - should also match
 		prefixLength = getPlaylistLength(t, ml, api("playlists", "favorites")+"?prefix=foo/")
-		expectedPrefixLength = 1
 		if prefixLength != expectedPrefixLength {
 			t.Errorf("expected prefix 'foo/' to match %v entries, got %v", expectedPrefixLength, prefixLength)
 		}
@@ -616,7 +614,7 @@ func TestFavoritePaths(t *testing.T) {
 		}
 
 		// Test fetching specific entries with prefix
-		testPrefix := "test.flac"
+		testPrefix := "foo"
 		basePath := api("playlists", "favorites")
 		prefixPath := basePath + "?prefix=" + testPrefix
 		prefixLength = getPlaylistLength(t, ml, prefixPath)

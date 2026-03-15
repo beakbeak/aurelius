@@ -15,6 +15,13 @@ func CleanLibraryPath(libraryPath string) string {
 	return cleanedPath
 }
 
+// SplitLibraryPath splits a library path into its directory and name components.
+func SplitLibraryPath(libraryPath string) (dir, name string) {
+	dir, name = path.Split(libraryPath)
+	dir = CleanLibraryPath(dir)
+	return dir, name
+}
+
 // JoinLibraryPath joins a directory and filename into a library path.
 func JoinLibraryPath(dir, name string) string {
 	if dir == "" {

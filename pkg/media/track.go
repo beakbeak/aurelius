@@ -266,45 +266,11 @@ func newAudioSource(path string) (aurelib.Source, error) {
 }
 
 func (ml *Library) isFavorite(path string) (bool, error) {
-	favorites, err := ml.playlistCache.Get(ml.storageToFsPath(favoritesPath))
-	switch {
-	case os.IsNotExist(err):
-		return false, nil
-	case err != nil:
-		return false, err
-	}
-	return favorites.LineSet()[path], nil
+	return ml.db.IsFavorite(path)
 }
 
-func (ml *Library) setFavorite(
-	path string,
-	favorite bool,
-) error {
-	if favorite {
-		return ml.playlistCache.CreateOrModify(
-			ml.storageToFsPath(favoritesPath),
-			func(favorites []string) ([]string, error) {
-				for _, line := range favorites {
-					if line == path {
-						return nil, nil
-					}
-				}
-				return append(favorites, path), nil
-			},
-		)
-	} else {
-		return ml.playlistCache.CreateOrModify(
-			ml.storageToFsPath(favoritesPath),
-			func(favorites []string) ([]string, error) {
-				for index, line := range favorites {
-					if line == path {
-						return append(favorites[:index], favorites[index+1:]...), nil
-					}
-				}
-				return nil, nil
-			},
-		)
-	}
+func (ml *Library) setFavorite(path string, favorite bool) error {
+	return ml.db.SetFavorite(path, favorite)
 }
 
 func (ml *Library) handleTrackImage(

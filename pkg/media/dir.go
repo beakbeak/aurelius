@@ -96,11 +96,6 @@ func (ml *Library) handleDirInfo(
 		}
 	}
 
-	favorites, err := ml.loadFavorites()
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to load favorites", "error", err)
-	}
-
 	for _, t := range tracks {
 		if fragmentSourceFiles[t.Name] {
 			continue
@@ -110,8 +105,10 @@ func (ml *Library) handleDirInfo(
 			Name: t.Name,
 			Url:  ml.libraryToUrlPath("tracks", trackPath),
 		}
-		if favorites != nil {
-			pu.Favorite = favorites.data.LineSet()[trackPath]
+		if fav, err := ml.db.IsFavorite(trackPath); err != nil {
+			slog.ErrorContext(ctx, "IsFavorite failed", "path", trackPath, "error", err)
+		} else {
+			pu.Favorite = fav
 		}
 		result.Tracks = append(result.Tracks, pu)
 	}

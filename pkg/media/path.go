@@ -7,8 +7,6 @@ import (
 	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
 
-const favoritesPath = "favorites.m3u"
-
 // libraryToFsPath converts a URL-style path relative to the root of the media
 // library to a path in the local file system.
 func (ml *Library) libraryToFsPath(libraryPath string) string {
@@ -20,12 +18,6 @@ func (ml *Library) libraryToUrlPath(collection string, libraryPath string) strin
 	out := &url.URL{Path: ml.config.Prefix}
 	out = out.JoinPath(collection, "at:"+url.PathEscape(libraryPath))
 	return out.String()
-}
-
-// storageToFsPath converts a path relative to the library's configured storage path to an absolute
-// path.
-func (ml *Library) storageToFsPath(storagePath string) string {
-	return filepath.Join(ml.config.StoragePath, storagePath)
 }
 
 // cleanLibraryPath is an alias for mediadb.CleanLibraryPath.

@@ -224,16 +224,16 @@ func handleDirInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 
 func handlePlaylistInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("playlist")
-	var playlist *playlist
-	var err error
 	if id == "favorites" {
-		playlist, err = ml.loadFavorites()
-	} else if path, ok := parseAt(id); ok {
-		playlist, err = ml.loadPlaylist(path)
-	} else {
+		ml.handleFavoritesInfo(w, r)
+		return
+	}
+	path, ok := parseAt(id)
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
+	playlist, err := ml.loadPlaylist(path)
 	if err != nil {
 		http.NotFound(w, r)
 		slog.ErrorContext(r.Context(), "loadPlaylist failed", "id", id, "error", err)
@@ -252,15 +252,16 @@ func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Requ
 	}
 
 	id := r.PathValue("playlist")
-	var playlist *playlist
 	if id == "favorites" {
-		playlist, err = ml.loadFavorites()
-	} else if path, ok := parseAt(id); ok {
-		playlist, err = ml.loadPlaylist(path)
-	} else {
+		ml.handleFavoritesTrack(pos, w, r)
+		return
+	}
+	path, ok := parseAt(id)
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
+	playlist, err := ml.loadPlaylist(path)
 	if err != nil {
 		http.NotFound(w, r)
 		slog.ErrorContext(r.Context(), "loadPlaylist failed", "id", id, "error", err)
