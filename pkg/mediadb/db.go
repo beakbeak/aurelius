@@ -305,29 +305,16 @@ func (db *DB) GetM3UPlaylistsInDirIncludingEmpty(dir string) ([]M3UPlaylist, err
 	return playlists, rows.Err()
 }
 
-// m3uPlaylistDirFilter returns a SQL WHERE clause fragment and args that filter
-// playlist tracks by directory prefix. If prefix is empty, no filter is applied.
-func m3uPlaylistDirFilter(prefix string) (string, []any) {
-	if prefix == "" {
-		return "", nil
-	}
-	prefix = CleanLibraryPath(prefix)
-	return `AND (t.dir = ? OR t.dir LIKE ? || '/%')`, []any{prefix, prefix}
-}
-
 // GetM3UPlaylistTrackCount returns the number of resolved tracks in a playlist.
 // Only counts tracks visible through the tracks view (not soft-deleted).
-func (db *DB) GetM3UPlaylistTrackCount(dir, name, prefix string) (int, error) {
-	filter, filterArgs := m3uPlaylistDirFilter(prefix)
-	args := []any{dir, name}
-	args = append(args, filterArgs...)
+func (db *DB) GetM3UPlaylistTrackCount(dir, name string) (int, error) {
 	var count int
 	err := db.db.QueryRow(
 		`SELECT COUNT(*) FROM m3u_playlist_tracks pt
 		JOIN tracks t ON t.id = pt.track_id
 		JOIN m3u_playlists p ON p.id = pt.playlist_id
-		WHERE p.dir = ? AND p.name = ? `+filter,
-		args...,
+		WHERE p.dir = ? AND p.name = ?`,
+		dir, name,
 	).Scan(&count)
 	return count, err
 }
@@ -335,14 +322,10 @@ func (db *DB) GetM3UPlaylistTrackCount(dir, name, prefix string) (int, error) {
 // GetM3UPlaylistTrackAt returns the library path of the track at the given
 // position in a playlist. Only considers tracks visible through the tracks view.
 // Returns ("", nil) if pos is out of range.
-func (db *DB) GetM3UPlaylistTrackAt(dir, name string, pos int, prefix string) (string, error) {
+func (db *DB) GetM3UPlaylistTrackAt(dir, name string, pos int) (string, error) {
 	if pos < 0 {
 		return "", nil
 	}
-	filter, filterArgs := m3uPlaylistDirFilter(prefix)
-	args := []any{dir, name}
-	args = append(args, filterArgs...)
-	args = append(args, pos)
 	var libraryPath string
 	err := db.db.QueryRow(
 		`SELECT CASE WHEN t.dir = '' THEN t.name
@@ -350,10 +333,10 @@ func (db *DB) GetM3UPlaylistTrackAt(dir, name string, pos int, prefix string) (s
 		FROM m3u_playlist_tracks pt
 		JOIN tracks t ON t.id = pt.track_id
 		JOIN m3u_playlists p ON p.id = pt.playlist_id
-		WHERE p.dir = ? AND p.name = ? `+filter+`
+		WHERE p.dir = ? AND p.name = ?
 		ORDER BY pt.position
 		LIMIT 1 OFFSET ?`,
-		args...,
+		dir, name, pos,
 	).Scan(&libraryPath)
 	if err == sql.ErrNoRows {
 		return "", nil

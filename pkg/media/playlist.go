@@ -13,8 +13,7 @@ func (ml *Library) handleM3UPlaylistInfo(
 	req *http.Request,
 ) {
 	dir, name := mediadb.SplitLibraryPath(libraryPath)
-	prefix := req.URL.Query().Get("prefix")
-	count, err := ml.db.GetM3UPlaylistTrackCount(dir, name, prefix)
+	count, err := ml.db.GetM3UPlaylistTrackCount(dir, name)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "GetM3UPlaylistTrackCount failed", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -35,9 +34,8 @@ func (ml *Library) handleM3UPlaylistTrack(
 ) {
 	ctx := req.Context()
 	dir, name := mediadb.SplitLibraryPath(libraryPath)
-	prefix := req.URL.Query().Get("prefix")
 
-	trackPath, err := ml.db.GetM3UPlaylistTrackAt(dir, name, pos, prefix)
+	trackPath, err := ml.db.GetM3UPlaylistTrackAt(dir, name, pos)
 	if err != nil {
 		slog.ErrorContext(ctx, "GetM3UPlaylistTrackAt failed", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
