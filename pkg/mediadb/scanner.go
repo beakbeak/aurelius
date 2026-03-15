@@ -447,12 +447,22 @@ func (s *Scanner) Apply(result *ScanResult) error {
 
 	// Moves.
 	if len(result.Moves) > 0 {
-		stmt, err := tx.Prepare(`UPDATE tracks SET dir = ?, name = ?, mtime = ? WHERE dir = ? AND name = ?`)
+		// Hard-delete any soft-deleted track at the move destination to avoid
+		// UNIQUE constraint violations.
+		clearStmt, err := tx.Prepare(`DELETE FROM tracks_with_deletes WHERE dir = ? AND name = ? AND deleted = 1`)
+		if err != nil {
+			return err
+		}
+		defer clearStmt.Close()
+		stmt, err := tx.Prepare(`UPDATE tracks_with_deletes SET dir = ?, name = ?, mtime = ? WHERE dir = ? AND name = ?`)
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 		for _, m := range result.Moves {
+			if _, err := clearStmt.Exec(m.NewDir, m.NewName); err != nil {
+				return fmt.Errorf("failed to clear soft-deleted track at move destination: %w", err)
+			}
 			if _, err := stmt.Exec(m.NewDir, m.NewName, m.NewMtime, m.OldDir, m.OldName); err != nil {
 				return fmt.Errorf("failed to apply move: %w", err)
 			}
@@ -462,7 +472,7 @@ func (s *Scanner) Apply(result *ScanResult) error {
 	// Changed.
 	if len(result.ChangedTracks) > 0 {
 		stmt, err := tx.Prepare(
-			`UPDATE tracks SET mtime = ?, hash = ?, tags = ?, attached_images = ?, metadata = ?
+			`UPDATE tracks_with_deletes SET mtime = ?, hash = ?, tags = ?, attached_images = ?, metadata = ?
 			WHERE dir = ? AND name = ?`,
 		)
 		if err != nil {
@@ -484,8 +494,15 @@ func (s *Scanner) Apply(result *ScanResult) error {
 	// Added.
 	if len(result.AddedTracks) > 0 {
 		stmt, err := tx.Prepare(
-			`INSERT INTO tracks (dir, name, mtime, hash, tags, attached_images, metadata)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO tracks_with_deletes (dir, name, mtime, hash, tags, attached_images, metadata, deleted)
+			VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+			ON CONFLICT(dir, name) DO UPDATE SET
+				mtime = excluded.mtime,
+				hash = excluded.hash,
+				tags = excluded.tags,
+				attached_images = excluded.attached_images,
+				metadata = excluded.metadata,
+				deleted = 0`,
 		)
 		if err != nil {
 			return err
@@ -505,14 +522,14 @@ func (s *Scanner) Apply(result *ScanResult) error {
 
 	// Removed.
 	if len(result.RemovedTracks) > 0 {
-		stmt, err := tx.Prepare(`DELETE FROM tracks WHERE dir = ? AND name = ?`)
+		stmt, err := tx.Prepare(`UPDATE tracks_with_deletes SET deleted = 1 WHERE dir = ? AND name = ?`)
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 		for _, t := range result.RemovedTracks {
 			if _, err := stmt.Exec(t.Dir, t.Name); err != nil {
-				return fmt.Errorf("failed to delete track: %w", err)
+				return fmt.Errorf("failed to soft-delete track: %w", err)
 			}
 		}
 	}

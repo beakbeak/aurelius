@@ -4,8 +4,8 @@ package mediadb
 // database version. The database's PRAGMA user_version tracks which migrations
 // have been applied.
 var migrations = []string{
-	// v1: initial schema.
-	`CREATE TABLE tracks (
+	`-- v1: initial schema.
+CREATE TABLE tracks (
     id              INTEGER PRIMARY KEY,
     dir             TEXT NOT NULL,
     name            TEXT NOT NULL,
@@ -26,6 +26,14 @@ CREATE TABLE dirs (
 );
 
 CREATE INDEX idx_dirs_parent ON dirs(parent);`,
+
+	`-- v2: soft-delete tracks.
+ALTER TABLE tracks RENAME TO tracks_with_deletes;
+ALTER TABLE tracks_with_deletes ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+CREATE VIEW tracks AS
+  SELECT id, dir, name, mtime, hash, tags, attached_images, metadata
+  FROM tracks_with_deletes
+  WHERE deleted = 0;`,
 }
 
 // ReplayGain holds the four combinations of ReplayGain mode and clipping
