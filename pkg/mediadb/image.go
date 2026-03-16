@@ -7,11 +7,13 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 
 	"golang.org/x/image/draw"
 )
@@ -83,16 +85,6 @@ func processImage(data []byte, mimeType string) ([]byte, string, [32]byte, error
 	}
 	hash := sha256.Sum256(last)
 	return last, "image/jpeg", hash, nil
-}
-
-// processImageFile reads an image file from disk, processes it, and returns the
-// result.
-func processImageFile(path string, mimeType string) ([]byte, string, [32]byte, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, "", [32]byte{}, err
-	}
-	return processImage(data, mimeType)
 }
 
 // directoryImageRef is a reference to an image file in a track's directory.
@@ -167,4 +159,96 @@ func collectDirectoryImagePaths(trackFsPath string) []directoryImageRef {
 		refs[i] = img.ref
 	}
 	return refs
+}
+
+// processedImage holds the result of processing a single image.
+type processedImage struct {
+	hash     [32]byte
+	origHash [32]byte
+	mimeType string
+	data     []byte // nil if image already exists in DB
+}
+
+// imageHashCache provides thread-safe deduplication of image processing.
+type imageHashCache struct {
+	mu                      sync.Mutex
+	originalHashToProcessed map[[32]byte][32]byte
+}
+
+// collectAndProcessTrackImages opens the audio file and scans the directory for
+// images, processing each one. New images (not in cache) are sent through
+// imageCh for the consumer to insert. The cache prevents duplicate processing
+// both across scans (pre-loaded data) and within the current scan (worker
+// updates). Returns the ordered image hashes for track_images linking.
+func collectAndProcessTrackImages(
+	trackFsPath string,
+	cache *imageHashCache,
+	imageCh chan<- processedImage,
+) [][32]byte {
+	var hashes [][32]byte
+	seenHashes := make(map[[32]byte]bool)
+
+	addImage := func(data []byte, mimeType, context string) {
+		origHash := sha256.Sum256(data)
+
+		// Check cache for already-processed image.
+		cache.mu.Lock()
+		if existingHash, ok := cache.originalHashToProcessed[origHash]; ok {
+			cache.mu.Unlock()
+			if !seenHashes[existingHash] {
+				seenHashes[existingHash] = true
+				hashes = append(hashes, existingHash)
+			}
+			return
+		}
+		cache.mu.Unlock()
+
+		// Process the image (resize/re-encode if needed).
+		processed, processedMime, hash, err := processImage(data, mimeType)
+		if err != nil {
+			slog.Warn("image processing failed", "context", "processImage", "path", context, "error", err)
+			return
+		}
+
+		// Update cache.
+		cache.mu.Lock()
+		cache.originalHashToProcessed[origHash] = hash
+		cache.mu.Unlock()
+
+		if seenHashes[hash] {
+			return
+		}
+		seenHashes[hash] = true
+
+		imageCh <- processedImage{
+			hash:     hash,
+			origHash: origHash,
+			mimeType: processedMime,
+			data:     processed,
+		}
+		hashes = append(hashes, hash)
+	}
+
+	// Attached images from the audio file.
+	src, err := newAudioSource(trackFsPath)
+	if err != nil {
+		slog.Warn("failed to open source for images", "path", trackFsPath, "error", err)
+		return nil
+	}
+	for _, img := range src.AttachedImages() {
+		addImage(img.Data, img.Format.MimeType(), trackFsPath)
+	}
+	src.Destroy()
+
+	// Directory images.
+	for _, ref := range collectDirectoryImagePaths(trackFsPath) {
+		data, err := os.ReadFile(ref.path)
+		if err != nil {
+			slog.Warn("image processing failed", "context", "readFile", "path", ref.path, "error", err)
+			continue
+		}
+		addImage(data, ref.mimeType, ref.path)
+	}
+
+	return hashes
 }

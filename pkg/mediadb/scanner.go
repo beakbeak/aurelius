@@ -2,7 +2,6 @@ package mediadb
 
 import (
 	"bufio"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,12 +10,19 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/beakbeak/aurelius/internal/maputil"
 	"github.com/beakbeak/aurelius/pkg/aurelib"
 	"github.com/beakbeak/aurelius/pkg/fragment"
+)
+
+const (
+	imageProcessingLogInterval = 5 * time.Second
 )
 
 // FSEntry represents a file found on the filesystem during scanning.
@@ -524,83 +530,143 @@ func logImageProcessingError(context string, path string, err error) {
 		"error", err)
 }
 
-// collectAndInsertTrackImages opens the audio file and scans the directory for
-// images, processing and inserting them one at a time. Each image is loaded,
-// processed, inserted, and released before the next to avoid accumulating large
-// buffers in memory. If the original (unprocessed) hash already exists in the
-// database, the expensive decode/resize is skipped entirely.
-func (s *Scanner) collectAndInsertTrackImages(
-	insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt *sql.Stmt,
-	trackID int64, dir, name string,
-) error {
-	fsPath := s.fsPath(dir, name)
+// trackImageWork identifies a track that needs image processing.
+type trackImageWork struct {
+	dir     string
+	name    string
+	trackID int64
+}
 
-	position := 0
-	seenHashes := make(map[[32]byte]bool)
-
-	// insertImage hashes the raw data, checks whether we already processed it,
-	// and only calls processImage if needed.
-	insertImage := func(data []byte, mimeType, context string) {
-		origHash := sha256.Sum256(data)
-
-		// Check if we already have a processed version of this original.
-		var existingHash []byte
-		err := lookupOrigHashStmt.QueryRow(origHash[:]).Scan(&existingHash)
-		if err == nil && len(existingHash) == 32 {
-			var h [32]byte
-			copy(h[:], existingHash)
-			if !seenHashes[h] {
-				seenHashes[h] = true
-				if _, err := insertTrackImageStmt.Exec(trackID, position, existingHash); err != nil {
-					logImageProcessingError("insertTrackImage", context, err)
-					return
-				}
-				position++
-			}
-			return
-		}
-
-		// Process the image (resize/re-encode if needed).
-		processed, processedMime, hash, err := processImage(data, mimeType)
-		if err != nil {
-			logImageProcessingError("processImage", context, err)
-			return
-		}
-		if seenHashes[hash] {
-			return
-		}
-		seenHashes[hash] = true
-
-		if _, err := insertImageStmt.Exec(hash[:], origHash[:], processedMime, processed); err != nil {
-			logImageProcessingError("insertImage", context, err)
-			return
-		}
-		if _, err := insertTrackImageStmt.Exec(trackID, position, hash[:]); err != nil {
-			logImageProcessingError("insertTrackImage", context, err)
-			return
-		}
-		position++
-	}
-
-	// Attached images from the audio file.
-	src, err := newAudioSource(fsPath)
-	if err != nil {
-		slog.Warn("failed to open source for images", "path", fsPath, "error", err)
+// processAndInsertTrackImages processes images for the given tracks in parallel
+// and inserts them within the provided transaction. Uses one goroutine per CPU
+// core for image processing. Logs progress every 5 seconds if the operation
+// takes longer than that.
+//
+// Uses a two-phase approach: phase 1 inserts all image data (via a streaming
+// channel from workers), phase 2 creates track_images links (after all images
+// are guaranteed to exist in the DB).
+func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWork) error {
+	if len(tracks) == 0 {
 		return nil
 	}
-	for _, img := range src.AttachedImages() {
-		insertImage(img.Data, img.Format.MimeType(), fsPath)
-	}
-	src.Destroy()
 
-	// Directory images.
-	for _, ref := range collectDirectoryImagePaths(fsPath) {
-		data, err := os.ReadFile(ref.path)
-		if err != nil {
-			logImageProcessingError("readFile", ref.path, err)
+	insertImageStmt, err := tx.Prepare(
+		`INSERT OR IGNORE INTO images (hash, original_hash, mime_type, data) VALUES (?, ?, ?, ?)`,
+	)
+	if err != nil {
+		return err
+	}
+	defer insertImageStmt.Close()
+
+	insertTrackImageStmt, err := tx.Prepare(
+		`INSERT INTO track_images (track_id, position, image_hash) VALUES (?, ?, ?)`,
+	)
+	if err != nil {
+		return err
+	}
+	defer insertTrackImageStmt.Close()
+
+	deleteImagesStmt, err := tx.Prepare(`DELETE FROM track_images WHERE track_id = ?`)
+	if err != nil {
+		return err
+	}
+	defer deleteImagesStmt.Close()
+
+	// Pre-load existing original_hash → hash mappings.
+	cache := &imageHashCache{originalHashToProcessed: make(map[[32]byte][32]byte)}
+	rows, err := tx.Query("SELECT original_hash, hash FROM images")
+	if err == nil {
+		for rows.Next() {
+			var origHash, hash []byte
+			if err := rows.Scan(&origHash, &hash); err != nil {
+				continue
+			}
+			var ok, hk [32]byte
+			copy(ok[:], origHash)
+			copy(hk[:], hash)
+			cache.originalHashToProcessed[ok] = hk
+		}
+		rows.Close()
+	}
+
+	type trackImageMapping struct {
+		trackID int64
+		hashes  [][32]byte
+	}
+
+	imageCh := make(chan processedImage)
+	var mappings []trackImageMapping
+	var mappingsMu sync.Mutex
+
+	work := make(chan trackImageWork)
+	var wg sync.WaitGroup
+
+	// Log progress at regular intervals.
+	var processed atomic.Int64
+	total := int64(len(tracks))
+	done := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(imageProcessingLogInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				slog.Info("processing track images",
+					"completed", processed.Load(),
+					"total", total)
+			}
+		}
+	}()
+
+	// Start workers that will process images as work arrives on the queue.
+	numWorkers := runtime.NumCPU()
+	for range numWorkers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for item := range work {
+				hashes := collectAndProcessTrackImages(s.fsPath(item.dir, item.name), cache, imageCh)
+				mappingsMu.Lock()
+				mappings = append(mappings, trackImageMapping{trackID: item.trackID, hashes: hashes})
+				mappingsMu.Unlock()
+				processed.Add(1)
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(imageCh)
+		close(done)
+	}()
+
+	go func() {
+		for _, item := range tracks {
+			work <- item
+		}
+		close(work)
+	}()
+
+	// Phase 1: Insert all image data.
+	for img := range imageCh {
+		if _, err := insertImageStmt.Exec(img.hash[:], img.origHash[:], img.mimeType, img.data); err != nil {
+			logImageProcessingError("insertImage", "image", err)
+		}
+	}
+
+	// Phase 2: Create track_images links (all images now exist in DB).
+	for _, m := range mappings {
+		if _, err := deleteImagesStmt.Exec(m.trackID); err != nil {
+			slog.Warn("failed to delete track images", "trackID", m.trackID, "error", err)
 			continue
 		}
-		insertImage(data, ref.mimeType, ref.path)
+		for pos, hash := range m.hashes {
+			if _, err := insertTrackImageStmt.Exec(m.trackID, pos, hash[:]); err != nil {
+				logImageProcessingError("insertTrackImage", fmt.Sprintf("trackID=%d", m.trackID), err)
+			}
+		}
 	}
 
 	return nil
@@ -651,39 +717,7 @@ func (s *Scanner) Apply(result *ScanResult) error {
 		}
 	}
 
-	// Prepare shared image statements for Changed + Added tracks.
-	var insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt, deleteImagesStmt *sql.Stmt
-	if len(result.ChangedTracks) > 0 || len(result.AddedTracks) > 0 {
-		insertImageStmt, err = tx.Prepare(
-			`INSERT OR IGNORE INTO images (hash, original_hash, mime_type, data) VALUES (?, ?, ?, ?)`,
-		)
-		if err != nil {
-			return err
-		}
-		defer insertImageStmt.Close()
-
-		insertTrackImageStmt, err = tx.Prepare(
-			`INSERT INTO track_images (track_id, position, image_hash) VALUES (?, ?, ?)`,
-		)
-		if err != nil {
-			return err
-		}
-		defer insertTrackImageStmt.Close()
-
-		lookupOrigHashStmt, err = tx.Prepare(
-			`SELECT hash FROM images WHERE original_hash = ? LIMIT 1`,
-		)
-		if err != nil {
-			return err
-		}
-		defer lookupOrigHashStmt.Close()
-
-		deleteImagesStmt, err = tx.Prepare(`DELETE FROM track_images WHERE track_id = ?`)
-		if err != nil {
-			return err
-		}
-		defer deleteImagesStmt.Close()
-	}
+	var imageWork []trackImageWork
 
 	// Changed.
 	if len(result.ChangedTracks) > 0 {
@@ -705,12 +739,7 @@ func (s *Scanner) Apply(result *ScanResult) error {
 			if err := updateStmt.QueryRow(t.Mtime, t.Hash, tagsJSON, metadataJSON, t.Dir, t.Name).Scan(&trackID); err != nil {
 				return fmt.Errorf("failed to update track: %w", err)
 			}
-			if _, err := deleteImagesStmt.Exec(trackID); err != nil {
-				return fmt.Errorf("failed to delete track images: %w", err)
-			}
-			if err := s.collectAndInsertTrackImages(insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt, trackID, t.Dir, t.Name); err != nil {
-				slog.Warn("failed to collect images for changed track", "dir", t.Dir, "name", t.Name, "error", err)
-			}
+			imageWork = append(imageWork, trackImageWork{dir: t.Dir, name: t.Name, trackID: trackID})
 		}
 	}
 
@@ -741,14 +770,13 @@ func (s *Scanner) Apply(result *ScanResult) error {
 			if err := stmt.QueryRow(t.Dir, t.Name, t.Mtime, t.Hash, tagsJSON, metadataJSON).Scan(&trackID); err != nil {
 				return fmt.Errorf("failed to insert track: %w", err)
 			}
-			// Clear any stale images from a previous soft-deleted version.
-			if _, err := deleteImagesStmt.Exec(trackID); err != nil {
-				return fmt.Errorf("failed to delete track images: %w", err)
-			}
-			if err := s.collectAndInsertTrackImages(insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt, trackID, t.Dir, t.Name); err != nil {
-				slog.Warn("failed to collect images for added track", "dir", t.Dir, "name", t.Name, "error", err)
-			}
+			imageWork = append(imageWork, trackImageWork{dir: t.Dir, name: t.Name, trackID: trackID})
 		}
+	}
+
+	// Process and insert images in parallel.
+	if err := s.processAndInsertTrackImages(tx, imageWork); err != nil {
+		return err
 	}
 
 	// Removed.
