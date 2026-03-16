@@ -598,7 +598,24 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 	var mappings []trackImageMapping
 	var mappingsMu sync.Mutex
 
-	work := make(chan trackImageWork)
+	// Group tracks by directory so that workers process all tracks in a
+	// directory together, maximizing image cache hits for shared directory
+	// images.
+	type dirGroup struct {
+		dir    string
+		tracks []trackImageWork
+	}
+	groupsByDir := make(map[string]*dirGroup)
+	for _, item := range tracks {
+		g, ok := groupsByDir[item.dir]
+		if !ok {
+			g = &dirGroup{dir: item.dir}
+			groupsByDir[item.dir] = g
+		}
+		g.tracks = append(g.tracks, item)
+	}
+
+	work := make(chan *dirGroup)
 	var wg sync.WaitGroup
 
 	// Log progress at regular intervals.
@@ -620,18 +637,21 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 		}
 	}()
 
-	// Start workers that will process images as work arrives on the queue.
+	// Start workers that process all tracks in a directory group together.
+	// This ensures directory images are only processed once per directory.
 	numWorkers := runtime.NumCPU()
 	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for item := range work {
-				hashes := collectAndProcessTrackImages(s.fsPath(item.dir, item.name), cache, imageCh)
-				mappingsMu.Lock()
-				mappings = append(mappings, trackImageMapping{trackID: item.trackID, hashes: hashes})
-				mappingsMu.Unlock()
-				processed.Add(1)
+			for group := range work {
+				for _, item := range group.tracks {
+					hashes := collectAndProcessTrackImages(s.fsPath(item.dir, item.name), cache, imageCh)
+					mappingsMu.Lock()
+					mappings = append(mappings, trackImageMapping{trackID: item.trackID, hashes: hashes})
+					mappingsMu.Unlock()
+					processed.Add(1)
+				}
 			}
 		}()
 	}
@@ -643,8 +663,8 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 	}()
 
 	go func() {
-		for _, item := range tracks {
-			work <- item
+		for _, group := range groupsByDir {
+			work <- group
 		}
 		close(work)
 	}()
