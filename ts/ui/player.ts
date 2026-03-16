@@ -3,11 +3,9 @@ import { loadDir } from "./dir";
 import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
 import { showModalDialog } from "./modal";
-import { AttachedImageInfo, StreamCodec } from "../core/track";
 import { getSettings } from "./settings";
 
 const defaultTrackImageUrl = "/static/img/aurelius.svgz";
-const maxImageSize = 300 * 1024;
 
 let player: Player;
 
@@ -243,31 +241,6 @@ function startSeekSliderDrag(anchorClientX: number, anchorScreenX: number, touch
     );
 }
 
-function filterTrackImages(
-    images: AttachedImageInfo[],
-): (AttachedImageInfo & { originalIndex: number })[] {
-    const imagesWithIndex = images.map((img, index) => ({ ...img, originalIndex: index }));
-
-    switch (player.streamConfig.codec) {
-        case StreamCodec.Flac:
-        case StreamCodec.Wav:
-            // When a lossless codec is chosen, assume that bandwidth is less of a concern,
-            // so do not filter out large images.
-            return imagesWithIndex;
-        default:
-            return imagesWithIndex.filter((img) => {
-                if (img.size > maxImageSize) {
-                    console.debug("skipping oversized image", {
-                        ...img,
-                        maxSize: maxImageSize,
-                    });
-                    return false;
-                }
-                return true;
-            });
-    }
-}
-
 function updateStatus(): void {
     const track = player.track;
     if (track === undefined) {
@@ -304,12 +277,11 @@ function updateStatus(): void {
         icon: undefined, // Will be set below
     };
 
-    const filteredImages = filterTrackImages(info.attachedImages);
+    const images = info.attachedImages;
     let newTrackImageUrl = "";
-    if (filteredImages.length > 0) {
-        newTrackImageUrl = `${track.url}/images/${filteredImages[0].originalIndex}`;
+    if (images.length > 0) {
+        newTrackImageUrl = `${track.url}/images/0`;
         trackImage.style.cursor = "pointer";
-        // Set notification icon
         if (_notificationData) {
             _notificationData.icon = newTrackImageUrl;
         }
@@ -323,9 +295,9 @@ function updateStatus(): void {
 
     if (navigator.mediaSession !== undefined) {
         const artwork: MediaImage[] = [];
-        filteredImages.forEach((imageInfo) => {
+        images.forEach((imageInfo, index) => {
             artwork.push({
-                src: `${track.url}/images/${imageInfo.originalIndex}`,
+                src: `${track.url}/images/${index}`,
                 type: `${imageInfo.mimeType}`,
                 sizes: "",
             });

@@ -27,6 +27,12 @@ func Open(path string) (*DB, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	// Clean up images no longer referenced by any track.
+	if _, err := sqlDB.Exec("DELETE FROM images WHERE NOT EXISTS (SELECT 1 FROM track_images WHERE image_hash = images.hash)"); err != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("failed to clean orphaned images: %w", err)
+	}
+
 	return &DB{db: sqlDB}, nil
 }
 
@@ -56,11 +62,11 @@ func (db *DB) Close() error {
 
 func scanTrack(row interface{ Scan(...any) error }) (*Track, error) {
 	var t Track
-	var tagsJSON, imagesJSON, metadataJSON string
+	var tagsJSON, metadataJSON string
 
 	err := row.Scan(
 		&t.ID, &t.Dir, &t.Name, &t.Mtime, &t.Hash,
-		&tagsJSON, &imagesJSON, &metadataJSON,
+		&tagsJSON, &metadataJSON,
 	)
 	if err != nil {
 		return nil, err
@@ -69,9 +75,6 @@ func scanTrack(row interface{ Scan(...any) error }) (*Track, error) {
 	if err := json.Unmarshal([]byte(tagsJSON), &t.Tags); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal tags: %w", err)
 	}
-	if err := json.Unmarshal([]byte(imagesJSON), &t.AttachedImages); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal attached_images: %w", err)
-	}
 	if err := json.Unmarshal([]byte(metadataJSON), &t.Metadata); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
 	}
@@ -79,9 +82,10 @@ func scanTrack(row interface{ Scan(...any) error }) (*Track, error) {
 	return &t, nil
 }
 
-const trackColumns = `id, dir, name, mtime, hash, tags, attached_images, metadata`
+const trackColumns = `id, dir, name, mtime, hash, tags, metadata`
 
-// GetTrack returns the track at the given library path (dir + name).
+// GetTrack returns the track at the given library path (dir + name),
+// including image metadata (but not image data).
 func (db *DB) GetTrack(dir, name string) (*Track, error) {
 	row := db.db.QueryRow(
 		`SELECT `+trackColumns+` FROM tracks WHERE dir = ? AND name = ?`,
@@ -91,7 +95,60 @@ func (db *DB) GetTrack(dir, name string) (*Track, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	return t, err
+	if err != nil {
+		return nil, err
+	}
+
+	images, err := db.getTrackImages(t.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load track images: %w", err)
+	}
+	t.Images = images
+	return t, nil
+}
+
+// getTrackImages returns image metadata for a track (hash, mime type, size)
+// without loading the image data blob.
+func (db *DB) getTrackImages(trackID int64) ([]ImageInfo, error) {
+	rows, err := db.db.Query(
+		`SELECT i.hash, i.mime_type, length(i.data)
+		FROM track_images ti
+		JOIN images i ON i.hash = ti.image_hash
+		WHERE ti.track_id = ?
+		ORDER BY ti.position`,
+		trackID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var images []ImageInfo
+	for rows.Next() {
+		var img ImageInfo
+		if err := rows.Scan(&img.Hash, &img.MimeType, &img.Size); err != nil {
+			return nil, err
+		}
+		images = append(images, img)
+	}
+	return images, rows.Err()
+}
+
+// GetTrackImageData returns the full image data for a track at the given
+// position. Returns (nil, "", nil, nil) if not found.
+func (db *DB) GetTrackImageData(dir, name string, position int) (data []byte, mimeType string, hash []byte, err error) {
+	err = db.db.QueryRow(
+		`SELECT i.data, i.mime_type, i.hash
+		FROM track_images ti
+		JOIN images i ON i.hash = ti.image_hash
+		JOIN tracks t ON t.id = ti.track_id
+		WHERE t.dir = ? AND t.name = ? AND ti.position = ?`,
+		dir, name, position,
+	).Scan(&data, &mimeType, &hash)
+	if err == sql.ErrNoRows {
+		return nil, "", nil, nil
+	}
+	return
 }
 
 // GetTracksInDir returns all tracks in the given directory.

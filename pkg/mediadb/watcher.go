@@ -386,6 +386,8 @@ func (w *Watcher) processFileEvent(absPath string, ev *pendingEvent, changes *Ch
 		w.processTrackEvent(absPath, dir, name, ev, changes)
 	case FileTypePlaylist:
 		w.processPlaylistEvent(absPath, dir, name, ev, changes)
+	case FileTypeImage:
+		w.processImageFileEvent(dir, ev, changes)
 	case FileTypeIgnored:
 	}
 }
@@ -477,6 +479,25 @@ func (w *Watcher) processPlaylistEvent(absPath, dir, name string, ev *pendingEve
 			return
 		}
 		changes.RemovedPlaylists = append(changes.RemovedPlaylists, *playlist)
+	}
+}
+
+// processImageFileEvent handles a directory image file change by marking all
+// tracks in the same directory as changed so their images are re-collected.
+func (w *Watcher) processImageFileEvent(dir string, ev *pendingEvent, changes *ChangeSet) {
+	tracks, err := w.scanner.db.GetTracksInDir(dir)
+	if err != nil {
+		slog.Warn("watcher: failed to look up tracks for image event", "dir", dir, "error", err)
+		return
+	}
+	for _, t := range tracks {
+		info, err := os.Lstat(w.scanner.fsPath(t.Dir, t.Name))
+		if err != nil {
+			continue
+		}
+		changes.Changed = append(changes.Changed, FSEntry{
+			Dir: t.Dir, Name: t.Name, Mtime: info.ModTime().Unix(),
+		})
 	}
 }
 

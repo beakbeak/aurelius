@@ -2,6 +2,8 @@ package mediadb
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -63,10 +65,9 @@ type ScannedPlaylist struct {
 // ScannedTrack is an FSEntry enriched with metadata read from the file.
 type ScannedTrack struct {
 	FSEntry
-	Hash           []byte
-	Tags           map[string]string
-	AttachedImages []AttachedImageInfo
-	Metadata       TrackMetadata
+	Hash     []byte
+	Tags     map[string]string
+	Metadata TrackMetadata
 }
 
 // ScanResult contains the fully resolved changes, ready to apply.
@@ -459,13 +460,7 @@ func resolvePlaylistTracks(playlistDir string, lines []string) []string {
 func (s *Scanner) scanFile(entry FSEntry, hash []byte) (*ScannedTrack, error) {
 	fsPath := s.fsPath(entry.Dir, entry.Name)
 
-	var src aurelib.Source
-	var err error
-	if fragment.IsFragment(fsPath) {
-		src, err = fragment.New(fsPath)
-	} else {
-		src, err = aurelib.NewFileSource(fsPath)
-	}
+	src, err := newAudioSource(fsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", fsPath, err)
 	}
@@ -499,40 +494,124 @@ func (s *Scanner) scanFile(entry FSEntry, hash []byte) (*ScannedTrack, error) {
 		}
 	}
 
-	// Collect attached image info.
-	attachedImages := src.AttachedImages()
-	imageInfos := make([]AttachedImageInfo, 0, len(attachedImages))
-	for _, img := range attachedImages {
-		imageInfos = append(imageInfos, AttachedImageInfo{
-			MimeType: img.Format.MimeType(),
-			Size:     len(img.Data),
-		})
-	}
-
 	return &ScannedTrack{
-		FSEntry:        entry,
-		Hash:           hash,
-		Tags:           tags,
-		AttachedImages: imageInfos,
-		Metadata:       metadata,
+		FSEntry:  entry,
+		Hash:     hash,
+		Tags:     tags,
+		Metadata: metadata,
 	}, nil
 }
 
 // marshalTrackJSON marshals the JSON fields of a ScannedTrack.
-func marshalTrackJSON(t *ScannedTrack) (tagsJSON, imagesJSON, metadataJSON string, err error) {
+func marshalTrackJSON(t *ScannedTrack) (tagsJSON, metadataJSON string, err error) {
 	tagsBytes, err := json.Marshal(t.Tags)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to marshal tags: %w", err)
-	}
-	imagesBytes, err := json.Marshal(t.AttachedImages)
-	if err != nil {
-		return "", "", "", fmt.Errorf("failed to marshal images: %w", err)
+		return "", "", fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	metadataBytes, err := json.Marshal(t.Metadata)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to marshal metadata: %w", err)
+		return "", "", fmt.Errorf("failed to marshal metadata: %w", err)
 	}
-	return string(tagsBytes), string(imagesBytes), string(metadataBytes), nil
+	return string(tagsBytes), string(metadataBytes), nil
+}
+
+// logImageProcessingError logs an error from image processing without
+// stopping the scan.
+func logImageProcessingError(context string, path string, err error) {
+	slog.Warn("image processing failed",
+		"context", context,
+		"path", path,
+		"error", err)
+}
+
+// collectAndInsertTrackImages opens the audio file and scans the directory for
+// images, processing and inserting them one at a time. Each image is loaded,
+// processed, inserted, and released before the next to avoid accumulating large
+// buffers in memory. If the original (unprocessed) hash already exists in the
+// database, the expensive decode/resize is skipped entirely.
+func (s *Scanner) collectAndInsertTrackImages(
+	insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt *sql.Stmt,
+	trackID int64, dir, name string,
+) error {
+	fsPath := s.fsPath(dir, name)
+
+	position := 0
+	seenHashes := make(map[[32]byte]bool)
+
+	// insertImage hashes the raw data, checks whether we already processed it,
+	// and only calls processImage if needed.
+	insertImage := func(data []byte, mimeType, context string) {
+		origHash := sha256.Sum256(data)
+
+		// Check if we already have a processed version of this original.
+		var existingHash []byte
+		err := lookupOrigHashStmt.QueryRow(origHash[:]).Scan(&existingHash)
+		if err == nil && len(existingHash) == 32 {
+			var h [32]byte
+			copy(h[:], existingHash)
+			if !seenHashes[h] {
+				seenHashes[h] = true
+				if _, err := insertTrackImageStmt.Exec(trackID, position, existingHash); err != nil {
+					logImageProcessingError("insertTrackImage", context, err)
+					return
+				}
+				position++
+			}
+			return
+		}
+
+		// Process the image (resize/re-encode if needed).
+		processed, processedMime, hash, err := processImage(data, mimeType)
+		if err != nil {
+			logImageProcessingError("processImage", context, err)
+			return
+		}
+		if seenHashes[hash] {
+			return
+		}
+		seenHashes[hash] = true
+
+		if _, err := insertImageStmt.Exec(hash[:], origHash[:], processedMime, processed); err != nil {
+			logImageProcessingError("insertImage", context, err)
+			return
+		}
+		if _, err := insertTrackImageStmt.Exec(trackID, position, hash[:]); err != nil {
+			logImageProcessingError("insertTrackImage", context, err)
+			return
+		}
+		position++
+	}
+
+	// Attached images from the audio file.
+	src, err := newAudioSource(fsPath)
+	if err != nil {
+		slog.Warn("failed to open source for images", "path", fsPath, "error", err)
+		return nil
+	}
+	for _, img := range src.AttachedImages() {
+		insertImage(img.Data, img.Format.MimeType(), fsPath)
+	}
+	src.Destroy()
+
+	// Directory images.
+	for _, ref := range collectDirectoryImagePaths(fsPath) {
+		data, err := os.ReadFile(ref.path)
+		if err != nil {
+			logImageProcessingError("readFile", ref.path, err)
+			continue
+		}
+		insertImage(data, ref.mimeType, ref.path)
+	}
+
+	return nil
+}
+
+// newAudioSource opens an audio file as an aurelib.Source.
+func newAudioSource(fsPath string) (aurelib.Source, error) {
+	if fragment.IsFragment(fsPath) {
+		return fragment.New(fsPath)
+	}
+	return aurelib.NewFileSource(fsPath)
 }
 
 // Apply writes a ScanResult to the database in a single transaction.
@@ -572,24 +651,65 @@ func (s *Scanner) Apply(result *ScanResult) error {
 		}
 	}
 
-	// Changed.
-	if len(result.ChangedTracks) > 0 {
-		stmt, err := tx.Prepare(
-			`UPDATE tracks_with_deletes SET mtime = ?, hash = ?, tags = ?, attached_images = ?, metadata = ?
-			WHERE dir = ? AND name = ?`,
+	// Prepare shared image statements for Changed + Added tracks.
+	var insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt, deleteImagesStmt *sql.Stmt
+	if len(result.ChangedTracks) > 0 || len(result.AddedTracks) > 0 {
+		insertImageStmt, err = tx.Prepare(
+			`INSERT OR IGNORE INTO images (hash, original_hash, mime_type, data) VALUES (?, ?, ?, ?)`,
 		)
 		if err != nil {
 			return err
 		}
-		defer stmt.Close()
+		defer insertImageStmt.Close()
+
+		insertTrackImageStmt, err = tx.Prepare(
+			`INSERT INTO track_images (track_id, position, image_hash) VALUES (?, ?, ?)`,
+		)
+		if err != nil {
+			return err
+		}
+		defer insertTrackImageStmt.Close()
+
+		lookupOrigHashStmt, err = tx.Prepare(
+			`SELECT hash FROM images WHERE original_hash = ? LIMIT 1`,
+		)
+		if err != nil {
+			return err
+		}
+		defer lookupOrigHashStmt.Close()
+
+		deleteImagesStmt, err = tx.Prepare(`DELETE FROM track_images WHERE track_id = ?`)
+		if err != nil {
+			return err
+		}
+		defer deleteImagesStmt.Close()
+	}
+
+	// Changed.
+	if len(result.ChangedTracks) > 0 {
+		updateStmt, err := tx.Prepare(
+			`UPDATE tracks_with_deletes SET mtime = ?, hash = ?, tags = ?, metadata = ?
+			WHERE dir = ? AND name = ? RETURNING id`,
+		)
+		if err != nil {
+			return err
+		}
+		defer updateStmt.Close()
 		for i := range result.ChangedTracks {
 			t := &result.ChangedTracks[i]
-			tagsJSON, imagesJSON, metadataJSON, err := marshalTrackJSON(t)
+			tagsJSON, metadataJSON, err := marshalTrackJSON(t)
 			if err != nil {
 				return err
 			}
-			if _, err := stmt.Exec(t.Mtime, t.Hash, tagsJSON, imagesJSON, metadataJSON, t.Dir, t.Name); err != nil {
+			var trackID int64
+			if err := updateStmt.QueryRow(t.Mtime, t.Hash, tagsJSON, metadataJSON, t.Dir, t.Name).Scan(&trackID); err != nil {
 				return fmt.Errorf("failed to update track: %w", err)
+			}
+			if _, err := deleteImagesStmt.Exec(trackID); err != nil {
+				return fmt.Errorf("failed to delete track images: %w", err)
+			}
+			if err := s.collectAndInsertTrackImages(insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt, trackID, t.Dir, t.Name); err != nil {
+				slog.Warn("failed to collect images for changed track", "dir", t.Dir, "name", t.Name, "error", err)
 			}
 		}
 	}
@@ -597,15 +717,15 @@ func (s *Scanner) Apply(result *ScanResult) error {
 	// Added.
 	if len(result.AddedTracks) > 0 {
 		stmt, err := tx.Prepare(
-			`INSERT INTO tracks_with_deletes (dir, name, mtime, hash, tags, attached_images, metadata, deleted)
-			VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+			`INSERT INTO tracks_with_deletes (dir, name, mtime, hash, tags, metadata, deleted)
+			VALUES (?, ?, ?, ?, ?, ?, 0)
 			ON CONFLICT(dir, name) DO UPDATE SET
 				mtime = excluded.mtime,
 				hash = excluded.hash,
 				tags = excluded.tags,
-				attached_images = excluded.attached_images,
 				metadata = excluded.metadata,
-				deleted = 0`,
+				deleted = 0
+			RETURNING id`,
 		)
 		if err != nil {
 			return err
@@ -613,12 +733,20 @@ func (s *Scanner) Apply(result *ScanResult) error {
 		defer stmt.Close()
 		for i := range result.AddedTracks {
 			t := &result.AddedTracks[i]
-			tagsJSON, imagesJSON, metadataJSON, err := marshalTrackJSON(t)
+			tagsJSON, metadataJSON, err := marshalTrackJSON(t)
 			if err != nil {
 				return err
 			}
-			if _, err := stmt.Exec(t.Dir, t.Name, t.Mtime, t.Hash, tagsJSON, imagesJSON, metadataJSON); err != nil {
+			var trackID int64
+			if err := stmt.QueryRow(t.Dir, t.Name, t.Mtime, t.Hash, tagsJSON, metadataJSON).Scan(&trackID); err != nil {
 				return fmt.Errorf("failed to insert track: %w", err)
+			}
+			// Clear any stale images from a previous soft-deleted version.
+			if _, err := deleteImagesStmt.Exec(trackID); err != nil {
+				return fmt.Errorf("failed to delete track images: %w", err)
+			}
+			if err := s.collectAndInsertTrackImages(insertImageStmt, insertTrackImageStmt, lookupOrigHashStmt, trackID, t.Dir, t.Name); err != nil {
+				slog.Warn("failed to collect images for added track", "dir", t.Dir, "name", t.Name, "error", err)
 			}
 		}
 	}

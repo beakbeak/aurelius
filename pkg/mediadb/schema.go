@@ -4,7 +4,8 @@ package mediadb
 // database version. The database's PRAGMA user_version tracks which migrations
 // have been applied.
 var migrations = []string{
-	`-- v1: initial schema.
+	// ------------------------------------------------------------------
+	`-- v1: Initial schema.
 CREATE TABLE tracks (
     id              INTEGER PRIMARY KEY,
     dir             TEXT NOT NULL,
@@ -27,7 +28,8 @@ CREATE TABLE dirs (
 
 CREATE INDEX idx_dirs_parent ON dirs(parent);`,
 
-	`-- v2: soft-delete tracks.
+	// ------------------------------------------------------------------
+	`-- v2: Soft-delete tracks.
 ALTER TABLE tracks RENAME TO tracks_with_deletes;
 ALTER TABLE tracks_with_deletes ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
 CREATE VIEW tracks AS
@@ -35,12 +37,14 @@ CREATE VIEW tracks AS
   FROM tracks_with_deletes
   WHERE deleted = 0;`,
 
-	`-- v3: favorites table.
+	// ------------------------------------------------------------------
+	`-- v3: Favorites table.
 CREATE TABLE favorites (
     track_id INTEGER PRIMARY KEY REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
     added_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );`,
 
+	// ------------------------------------------------------------------
 	`-- v4: FTS5 path search index.
 CREATE VIRTUAL TABLE path_search_index USING fts5(
     path,
@@ -68,6 +72,7 @@ BEGIN
 END;
 
 CREATE TRIGGER path_search_track_au AFTER UPDATE ON tracks_with_deletes
+WHEN OLD.dir != NEW.dir OR OLD.name != NEW.name OR OLD.deleted != NEW.deleted
 BEGIN
     DELETE FROM path_search_index
     WHERE OLD.deleted = 0
@@ -100,7 +105,8 @@ BEGIN
     DELETE FROM path_search_index WHERE path = OLD.path AND type = 'dir';
 END;`,
 
-	`-- v5: m3u playlist tables.
+	// ------------------------------------------------------------------
+	`-- v5: M3U playlist tables.
 CREATE TABLE m3u_playlists (
     id    INTEGER PRIMARY KEY,
     dir   TEXT NOT NULL,
@@ -119,6 +125,55 @@ CREATE TABLE m3u_playlist_tracks (
 
     PRIMARY KEY (playlist_id, position)
 );`,
+
+	// ------------------------------------------------------------------
+	`-- v6: Store images in database. Orphan cleanup is done at DB open, not via
+-- trigger. Also optimizes the path search update trigger to skip no-op
+-- updates (mtime, hash, tags, metadata changes).
+CREATE TABLE images (
+    hash          BLOB PRIMARY KEY,
+    original_hash BLOB NOT NULL,
+    mime_type     TEXT NOT NULL,
+    data          BLOB NOT NULL
+);
+
+CREATE INDEX idx_images_original_hash ON images(original_hash);
+
+CREATE TABLE track_images (
+    track_id   INTEGER NOT NULL REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
+    position   INTEGER NOT NULL,
+    image_hash BLOB NOT NULL REFERENCES images(hash),
+
+    PRIMARY KEY (track_id, position)
+);
+
+-- Drop the attached_images column (recreate the view first since it references it).
+DROP VIEW tracks;
+ALTER TABLE tracks_with_deletes DROP COLUMN attached_images;
+CREATE VIEW tracks AS
+  SELECT id, dir, name, mtime, hash, tags, metadata
+  FROM tracks_with_deletes
+  WHERE deleted = 0;
+
+-- Recreate path search trigger with WHEN clause to skip no-op updates.
+DROP TRIGGER path_search_track_au;
+CREATE TRIGGER path_search_track_au AFTER UPDATE ON tracks_with_deletes
+WHEN OLD.dir != NEW.dir OR OLD.name != NEW.name OR OLD.deleted != NEW.deleted
+BEGIN
+    DELETE FROM path_search_index
+    WHERE OLD.deleted = 0
+      AND type = 'track'
+      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
+                      ELSE OLD.dir || '/' || OLD.name END;
+    INSERT INTO path_search_index (path, type)
+    SELECT CASE WHEN NEW.dir = '' THEN NEW.name
+                ELSE NEW.dir || '/' || NEW.name END,
+           'track'
+    WHERE NEW.deleted = 0;
+END;
+
+-- Force full rescan to populate images.
+UPDATE tracks_with_deletes SET mtime = 0;`,
 }
 
 // ReplayGain holds the four combinations of ReplayGain mode and clipping
@@ -139,22 +194,24 @@ type TrackMetadata struct {
 	ReplayGain   *ReplayGain `json:"replayGain,omitempty"`
 }
 
-// AttachedImageInfo describes an image attached to or associated with a track.
-type AttachedImageInfo struct {
-	MimeType string `json:"mimeType"`
-	Size     int    `json:"size"`
+// ImageInfo describes an image associated with a track. The binary data is
+// stored in the images table and referenced by hash.
+type ImageInfo struct {
+	Hash     []byte
+	MimeType string
+	Size     int
 }
 
 // Track represents a row in the tracks table.
 type Track struct {
-	ID             int64
-	Dir            string
-	Name           string
-	Mtime          int64
-	Hash           []byte
-	Tags           map[string]string
-	AttachedImages []AttachedImageInfo
-	Metadata       TrackMetadata
+	ID       int64
+	Dir      string
+	Name     string
+	Mtime    int64
+	Hash     []byte
+	Tags     map[string]string
+	Images   []ImageInfo
+	Metadata TrackMetadata
 }
 
 // Dir represents a row in the dirs table.

@@ -7,7 +7,15 @@ import (
 	"time"
 
 	"github.com/beakbeak/aurelius/pkg/aurelib"
+	"github.com/beakbeak/aurelius/pkg/fragment"
 )
+
+func newAudioSource(path string) (aurelib.Source, error) {
+	if fragment.IsFragment(path) {
+		return fragment.New(path)
+	}
+	return aurelib.NewFileSource(path)
+}
 
 func (ml *Library) handleTrackStream(
 	fsPath string,

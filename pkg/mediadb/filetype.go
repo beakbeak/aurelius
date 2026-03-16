@@ -14,12 +14,14 @@ const (
 	FileTypeIgnored  FileType = iota
 	FileTypePlaylist
 	FileTypeTrack
+	FileTypeImage
 )
 
 var (
 	reFragment = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
 	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
-	reIgnore   = regexp.MustCompile(`(?i)\.(gif|txt|nfo)$`)
+	reImage    = regexp.MustCompile(`(?i)\.(jpg|jpeg|png|gif)$`)
+	reIgnore   = regexp.MustCompile(`(?i)\.(txt|nfo)$`)
 	reTrack    = regexp.MustCompile(`(?i)\.(opus|m4a|wma|wmv|wav|` + strings.Join(aurelib.InputExtensions(), "|") + `)$`)
 )
 
@@ -30,6 +32,8 @@ func GetFileType(filename string) FileType {
 		return FileTypeTrack
 	case rePlaylist.MatchString(filename):
 		return FileTypePlaylist
+	case reImage.MatchString(filename):
+		return FileTypeImage
 	case reIgnore.MatchString(filename):
 		return FileTypeIgnored
 	case reTrack.MatchString(filename):
