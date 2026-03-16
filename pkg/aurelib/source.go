@@ -4,6 +4,7 @@ package aurelib
 #cgo pkg-config: libavformat libavcodec libavutil
 
 #include <libavformat/avformat.h>
+#include <libavformat/version.h>
 #include <libavcodec/avcodec.h>
 #include <libavcodec/codec_id.h>
 #include <libavutil/replaygain.h>
@@ -23,6 +24,26 @@ avErrorEAGAIN() {
 static char const*
 strEmpty() {
 	return "";
+}
+
+// streamGetSideData returns the side data of the given type from the stream,
+// or NULL if not found. Handles both the old AVStream.side_data API
+// (libavformat < 61) and the new AVCodecParameters.side_data API.
+static AVPacketSideData*
+streamGetSideData(AVStream *stream, enum AVPacketSideDataType type) {
+#if LIBAVFORMAT_VERSION_MAJOR >= 61
+	return (AVPacketSideData*)av_packet_side_data_get(
+		stream->codecpar->coded_side_data,
+		stream->codecpar->nb_coded_side_data,
+		type);
+#else
+	for (int i = 0; i < stream->nb_side_data; i++) {
+		if (stream->side_data[i].type == type) {
+			return &stream->side_data[i];
+		}
+	}
+	return NULL;
+#endif
 }
 */
 import "C"
@@ -363,17 +384,7 @@ func (src *sourceBase) replayGainFromSideData(
 	mode ReplayGainMode,
 	preventClipping bool,
 ) (float64, bool /*ok*/) {
-	var data *C.AVPacketSideData
-	for i := C.int(0); i < src.stream.nb_side_data; i++ {
-		address := uintptr(unsafe.Pointer(src.stream.side_data))
-		address += uintptr(i) * unsafe.Sizeof(*src.stream.side_data)
-		localData := (*C.AVPacketSideData)(unsafe.Pointer(address))
-
-		if localData._type == C.AV_PKT_DATA_REPLAYGAIN {
-			data = localData
-			break
-		}
-	}
+	data := C.streamGetSideData(src.stream, C.AV_PKT_DATA_REPLAYGAIN)
 	if data == nil {
 		return 1., false
 	}
