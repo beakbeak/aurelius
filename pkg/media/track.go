@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"path"
 	"strconv"
 	"time"
 )
@@ -21,10 +20,8 @@ func (ml *Library) handleTrackFavorite(
 	req *http.Request,
 ) {
 	ctx := req.Context()
-	dir, name := path.Split(libraryPath)
-	dir = cleanLibraryPath(dir)
 
-	track, err := ml.db.GetTrack(dir, name)
+	track, err := ml.db.GetTrack(libraryPath)
 	if err != nil {
 		slog.ErrorContext(ctx, "GetTrack failed", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -49,10 +46,7 @@ func (ml *Library) handleTrackInfo(
 ) {
 	ctx := req.Context()
 
-	dir, name := path.Split(libraryPath)
-	dir = cleanLibraryPath(dir)
-
-	track, err := ml.db.GetTrack(dir, name)
+	track, err := ml.db.GetTrack(libraryPath)
 	if err != nil {
 		slog.ErrorContext(ctx, "GetTrack failed", "error", err)
 	}
@@ -106,7 +100,7 @@ func (ml *Library) handleTrackInfo(
 		BitRate:         track.Metadata.BitRate,
 		SampleRate:      track.Metadata.SampleRate,
 		SampleFormat:    track.Metadata.SampleFormat,
-		Dir:             ml.libraryToUrlPath("dirs", cleanLibraryPath(dir)),
+		Dir:             ml.libraryToUrlPath("dirs", track.Dir),
 	}
 
 	if favorite, err := ml.isFavorite(libraryPath); err != nil {
@@ -140,10 +134,7 @@ func (ml *Library) handleTrackImage(
 		return
 	}
 
-	dir, name := path.Split(libraryPath)
-	dir = cleanLibraryPath(dir)
-
-	data, mimeType, hash, err := ml.db.GetTrackImageData(dir, name, index)
+	data, mimeType, hash, err := ml.db.GetTrackImageData(libraryPath, index)
 	if err != nil {
 		slog.ErrorContext(ctx, "GetTrackImageData failed", "error", err)
 		http.NotFound(w, req)

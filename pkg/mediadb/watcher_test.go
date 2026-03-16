@@ -240,7 +240,7 @@ func TestWatcherAddFile(t *testing.T) {
 
 	waitForBatch(t, batchApplied)
 
-	track, err := db.GetTrack("", "new.mp3")
+	track, err := db.GetTrack("new.mp3")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -256,7 +256,7 @@ func TestWatcherRemoveFile(t *testing.T) {
 	_, db, _, tmpDir, batchApplied := setupWatcherTest(t)
 
 	// Verify the file exists in DB.
-	track, err := db.GetTrack("", "test.ogg")
+	track, err := db.GetTrack("test.ogg")
 	if err != nil || track == nil {
 		t.Fatal("expected test.ogg to be in DB before removal")
 	}
@@ -268,7 +268,7 @@ func TestWatcherRemoveFile(t *testing.T) {
 
 	waitForBatch(t, batchApplied)
 
-	track, err = db.GetTrack("", "test.ogg")
+	track, err = db.GetTrack("test.ogg")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -281,7 +281,7 @@ func TestWatcherModifyFile(t *testing.T) {
 	_, db, _, tmpDir, batchApplied := setupWatcherTest(t)
 
 	// Get original mtime.
-	original, err := db.GetTrack("", "test.ogg")
+	original, err := db.GetTrack("test.ogg")
 	if err != nil || original == nil {
 		t.Fatal("expected test.ogg to be in DB")
 	}
@@ -302,7 +302,7 @@ func TestWatcherModifyFile(t *testing.T) {
 
 	waitForBatch(t, batchApplied)
 
-	updated, err := db.GetTrack("", "test.ogg")
+	updated, err := db.GetTrack("test.ogg")
 	if err != nil || updated == nil {
 		t.Fatal("expected test.ogg to still be in DB after modification")
 	}
@@ -315,7 +315,7 @@ func TestWatcherMoveFile(t *testing.T) {
 	_, db, _, tmpDir, batchApplied := setupWatcherTest(t)
 
 	// Verify source exists.
-	original, err := db.GetTrack("", "test.ogg")
+	original, err := db.GetTrack("test.ogg")
 	if err != nil || original == nil {
 		t.Fatal("expected test.ogg to be in DB")
 	}
@@ -330,7 +330,7 @@ func TestWatcherMoveFile(t *testing.T) {
 	waitForBatch(t, batchApplied)
 
 	// Old path should be gone.
-	track, err := db.GetTrack("", "test.ogg")
+	track, err := db.GetTrack("test.ogg")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestWatcherMoveFile(t *testing.T) {
 	}
 
 	// New path should exist.
-	track, err = db.GetTrack("", "moved.ogg")
+	track, err = db.GetTrack("moved.ogg")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -384,7 +384,7 @@ func TestWatcherAddDirectory(t *testing.T) {
 	}
 
 	// Check that the track was added.
-	track, err := db.GetTrack("newdir", "track.flac")
+	track, err := db.GetTrack("newdir/track.flac")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -412,7 +412,7 @@ func TestWatcherRemoveDirectory(t *testing.T) {
 	waitForBatch(t, batchApplied)
 
 	// Verify it's in the DB.
-	track, err := db.GetTrack("toremove", "song.wav")
+	track, err := db.GetTrack("toremove/song.wav")
 	if err != nil || track == nil {
 		t.Fatal("expected toremove/song.wav to be in DB before removal")
 	}
@@ -425,7 +425,7 @@ func TestWatcherRemoveDirectory(t *testing.T) {
 	waitForBatch(t, batchApplied)
 
 	// Track should be gone.
-	track, err = db.GetTrack("toremove", "song.wav")
+	track, err = db.GetTrack("toremove/song.wav")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -463,7 +463,7 @@ func TestWatcherIgnoresNonTrackFiles(t *testing.T) {
 	waitForBatch(t, batchApplied)
 
 	// Track file should be indexed.
-	track, err := db.GetTrack("", "track.mp3")
+	track, err := db.GetTrack("track.mp3")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}
@@ -472,7 +472,7 @@ func TestWatcherIgnoresNonTrackFiles(t *testing.T) {
 	}
 
 	// Non-track file should not be indexed.
-	track, err = db.GetTrack("", "notes.txt")
+	track, err = db.GetTrack("notes.txt")
 	if err != nil {
 		t.Fatalf("GetTrack error: %v", err)
 	}

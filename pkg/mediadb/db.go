@@ -84,9 +84,10 @@ func scanTrack(row interface{ Scan(...any) error }) (*Track, error) {
 
 const trackColumns = `id, dir, name, mtime, hash, tags, metadata`
 
-// GetTrack returns the track at the given library path (dir + name),
+// GetTrack returns the track at the given library path,
 // including image metadata (but not image data).
-func (db *DB) GetTrack(dir, name string) (*Track, error) {
+func (db *DB) GetTrack(libraryPath string) (*Track, error) {
+	dir, name := SplitLibraryPath(libraryPath)
 	row := db.db.QueryRow(
 		`SELECT `+trackColumns+` FROM tracks WHERE dir = ? AND name = ?`,
 		dir, name,
@@ -136,7 +137,8 @@ func (db *DB) getTrackImages(trackID int64) ([]ImageInfo, error) {
 
 // GetTrackImageData returns the full image data for a track at the given
 // position. Returns (nil, "", nil, nil) if not found.
-func (db *DB) GetTrackImageData(dir, name string, position int) (data []byte, mimeType string, hash []byte, err error) {
+func (db *DB) GetTrackImageData(libraryPath string, position int) (data []byte, mimeType string, hash []byte, err error) {
+	dir, name := SplitLibraryPath(libraryPath)
 	err = db.db.QueryRow(
 		`SELECT i.data, i.mime_type, i.hash
 		FROM track_images ti
@@ -293,8 +295,9 @@ func (db *DB) ForEachM3UPlaylist(fn func(*M3UPlaylist) error) error {
 	return rows.Err()
 }
 
-// GetM3UPlaylist returns the m3u playlist at the given library path (dir + name).
-func (db *DB) GetM3UPlaylist(dir, name string) (*M3UPlaylist, error) {
+// GetM3UPlaylist returns the m3u playlist at the given library path.
+func (db *DB) GetM3UPlaylist(libraryPath string) (*M3UPlaylist, error) {
+	dir, name := SplitLibraryPath(libraryPath)
 	var p M3UPlaylist
 	err := db.db.QueryRow(
 		`SELECT id, dir, name, mtime FROM m3u_playlists WHERE dir = ? AND name = ?`,
@@ -364,7 +367,8 @@ func (db *DB) GetM3UPlaylistsInDirIncludingEmpty(dir string) ([]M3UPlaylist, err
 
 // GetM3UPlaylistTrackCount returns the number of resolved tracks in a playlist.
 // Only counts tracks visible through the tracks view (not soft-deleted).
-func (db *DB) GetM3UPlaylistTrackCount(dir, name string) (int, error) {
+func (db *DB) GetM3UPlaylistTrackCount(libraryPath string) (int, error) {
+	dir, name := SplitLibraryPath(libraryPath)
 	var count int
 	err := db.db.QueryRow(
 		`SELECT COUNT(*) FROM m3u_playlist_tracks pt
@@ -379,7 +383,8 @@ func (db *DB) GetM3UPlaylistTrackCount(dir, name string) (int, error) {
 // GetM3UPlaylistTrackAt returns the library path of the track at the given
 // position in a playlist. Only considers tracks visible through the tracks view.
 // Returns ("", nil) if pos is out of range.
-func (db *DB) GetM3UPlaylistTrackAt(dir, name string, pos int) (string, error) {
+func (db *DB) GetM3UPlaylistTrackAt(playlistPath string, pos int) (string, error) {
+	dir, name := SplitLibraryPath(playlistPath)
 	if pos < 0 {
 		return "", nil
 	}

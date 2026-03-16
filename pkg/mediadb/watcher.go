@@ -428,7 +428,7 @@ func (w *Watcher) processTrackEvent(absPath, dir, name string, ev *pendingEvent,
 		})
 
 	case eventRemoved:
-		track, err := w.scanner.db.GetTrack(dir, name)
+		track, err := w.scanner.db.GetTrack(JoinLibraryPath(dir, name))
 		if err != nil {
 			slog.Warn("watcher: failed to look up removed track", "dir", dir, "name", name, "error", err)
 			return
@@ -470,7 +470,7 @@ func (w *Watcher) processPlaylistEvent(absPath, dir, name string, ev *pendingEve
 		})
 
 	case eventRemoved:
-		playlist, err := w.scanner.db.GetM3UPlaylist(dir, name)
+		playlist, err := w.scanner.db.GetM3UPlaylist(JoinLibraryPath(dir, name))
 		if err != nil {
 			slog.Warn("watcher: failed to look up removed playlist", "dir", dir, "name", name, "error", err)
 			return

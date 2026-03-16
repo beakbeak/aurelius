@@ -3,8 +3,6 @@ package media
 import (
 	"log/slog"
 	"net/http"
-
-	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
 
 func (ml *Library) handleM3UPlaylistInfo(
@@ -12,8 +10,7 @@ func (ml *Library) handleM3UPlaylistInfo(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	dir, name := mediadb.SplitLibraryPath(libraryPath)
-	count, err := ml.db.GetM3UPlaylistTrackCount(dir, name)
+	count, err := ml.db.GetM3UPlaylistTrackCount(libraryPath)
 	if err != nil {
 		slog.ErrorContext(req.Context(), "GetM3UPlaylistTrackCount failed", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -33,9 +30,8 @@ func (ml *Library) handleM3UPlaylistTrack(
 	req *http.Request,
 ) {
 	ctx := req.Context()
-	dir, name := mediadb.SplitLibraryPath(libraryPath)
 
-	trackPath, err := ml.db.GetM3UPlaylistTrackAt(dir, name, pos)
+	trackPath, err := ml.db.GetM3UPlaylistTrackAt(libraryPath, pos)
 	if err != nil {
 		slog.ErrorContext(ctx, "GetM3UPlaylistTrackAt failed", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
