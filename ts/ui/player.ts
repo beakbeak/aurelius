@@ -280,7 +280,7 @@ function updateStatus(): void {
     const images = info.attachedImages;
     let newTrackImageUrl = "";
     if (images.length > 0) {
-        newTrackImageUrl = `${track.url}/images/0`;
+        newTrackImageUrl = images[0].url;
         trackImage.style.cursor = "pointer";
         if (_notificationData) {
             _notificationData.icon = newTrackImageUrl;
@@ -295,10 +295,10 @@ function updateStatus(): void {
 
     if (navigator.mediaSession !== undefined) {
         const artwork: MediaImage[] = [];
-        images.forEach((imageInfo, index) => {
+        images.forEach((imageInfo) => {
             artwork.push({
-                src: `${track.url}/images/${index}`,
-                type: `${imageInfo.mimeType}`,
+                src: imageInfo.url,
+                type: imageInfo.mimeType,
                 sizes: "",
             });
         });

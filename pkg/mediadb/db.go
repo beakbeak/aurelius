@@ -153,6 +153,19 @@ func (db *DB) GetTrackImageData(libraryPath string, position int) (data []byte, 
 	return
 }
 
+// GetImageDataByHash returns image data looked up by its content hash.
+// Returns (nil, "", nil) if not found.
+func (db *DB) GetImageDataByHash(hash []byte) (data []byte, mimeType string, err error) {
+	err = db.db.QueryRow(
+		`SELECT data, mime_type FROM images WHERE hash = ?`,
+		hash,
+	).Scan(&data, &mimeType)
+	if err == sql.ErrNoRows {
+		return nil, "", nil
+	}
+	return
+}
+
 // GetTracksInDir returns all tracks in the given directory.
 func (db *DB) GetTracksInDir(dir string) ([]Track, error) {
 	rows, err := db.db.Query(

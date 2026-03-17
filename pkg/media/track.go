@@ -54,6 +54,7 @@ func (ml *Library) handleTrackInfo(
 	type AttachedImageInfo struct {
 		MimeType string `json:"mimeType"`
 		Size     int    `json:"size"`
+		Url      string `json:"url"`
 	}
 
 	type Result struct {
@@ -75,6 +76,7 @@ func (ml *Library) handleTrackInfo(
 		images = append(images, AttachedImageInfo{
 			MimeType: img.MimeType,
 			Size:     img.Size,
+			Url:      ml.makeImageUrl(img.Hash),
 		})
 	}
 
@@ -113,6 +115,37 @@ func (ml *Library) isFavorite(path string) (bool, error) {
 
 func (ml *Library) setFavorite(path string, favorite bool) error {
 	return ml.db.SetFavorite(path, favorite)
+}
+
+func (ml *Library) handleImageByHash(
+	hashHex string,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
+	ctx := req.Context()
+
+	hash, err := hex.DecodeString(hashHex)
+	if err != nil {
+		http.NotFound(w, req)
+		return
+	}
+
+	data, mimeType, err := ml.db.GetImageDataByHash(hash)
+	if err != nil {
+		slog.ErrorContext(ctx, "GetImageDataByHash failed", "error", err)
+		http.NotFound(w, req)
+		return
+	}
+	if data == nil {
+		http.NotFound(w, req)
+		return
+	}
+
+	w.Header().Set("Cache-Control", "max-age=31536000, immutable")
+	w.Header().Set("Content-Type", mimeType)
+	if _, err := w.Write(data); err != nil {
+		slog.ErrorContext(ctx, "failed to write image response", "error", err)
+	}
 }
 
 func (ml *Library) handleTrackImage(

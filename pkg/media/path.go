@@ -1,6 +1,7 @@
 package media
 
 import (
+	"encoding/hex"
 	"net/url"
 	"path/filepath"
 
@@ -17,6 +18,13 @@ func (ml *Library) libraryToFsPath(libraryPath string) string {
 func (ml *Library) libraryToUrlPath(collection string, libraryPath string) string {
 	out := &url.URL{Path: ml.config.Prefix}
 	out = out.JoinPath(collection, "at:"+url.PathEscape(libraryPath))
+	return out.String()
+}
+
+// makeImageUrl builds an absolute URL path for an image identified by its content hash.
+func (ml *Library) makeImageUrl(imageHash []byte) string {
+	out := &url.URL{Path: ml.config.Prefix}
+	out = out.JoinPath("images", "hash:"+hex.EncodeToString(imageHash))
 	return out.String()
 }
 

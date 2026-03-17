@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -157,6 +158,7 @@ func (ml *Library) setupHandler() {
 	mux.HandleFunc("GET /playlists/{playlist}/tracks/{track}", makeHandler(ml, handlePlaylistTrackWrapper))
 	mux.HandleFunc("GET /tracks/{track}", makeHandler(ml, handleTrackInfoWrapper))
 	mux.HandleFunc("GET /tracks/{track}/stream", makeHandler(ml, handleTrackStreamWrapper))
+	mux.HandleFunc("GET /images/{image}", makeHandler(ml, handleImageByHashWrapper))
 	mux.HandleFunc("GET /tracks/{track}/images/{image}", makeHandler(ml, handleTrackImageWrapper))
 	mux.HandleFunc("POST /tracks/{track}/favorite", makeHandler(ml, handleTrackFavoriteWrapper))
 	mux.HandleFunc("POST /tracks/{track}/unfavorite", makeHandler(ml, handleTrackUnfavoriteWrapper))
@@ -238,6 +240,15 @@ func handleTrackStreamWrapper(ml *Library, w http.ResponseWriter, r *http.Reques
 	if path, ok := parseAt(r.PathValue("track")); ok {
 		slog.InfoContext(r.Context(), "stream", "path", path)
 		ml.handleTrackStream(path, w, r)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func handleImageByHashWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+	image := r.PathValue("image")
+	if hashHex, ok := strings.CutPrefix(image, "hash:"); ok {
+		ml.handleImageByHash(hashHex, w, r)
 	} else {
 		http.NotFound(w, r)
 	}

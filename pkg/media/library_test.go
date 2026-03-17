@@ -827,6 +827,7 @@ func TestTrackImages(t *testing.T) {
 	type AttachedImageInfo struct {
 		MimeType string `json:"mimeType"`
 		Size     int    `json:"size"`
+		Url      string `json:"url"`
 	}
 	type TrackInfo struct {
 		AttachedImages []AttachedImageInfo `json:"attachedImages"`
@@ -843,6 +844,11 @@ func TestTrackImages(t *testing.T) {
 	// Test each image index
 	for i, imageInfo := range trackInfo.AttachedImages {
 		t.Run(fmt.Sprintf("image_%d", i), func(t *testing.T) {
+			// Verify URL field is present
+			if imageInfo.Url == "" {
+				t.Fatal("Expected image URL to be set")
+			}
+
 			uri := trackAt("test.flac", "images", fmt.Sprintf("%d", i))
 			body, statusCode := simpleRequestWithStatus(t, ml, "GET", uri, "")
 
@@ -864,6 +870,15 @@ func TestTrackImages(t *testing.T) {
 			contentType := w.Header().Get("Content-Type")
 			if contentType != imageInfo.MimeType {
 				t.Fatalf("Content-Type mismatch for image %d: expected %s, got %s", i, imageInfo.MimeType, contentType)
+			}
+
+			// Verify hash-based URL returns the same image
+			hashBody, hashStatus := simpleRequestWithStatus(t, ml, "GET", imageInfo.Url, "")
+			if hashStatus != http.StatusOK {
+				t.Fatalf("Hash URL request failed with status %d: %s", hashStatus, string(hashBody))
+			}
+			if !bytes.Equal(body, hashBody) {
+				t.Fatalf("Hash URL returned different data than index URL")
 			}
 		})
 	}
@@ -925,6 +940,52 @@ func TestTrackImageETag(t *testing.T) {
 	if w3.Code != http.StatusOK {
 		t.Fatalf("Third request failed with status %d", w3.Code)
 	}
+}
+
+func TestHashImageRoute(t *testing.T) {
+	ml := createDefaultLibrary(t)
+
+	// Get a valid image URL from track info
+	infoBody := simpleRequest(t, ml, "GET", trackAt("test.flac"), "")
+
+	type AttachedImageInfo struct {
+		Url string `json:"url"`
+	}
+	type TrackInfo struct {
+		AttachedImages []AttachedImageInfo `json:"attachedImages"`
+	}
+	var trackInfo TrackInfo
+	if err := json.Unmarshal(infoBody, &trackInfo); err != nil {
+		t.Fatalf("failed to decode track info JSON: %v", err)
+	}
+
+	if len(trackInfo.AttachedImages) == 0 {
+		t.Skip("test.flac has no attached images")
+	}
+
+	imageUrl := trackInfo.AttachedImages[0].Url
+
+	// Valid hash URL should return 200
+	w := httptest.NewRecorder()
+	ml.ServeHTTP(w, httptest.NewRequest("GET", imageUrl, nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200, got %d", w.Code)
+	}
+
+	// Should have Cache-Control header
+	cacheControl := w.Header().Get("Cache-Control")
+	if cacheControl == "" {
+		t.Fatal("Expected Cache-Control header to be set")
+	}
+
+	// Invalid hash should return 404
+	simpleRequestShouldFail(t, ml, "GET", api("images", "hash:0000000000000000000000000000000000000000000000000000000000000000"), "")
+
+	// Non-hex string should return 404
+	simpleRequestShouldFail(t, ml, "GET", api("images", "hash:notahex"), "")
+
+	// Missing hash: prefix should return 404
+	simpleRequestShouldFail(t, ml, "GET", api("images", "something"), "")
 }
 
 func TestDirInfo(t *testing.T) {
