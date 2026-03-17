@@ -1093,3 +1093,43 @@ func TestSearch(t *testing.T) {
 		}
 	})
 }
+
+func TestPlayHistory(t *testing.T) {
+	ml := createDefaultLibrary(t)
+	db := ml.DB()
+
+	trackPath := "test.flac"
+
+	// Streaming from the beginning (no startTime) should record a play.
+	simpleRequest(t, ml, "GET", trackAt(trackPath, "stream"), "")
+
+	count, err := db.PlayCount(trackPath)
+	if err != nil {
+		t.Fatalf("PlayCount failed: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 play after streaming from beginning, got %d", count)
+	}
+
+	// Streaming with startTime=0 should also record a play.
+	simpleRequest(t, ml, "GET", trackAt(trackPath, "stream")+"?startTime=0s", "")
+
+	count, err = db.PlayCount(trackPath)
+	if err != nil {
+		t.Fatalf("PlayCount failed: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("expected 2 plays after streaming with startTime=0, got %d", count)
+	}
+
+	// Streaming with a non-zero startTime should NOT record a play.
+	simpleRequest(t, ml, "GET", trackAt(trackPath, "stream")+"?startTime=2s", "")
+
+	count, err = db.PlayCount(trackPath)
+	if err != nil {
+		t.Fatalf("PlayCount failed: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("expected 2 plays after streaming with startTime=2s, got %d", count)
+	}
+}

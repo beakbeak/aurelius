@@ -406,6 +406,30 @@ func (db *DB) GetM3UPlaylistTrackAt(playlistPath string, pos int) (string, error
 	return libraryPath, err
 }
 
+// RecordPlay records a play event for the track at the given library path.
+func (db *DB) RecordPlay(libraryPath string) error {
+	dir, name := SplitLibraryPath(libraryPath)
+	_, err := db.db.Exec(
+		`INSERT INTO play_history(track_id)
+		SELECT id FROM tracks WHERE dir = ? AND name = ?`,
+		dir, name,
+	)
+	return err
+}
+
+// PlayCount returns the number of play history entries for the given track.
+func (db *DB) PlayCount(libraryPath string) (int, error) {
+	dir, name := SplitLibraryPath(libraryPath)
+	var count int
+	err := db.db.QueryRow(
+		`SELECT COUNT(*) FROM play_history
+		JOIN tracks ON play_history.track_id = tracks.id
+		WHERE tracks.dir = ? AND tracks.name = ?`,
+		dir, name,
+	).Scan(&count)
+	return count, err
+}
+
 // favoriteDirFilter returns a SQL WHERE clause and args that filter favorites
 // by directory prefix. If prefix is empty, no filter is applied.
 func favoriteDirFilter(prefix string) (string, []any) {

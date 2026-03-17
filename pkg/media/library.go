@@ -237,7 +237,7 @@ func handleTrackInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request)
 func handleTrackStreamWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
 		slog.InfoContext(r.Context(), "stream", "path", path)
-		ml.handleTrackStream(ml.libraryToFsPath(path), w, r)
+		ml.handleTrackStream(path, w, r)
 	} else {
 		http.NotFound(w, r)
 	}

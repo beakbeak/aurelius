@@ -18,10 +18,11 @@ func newAudioSource(path string) (aurelib.Source, error) {
 }
 
 func (ml *Library) handleTrackStream(
-	fsPath string,
+	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
+	fsPath := ml.libraryToFsPath(libraryPath)
 	ctx := req.Context()
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)
@@ -162,6 +163,7 @@ func (ml *Library) handleTrackStream(
 		volume = 1.
 	}
 
+	startFromBeginning := true
 	if startTimeArgs, ok := query["startTime"]; ok {
 		startTime, err := time.ParseDuration(startTimeArgs[0])
 		if err != nil {
@@ -171,9 +173,16 @@ func (ml *Library) handleTrackStream(
 			rejectBadRequest("invalid start time: %v\n", startTimeArgs[0])
 			return
 		} else if startTime > 0 {
+			startFromBeginning = false
 			if err := src.SeekTo(startTime); err != nil {
 				slog.ErrorContext(ctx, "seek failed", "error", err)
 			}
+		}
+	}
+
+	if startFromBeginning {
+		if err := ml.db.RecordPlay(libraryPath); err != nil {
+			slog.ErrorContext(ctx, "failed to record play", "error", err)
 		}
 	}
 
