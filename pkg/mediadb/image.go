@@ -94,7 +94,25 @@ type directoryImageRef struct {
 	mimeType string
 }
 
-var coverImageRegex = regexp.MustCompile(`(?i)front|cover|thumb|F$`)
+// coverImageRegexes defines image name priority tiers, from highest to lowest.
+// Names matching earlier regexes sort before those matching later ones.
+var coverImageRegexes = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)front|F$`),
+	regexp.MustCompile(`(?i)cover`),
+	regexp.MustCompile(`(?i)thumb`),
+}
+
+// coverImagePriority returns a sort priority for the given image name (without
+// extension). Lower values sort first. Names not matching any pattern get the
+// lowest priority.
+func coverImagePriority(nameWithoutExt string) int {
+	for i, re := range coverImageRegexes {
+		if re.MatchString(nameWithoutExt) {
+			return i
+		}
+	}
+	return len(coverImageRegexes)
+}
 
 var knownImageExts = map[string]string{
 	".jpg":  "image/jpeg",
@@ -137,19 +155,16 @@ func collectDirectoryImagePaths(trackFsPath string) []directoryImageRef {
 		})
 	}
 
-	// Sort cover images first, then lexicographically.
+	// Sort by cover image priority tier, then lexicographically.
 	slices.SortFunc(images, func(a, b imageEntry) int {
 		aNameWithoutExt := strings.TrimSuffix(a.name, filepath.Ext(a.name))
 		bNameWithoutExt := strings.TrimSuffix(b.name, filepath.Ext(b.name))
 
-		aCover := coverImageRegex.MatchString(aNameWithoutExt)
-		bCover := coverImageRegex.MatchString(bNameWithoutExt)
+		aPriority := coverImagePriority(aNameWithoutExt)
+		bPriority := coverImagePriority(bNameWithoutExt)
 
-		if aCover && !bCover {
-			return -1
-		}
-		if !aCover && bCover {
-			return 1
+		if aPriority != bPriority {
+			return aPriority - bPriority
 		}
 		return strings.Compare(a.name, b.name)
 	})
