@@ -113,12 +113,19 @@ func (s *Scanner) FullScan() error {
 	start := time.Now()
 
 	// Phase 1: Walk filesystem.
+	slog.Info("walking filesystem")
 	fsFiles, fsDirs, fsPlaylists, err := s.walkFilesystem()
 	if err != nil {
 		return fmt.Errorf("filesystem walk failed: %w", err)
 	}
+	slog.Info("filesystem walk complete",
+		"files", len(fsFiles),
+		"dirs", len(fsDirs),
+		"playlists", len(fsPlaylists),
+	)
 
 	// Phase 2: Diff and detect moves.
+	slog.Info("diffing against database")
 	changes, err := s.diffAgainstDB(fsFiles, fsDirs, fsPlaylists)
 	if err != nil {
 		return fmt.Errorf("diff failed: %w", err)
@@ -138,12 +145,14 @@ func (s *Scanner) FullScan() error {
 	)
 
 	// Phase 3: Collect metadata.
+	slog.Info("collecting metadata")
 	result, err := s.collectMetadata(changes)
 	if err != nil {
 		return fmt.Errorf("metadata collection failed: %w", err)
 	}
 
 	// Phase 4: Apply.
+	slog.Info("applying changes to database")
 	if err := s.Apply(result); err != nil {
 		return fmt.Errorf("apply failed: %w", err)
 	}
@@ -242,6 +251,9 @@ func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Di
 	}
 
 	// Remaining fsFiles are new.
+	if len(fsFiles) > 0 {
+		slog.Info("hashing new files", "count", len(fsFiles))
+	}
 	for _, entry := range fsFiles {
 		hash, err := computePartialHash(s.fsPath(entry.Dir, entry.Name))
 		if err != nil {
@@ -573,6 +585,7 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 	defer deleteImagesStmt.Close()
 
 	// Pre-load existing original_hash → hash mappings.
+	slog.Info("loading image hash cache")
 	cache := &imageHashCache{originalHashToProcessed: make(map[[32]byte][32]byte)}
 	rows, err := tx.Query("SELECT original_hash, hash FROM images")
 	if err == nil {
@@ -636,6 +649,8 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 			}
 		}
 	}()
+
+	slog.Info("processing track images", "tracks", total, "directories", len(groupsByDir))
 
 	// Start workers that process all tracks in a directory group together.
 	// This ensures directory images are only processed once per directory.
@@ -795,6 +810,7 @@ func (s *Scanner) Apply(result *ScanResult) error {
 	}
 
 	// Process and insert images in parallel.
+	slog.Info("starting image processing", "tracks", len(imageWork))
 	if err := s.processAndInsertTrackImages(tx, imageWork); err != nil {
 		return err
 	}
