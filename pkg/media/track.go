@@ -6,11 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"time"
-)
-
-const (
-	cachedImageMaxAge = 1 * time.Hour
 )
 
 func (ml *Library) handleTrackFavorite(
@@ -153,9 +148,7 @@ func (ml *Library) handleTrackImage(
 			return
 		}
 	}
-	w.Header().Set(
-		"Cache-Control",
-		fmt.Sprintf("max-age=%v", int(cachedImageMaxAge/time.Second)))
+	w.Header().Set("Cache-Control", "no-cache")
 
 	w.Header().Set("Content-Type", mimeType)
 	if _, err := w.Write(data); err != nil {
