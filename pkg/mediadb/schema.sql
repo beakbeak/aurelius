@@ -110,20 +110,23 @@ CREATE TABLE play_history (
 );
 CREATE INDEX idx_play_history_played_at ON play_history(played_at);
 CREATE VIEW play_history_plus AS
+WITH base AS (
+    SELECT
+        ph.id,
+        ph.track_id,
+        ph.played_at,
+        json_extract(t.metadata, '$.duration') AS duration,
+        (unixepoch(LEAD(ph.played_at) OVER (ORDER BY ph.played_at))
+            - unixepoch(ph.played_at)) AS seconds_played
+    FROM play_history ph
+    JOIN tracks_with_deletes t ON ph.track_id = t.id
+)
 SELECT
-    ph.id,
-    ph.track_id,
-    ph.played_at,
-    json_extract(t.metadata, '$.duration') AS duration,
-    (unixepoch(LEAD(ph.played_at) OVER (ORDER BY ph.played_at))
-        - unixepoch(ph.played_at)) AS seconds_played,
+    *,
     CASE
-        WHEN LEAD(ph.played_at) OVER (ORDER BY ph.played_at) IS NULL THEN 0
-        WHEN (unixepoch(LEAD(ph.played_at) OVER (ORDER BY ph.played_at))
-            - unixepoch(ph.played_at))
-            < (json_extract(t.metadata, '$.duration') * 0.9) THEN 1
+        WHEN seconds_played IS NULL THEN 0
+        WHEN seconds_played < (duration * 0.9) THEN 1
         ELSE 0
     END AS is_skipped
-FROM play_history ph
-JOIN tracks_with_deletes t ON ph.track_id = t.id
+FROM base
 /* play_history_plus(id,track_id,played_at,duration,seconds_played,is_skipped) */;
