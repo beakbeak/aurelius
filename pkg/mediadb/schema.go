@@ -1,208 +1,28 @@
 package mediadb
 
+import "embed"
+
+//go:embed migrations/*.sql
+var migrationFS embed.FS
+
 // migrations is an ordered list of SQL migrations. Each entry corresponds to a
 // database version. The database's PRAGMA user_version tracks which migrations
 // have been applied.
-var migrations = []string{
-	// ------------------------------------------------------------------
-	`-- v1: Initial schema.
-CREATE TABLE tracks (
-    id              INTEGER PRIMARY KEY,
-    dir             TEXT NOT NULL,
-    name            TEXT NOT NULL,
-    mtime           INTEGER NOT NULL,
-    hash            BLOB NOT NULL,
-    tags            TEXT NOT NULL DEFAULT '{}',
-    attached_images TEXT NOT NULL DEFAULT '[]',
-    metadata        TEXT NOT NULL DEFAULT '{}',
-
-    UNIQUE(dir, name)
-);
-
-CREATE INDEX idx_tracks_dir_name ON tracks(dir, name);
-
-CREATE TABLE dirs (
-    path    TEXT PRIMARY KEY,
-    parent  TEXT NOT NULL
-);
-
-CREATE INDEX idx_dirs_parent ON dirs(parent);`,
-
-	// ------------------------------------------------------------------
-	`-- v2: Soft-delete tracks.
-ALTER TABLE tracks RENAME TO tracks_with_deletes;
-ALTER TABLE tracks_with_deletes ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
-CREATE VIEW tracks AS
-  SELECT id, dir, name, mtime, hash, tags, attached_images, metadata
-  FROM tracks_with_deletes
-  WHERE deleted = 0;`,
-
-	// ------------------------------------------------------------------
-	`-- v3: Favorites table.
-CREATE TABLE favorites (
-    track_id INTEGER PRIMARY KEY REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
-    added_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-);`,
-
-	// ------------------------------------------------------------------
-	`-- v4: FTS5 path search index.
-CREATE VIRTUAL TABLE path_search_index USING fts5(
-    path,
-    type UNINDEXED,
-    tokenize='trigram case_sensitive 0 remove_diacritics 1'
-);
-
--- Backfill from existing data.
-INSERT INTO path_search_index (path, type)
-SELECT CASE WHEN dir = '' THEN name ELSE dir || '/' || name END, 'track'
-FROM tracks;
-
-INSERT INTO path_search_index (path, type)
-SELECT path, 'dir' FROM dirs;
-
--- Auto-sync triggers for tracks.
-CREATE TRIGGER path_search_track_ai AFTER INSERT ON tracks_with_deletes
-WHEN NEW.deleted = 0
-BEGIN
-    INSERT INTO path_search_index (path, type) VALUES (
-        CASE WHEN NEW.dir = '' THEN NEW.name
-             ELSE NEW.dir || '/' || NEW.name END,
-        'track'
-    );
-END;
-
-CREATE TRIGGER path_search_track_au AFTER UPDATE ON tracks_with_deletes
-WHEN OLD.dir != NEW.dir OR OLD.name != NEW.name OR OLD.deleted != NEW.deleted
-BEGIN
-    DELETE FROM path_search_index
-    WHERE OLD.deleted = 0
-      AND type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
-    INSERT INTO path_search_index (path, type)
-    SELECT CASE WHEN NEW.dir = '' THEN NEW.name
-                ELSE NEW.dir || '/' || NEW.name END,
-           'track'
-    WHERE NEW.deleted = 0;
-END;
-
-CREATE TRIGGER path_search_track_ad AFTER DELETE ON tracks_with_deletes
-BEGIN
-    DELETE FROM path_search_index
-    WHERE type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
-END;
-
--- Auto-sync triggers for dirs.
-CREATE TRIGGER path_search_dir_ai AFTER INSERT ON dirs
-BEGIN
-    INSERT INTO path_search_index (path, type) VALUES (NEW.path, 'dir');
-END;
-
-CREATE TRIGGER path_search_dir_ad AFTER DELETE ON dirs
-BEGIN
-    DELETE FROM path_search_index WHERE path = OLD.path AND type = 'dir';
-END;`,
-
-	// ------------------------------------------------------------------
-	`-- v5: M3U playlist tables.
-CREATE TABLE m3u_playlists (
-    id    INTEGER PRIMARY KEY,
-    dir   TEXT NOT NULL,
-    name  TEXT NOT NULL,
-    mtime INTEGER NOT NULL,
-
-    UNIQUE(dir, name)
-);
-
-CREATE INDEX idx_m3u_playlists_dir ON m3u_playlists(dir);
-
-CREATE TABLE m3u_playlist_tracks (
-    playlist_id INTEGER NOT NULL REFERENCES m3u_playlists(id) ON DELETE CASCADE,
-    position    INTEGER NOT NULL,
-    track_id    INTEGER NOT NULL REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
-
-    PRIMARY KEY (playlist_id, position)
-);`,
-
-	// ------------------------------------------------------------------
-	`-- v6: Store images in database. Orphan cleanup is done at DB open, not via
--- trigger. Also optimizes the path search update trigger to skip no-op
--- updates (mtime, hash, tags, metadata changes).
-CREATE TABLE images (
-    hash          BLOB PRIMARY KEY,
-    original_hash BLOB NOT NULL,
-    mime_type     TEXT NOT NULL,
-    data          BLOB NOT NULL
-);
-
-CREATE INDEX idx_images_original_hash ON images(original_hash);
-
-CREATE TABLE track_images (
-    track_id   INTEGER NOT NULL REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
-    position   INTEGER NOT NULL,
-    image_hash BLOB NOT NULL REFERENCES images(hash),
-
-    PRIMARY KEY (track_id, position)
-);
-
--- Drop the attached_images column (recreate the view first since it references it).
-DROP VIEW tracks;
-ALTER TABLE tracks_with_deletes DROP COLUMN attached_images;
-CREATE VIEW tracks AS
-  SELECT id, dir, name, mtime, hash, tags, metadata
-  FROM tracks_with_deletes
-  WHERE deleted = 0;
-
--- Recreate path search trigger with WHEN clause to skip no-op updates.
-DROP TRIGGER path_search_track_au;
-CREATE TRIGGER path_search_track_au AFTER UPDATE ON tracks_with_deletes
-WHEN OLD.dir != NEW.dir OR OLD.name != NEW.name OR OLD.deleted != NEW.deleted
-BEGIN
-    DELETE FROM path_search_index
-    WHERE OLD.deleted = 0
-      AND type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
-    INSERT INTO path_search_index (path, type)
-    SELECT CASE WHEN NEW.dir = '' THEN NEW.name
-                ELSE NEW.dir || '/' || NEW.name END,
-           'track'
-    WHERE NEW.deleted = 0;
-END;
-
--- Force full rescan to populate images.
-UPDATE tracks_with_deletes SET mtime = 0;`,
-
-	// ------------------------------------------------------------------
-	`-- v7: Play history table and skip-detection view.
-CREATE TABLE play_history (
-    id        INTEGER PRIMARY KEY,
-    track_id  INTEGER NOT NULL REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
-    played_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-);
-
-CREATE INDEX idx_play_history_played_at ON play_history(played_at);
-
-CREATE VIEW play_history_plus AS
-SELECT
-    ph.id,
-    ph.track_id,
-    ph.played_at,
-    json_extract(t.metadata, '$.duration') AS duration,
-    (unixepoch(LEAD(ph.played_at) OVER (ORDER BY ph.played_at))
-        - unixepoch(ph.played_at)) AS seconds_played,
-    CASE
-        WHEN LEAD(ph.played_at) OVER (ORDER BY ph.played_at) IS NULL THEN 0
-        WHEN (unixepoch(LEAD(ph.played_at) OVER (ORDER BY ph.played_at))
-            - unixepoch(ph.played_at))
-            < (json_extract(t.metadata, '$.duration') * 0.9) THEN 1
-        ELSE 0
-    END AS is_skipped
-FROM play_history ph
-JOIN tracks_with_deletes t ON ph.track_id = t.id;`,
-}
+var migrations = func() []string {
+	entries, err := migrationFS.ReadDir("migrations")
+	if err != nil {
+		panic("mediadb: reading embedded migrations: " + err.Error())
+	}
+	m := make([]string, len(entries))
+	for i, e := range entries {
+		data, err := migrationFS.ReadFile("migrations/" + e.Name())
+		if err != nil {
+			panic("mediadb: reading migration " + e.Name() + ": " + err.Error())
+		}
+		m[i] = string(data)
+	}
+	return m
+}()
 
 // ReplayGain holds the four combinations of ReplayGain mode and clipping
 // prevention.
