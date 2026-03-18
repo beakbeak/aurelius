@@ -97,7 +97,9 @@ type directoryImageRef struct {
 // coverImageRegexes defines image name priority tiers, from highest to lowest.
 // Names matching earlier regexes sort before those matching later ones.
 var coverImageRegexes = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)front|F$`),
+	regexp.MustCompile(`((?i)^front)|F$`),
+	regexp.MustCompile(`(?i)^cover`),
+	regexp.MustCompile(`(?i)front`),
 	regexp.MustCompile(`(?i)cover`),
 	regexp.MustCompile(`(?i)thumb`),
 }
