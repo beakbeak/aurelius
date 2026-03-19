@@ -186,17 +186,19 @@ func (w *Watcher) handleEvent(event fsnotify.Event, pending map[string]*pendingE
 	}
 
 	// For Create events, check if this is a directory and handle it.
+	// If Lstat fails, assume it's a regular file — the file may have
+	// already been moved away. Keeping it in pending ensures correct
+	// coalescing with a subsequent Remove for the same path.
 	if newKind == eventCreated {
 		info, err := os.Lstat(absPath)
-		if err != nil {
-			return
-		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return
-		}
-		if info.IsDir() {
-			w.handleNewDir(absPath, pending)
-			return
+		if err == nil {
+			if info.Mode()&os.ModeSymlink != 0 {
+				return
+			}
+			if info.IsDir() {
+				w.handleNewDir(absPath, pending)
+				return
+			}
 		}
 	}
 

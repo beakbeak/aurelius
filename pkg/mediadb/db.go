@@ -232,30 +232,22 @@ func (db *DB) ForEachTrack(fn func(*Track) error) error {
 	return rows.Err()
 }
 
-// SoftDeletedTrackByHash returns the unique soft-deleted track with the given
-// hash, or nil if there is no unique match (zero or multiple matches).
+// SoftDeletedTrackByHash returns a soft-deleted track with the given hash, or
+// nil if no match exists. When multiple soft-deleted tracks share the same
+// hash, the most recently inserted one is returned.
 func (db *DB) SoftDeletedTrackByHash(hash []byte) (*Track, error) {
-	rows, err := db.db.Query(
-		`SELECT `+trackColumns+` FROM tracks_with_deletes WHERE deleted = 1 AND hash = ? LIMIT 2`,
+	row := db.db.QueryRow(
+		`SELECT `+trackColumns+` FROM tracks_with_deletes WHERE deleted = 1 AND hash = ? ORDER BY id DESC LIMIT 1`,
 		hash,
 	)
+	t, err := scanTrack(row)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return nil, rows.Err()
-	}
-	t, err := scanTrack(rows)
-	if err != nil {
-		return nil, err
-	}
-	// Ambiguous if more than one soft-deleted track shares this hash.
-	if rows.Next() {
-		return nil, rows.Err()
-	}
-	return t, rows.Err()
+	return t, nil
 }
 
 // AllDirs returns all directories in the database.

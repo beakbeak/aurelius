@@ -120,6 +120,14 @@ func TestEventCoalescing(t *testing.T) {
 			expected: map[string]eventKind{},
 		},
 		{
+			name: "create for nonexistent file then remove is no-op",
+			events: []fsnotify.Event{
+				{Name: filepath.Join(tmpDir, "gone.flac"), Op: fsnotify.Create},
+				{Name: filepath.Join(tmpDir, "gone.flac"), Op: fsnotify.Remove},
+			},
+			expected: map[string]eventKind{},
+		},
+		{
 			name: "multiple independent files",
 			events: []fsnotify.Event{
 				{Name: aPath, Op: fsnotify.Create},

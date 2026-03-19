@@ -114,6 +114,14 @@ func TestDetectRevivalsAmbiguousHash(t *testing.T) {
 		t.Fatalf("second scan failed: %v", err)
 	}
 
+	// Record copy.ogg's ID — it was inserted after test.ogg, so it has
+	// the higher ID and should be the revival target.
+	copyTrack, err := db.GetTrack("copy.ogg")
+	if err != nil || copyTrack == nil {
+		t.Fatal("expected copy.ogg in DB")
+	}
+	copyID := copyTrack.ID
+
 	// Remove both files and rescan to soft-delete them.
 	os.Remove(filepath.Join(tmpDir, "test.ogg"))
 	os.Remove(filepath.Join(tmpDir, "copy.ogg"))
@@ -121,8 +129,8 @@ func TestDetectRevivalsAmbiguousHash(t *testing.T) {
 		t.Fatalf("third scan failed: %v", err)
 	}
 
-	// Add the file back — should NOT be revived because two soft-deleted
-	// tracks share the same hash (ambiguous).
+	// Add the file back — should be revived as the most recently inserted
+	// soft-deleted track (copy.ogg) even though two share the same hash.
 	if err := os.WriteFile(filepath.Join(tmpDir, "new.ogg"), srcData, 0o644); err != nil {
 		t.Fatalf("failed to write new file: %v", err)
 	}
@@ -136,6 +144,9 @@ func TestDetectRevivalsAmbiguousHash(t *testing.T) {
 	}
 	if track == nil {
 		t.Fatal("expected new.ogg to be in DB")
+	}
+	if track.ID != copyID {
+		t.Errorf("expected revived track to preserve ID %d (copy.ogg), got %d", copyID, track.ID)
 	}
 }
 
