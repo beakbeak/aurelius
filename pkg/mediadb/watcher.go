@@ -343,6 +343,10 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 
 	// Detect moves among added/removed.
 	detectMoves(changes)
+	if err := w.scanner.detectRevivals(changes); err != nil {
+		slog.Error("watcher revival detection failed", "error", err)
+		return
+	}
 
 	slog.Info("watcher batch",
 		"added", len(changes.Added),

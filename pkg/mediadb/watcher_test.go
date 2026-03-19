@@ -10,6 +10,11 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// testMediaPath returns the path to the test media directory.
+func testMediaPath() string {
+	return filepath.Join("..", "..", "test", "media")
+}
+
 func TestEventCoalescing(t *testing.T) {
 	t.Parallel()
 
@@ -161,11 +166,6 @@ func pendingKinds(pending map[string]*pendingEvent) map[string]eventKind {
 		result[k] = v.kind
 	}
 	return result
-}
-
-// testMediaPath returns the path to the test media directory.
-func testMediaPath() string {
-	return filepath.Join("..", "..", "test", "media")
 }
 
 // setupWatcherTest creates a temp directory, copies a test audio file into it,
@@ -478,6 +478,64 @@ func TestWatcherIgnoresNonTrackFiles(t *testing.T) {
 	}
 	if track != nil {
 		t.Fatal("expected notes.txt to NOT be in DB")
+	}
+}
+
+func TestWatcherReviveFile(t *testing.T) {
+	_, db, _, tmpDir, batchApplied := setupWatcherTest(t)
+
+	// Get the original track ID.
+	original, err := db.GetTrack("test.ogg")
+	if err != nil || original == nil {
+		t.Fatal("expected test.ogg in DB")
+	}
+	originalID := original.ID
+
+	// Remove the file and rescan to soft-delete it (bypass watcher to
+	// ensure the removal is fully applied before we test revival).
+	if err := os.Remove(filepath.Join(tmpDir, "test.ogg")); err != nil {
+		t.Fatalf("failed to remove file: %v", err)
+	}
+	waitForBatch(t, batchApplied)
+
+	track, err := db.GetTrack("test.ogg")
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track != nil {
+		t.Fatal("expected test.ogg to be soft-deleted")
+	}
+
+	// Copy the same file back with a different name — should be revived.
+	srcData, err := os.ReadFile(filepath.Join(testMediaPath(), "test.ogg"))
+	if err != nil {
+		t.Fatalf("failed to read source: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "revived.ogg"), srcData, 0o644); err != nil {
+		t.Fatalf("failed to write revived file: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Old path should still be gone.
+	track, err = db.GetTrack("test.ogg")
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track != nil {
+		t.Fatal("expected test.ogg to remain gone")
+	}
+
+	// New path should exist with the original track ID preserved.
+	track, err = db.GetTrack("revived.ogg")
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track == nil {
+		t.Fatal("expected revived.ogg to be in DB after watcher revival")
+	}
+	if track.ID != originalID {
+		t.Errorf("expected revived track to preserve original ID %d, got %d", originalID, track.ID)
 	}
 }
 

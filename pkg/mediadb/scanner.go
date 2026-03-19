@@ -131,6 +131,9 @@ func (s *Scanner) FullScan() error {
 		return fmt.Errorf("diff failed: %w", err)
 	}
 	detectMoves(changes)
+	if err := s.detectRevivals(changes); err != nil {
+		return fmt.Errorf("revival detection failed: %w", err)
+	}
 
 	slog.Info("scan diff complete",
 		"added", len(changes.Added),
@@ -377,6 +380,49 @@ func detectMoves(changes *ChangeSet) {
 		}
 		changes.Removed = newRemoved
 	}
+}
+
+// detectRevivals matches Added entries against soft-deleted tracks in the
+// database by hash. When a new file's hash matches a soft-deleted track, the
+// entry is converted to a Move so that the original track ID (and its
+// associated favorites, play history, etc.) is preserved.
+func (s *Scanner) detectRevivals(changes *ChangeSet) error {
+	if len(changes.Added) == 0 {
+		return nil
+	}
+
+	matched := make(map[int]bool)
+	for i, added := range changes.Added {
+		deleted, err := s.db.SoftDeletedTrackByHash(added.Hash)
+		if err != nil {
+			return fmt.Errorf("failed to query soft-deleted track by hash: %w", err)
+		}
+		if deleted == nil {
+			continue
+		}
+
+		changes.Moves = append(changes.Moves, Move{
+			OldDir:   deleted.Dir,
+			OldName:  deleted.Name,
+			NewDir:   added.Dir,
+			NewName:  added.Name,
+			NewMtime: added.Mtime,
+		})
+		matched[i] = true
+	}
+
+	if len(matched) > 0 {
+		slog.Info("revived soft-deleted tracks", "count", len(matched))
+		var newAdded []HashedFSEntry
+		for i, a := range changes.Added {
+			if !matched[i] {
+				newAdded = append(newAdded, a)
+			}
+		}
+		changes.Added = newAdded
+	}
+
+	return nil
 }
 
 // collectMetadata reads metadata from files for added and changed entries.
@@ -737,14 +783,18 @@ func (s *Scanner) Apply(result *ScanResult) error {
 			return err
 		}
 		defer clearStmt.Close()
-		stmt, err := tx.Prepare(`UPDATE tracks_with_deletes SET dir = ?, name = ?, mtime = ? WHERE dir = ? AND name = ?`)
+		stmt, err := tx.Prepare(`UPDATE tracks_with_deletes SET dir = ?, name = ?, mtime = ?, deleted = 0 WHERE dir = ? AND name = ?`)
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 		for _, m := range result.Moves {
-			if _, err := clearStmt.Exec(m.NewDir, m.NewName); err != nil {
-				return fmt.Errorf("failed to clear soft-deleted track at move destination: %w", err)
+			// Skip the clear when source and destination are the same path
+			// (revival in place) to avoid deleting the row we want to undelete.
+			if m.OldDir != m.NewDir || m.OldName != m.NewName {
+				if _, err := clearStmt.Exec(m.NewDir, m.NewName); err != nil {
+					return fmt.Errorf("failed to clear soft-deleted track at move destination: %w", err)
+				}
 			}
 			if _, err := stmt.Exec(m.NewDir, m.NewName, m.NewMtime, m.OldDir, m.OldName); err != nil {
 				return fmt.Errorf("failed to apply move: %w", err)
