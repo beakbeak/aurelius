@@ -126,11 +126,17 @@ export function setupPlayerUi(inPlayer: Player) {
         showDesktopNotification();
     });
 
-    navigator.mediaSession?.setActionHandler("previoustrack", () => {
-        player.previous();
+    navigator.mediaSession?.setActionHandler("previoustrack", async () => {
+        await player.previous();
+        if (getSettings().mediaSessionNotifications) {
+            showDesktopNotification();
+        }
     });
-    navigator.mediaSession?.setActionHandler("nexttrack", () => {
-        player.next();
+    navigator.mediaSession?.setActionHandler("nexttrack", async () => {
+        await player.next();
+        if (getSettings().mediaSessionNotifications) {
+            showDesktopNotification();
+        }
     });
     navigator.mediaSession?.setActionHandler("seekto", (args) => {
         if (typeof args.seekTime === "number") {

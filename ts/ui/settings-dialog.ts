@@ -68,6 +68,7 @@ function ensureElements() {
     settingsElements.push(new ReplayGainElement());
     settingsElements.push(new PreventClippingElement());
     settingsElements.push(new DesktopNotificationsElement());
+    settingsElements.push(new MediaSessionNotificationsElement());
 }
 
 function createOption(value: string, text = value): HTMLOptionElement {
@@ -288,6 +289,19 @@ class DesktopNotificationsElement implements SettingsElement {
     public readonly element = document.getElementById(
         "settings-desktop-notifications",
     ) as HTMLInputElement;
+    private readonly _mediaSessionNotifications = document.getElementById(
+        "settings-media-session-notifications",
+    ) as HTMLInputElement;
+
+    public constructor() {
+        this.element.oninput = () => {
+            this._onUpdate();
+        };
+    }
+
+    private _onUpdate(): void {
+        this._mediaSessionNotifications.disabled = !this.element.checked;
+    }
 
     public value(): boolean {
         return this.element.checked.valueOf();
@@ -295,9 +309,28 @@ class DesktopNotificationsElement implements SettingsElement {
 
     public fromSettings(settings: Settings): void {
         this.element.checked = !!settings.desktopNotifications;
+        this._onUpdate();
     }
 
     public toSettings(settings: Settings): void {
         settings.desktopNotifications = this.value();
+    }
+}
+
+class MediaSessionNotificationsElement implements SettingsElement {
+    public readonly element = document.getElementById(
+        "settings-media-session-notifications",
+    ) as HTMLInputElement;
+
+    public value(): boolean {
+        return this.element.checked.valueOf();
+    }
+
+    public fromSettings(settings: Settings): void {
+        this.element.checked = !!settings.mediaSessionNotifications;
+    }
+
+    public toSettings(settings: Settings): void {
+        settings.mediaSessionNotifications = this.value();
     }
 }
