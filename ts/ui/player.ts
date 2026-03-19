@@ -152,7 +152,7 @@ function showDesktopNotification(data = _notificationData): void {
             data &&
             "Notification" in window &&
             Notification.permission === "granted" &&
-            document.visibilityState === "hidden" &&
+            !document.hasFocus() &&
             getSettings().desktopNotifications
         )
     ) {
