@@ -188,6 +188,61 @@ func (db *DB) GetTracksInDir(dir string) ([]Track, error) {
 	return tracks, rows.Err()
 }
 
+// GetTrackImagesInDir returns image metadata for all tracks in the given
+// directory, keyed by track ID.
+func (db *DB) GetTrackImagesInDir(dir string) (map[int64][]ImageInfo, error) {
+	rows, err := db.db.Query(
+		`SELECT t.id, i.hash, i.mime_type, length(i.data)
+		FROM tracks t
+		JOIN track_images ti ON ti.track_id = t.id
+		JOIN images i ON i.hash = ti.image_hash
+		WHERE t.dir = ?
+		ORDER BY t.id, ti.position`,
+		dir,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int64][]ImageInfo)
+	for rows.Next() {
+		var trackID int64
+		var img ImageInfo
+		if err := rows.Scan(&trackID, &img.Hash, &img.MimeType, &img.Size); err != nil {
+			return nil, err
+		}
+		result[trackID] = append(result[trackID], img)
+	}
+	return result, rows.Err()
+}
+
+// GetFavoritesInDir returns the set of track IDs that are favorites in the
+// given directory.
+func (db *DB) GetFavoritesInDir(dir string) (map[int64]bool, error) {
+	rows, err := db.db.Query(
+		`SELECT t.id
+		FROM favorites f
+		JOIN tracks t ON t.id = f.track_id
+		WHERE t.dir = ?`,
+		dir,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int64]bool)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		result[id] = true
+	}
+	return result, rows.Err()
+}
+
 // GetSubdirs returns all immediate subdirectories of the given directory.
 func (db *DB) GetSubdirs(parent string) ([]Dir, error) {
 	rows, err := db.db.Query(

@@ -8,6 +8,7 @@ export interface AttachedImageInfo {
 
 export interface TrackInfo {
     readonly name: string;
+    readonly url: string;
     readonly duration: number;
     readonly replayGainTrack: number;
     readonly replayGainAlbum: number;

@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/beakbeak/aurelius/pkg/mediadb"
 )
 
 func (ml *Library) handleTrackFavorite(
@@ -26,11 +28,66 @@ func (ml *Library) handleTrackFavorite(
 		http.NotFound(w, req)
 		return
 	}
-	if err := ml.setFavorite(libraryPath, favorite); err != nil {
-		slog.ErrorContext(ctx, "setFavorite failed", "value", favorite, "error", err)
+	if err := ml.db.SetFavorite(libraryPath, favorite); err != nil {
+		slog.ErrorContext(ctx, "SetFavorite failed", "value", favorite, "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		writeJson(ctx, w, nil)
+	}
+}
+
+type attachedImageInfo struct {
+	MimeType string `json:"mimeType"`
+	Size     int    `json:"size"`
+	Url      string `json:"url"`
+}
+
+type trackInfoResult struct {
+	Name            string              `json:"name"`
+	Url             string              `json:"url"`
+	Duration        float64             `json:"duration"`
+	ReplayGainTrack float64             `json:"replayGainTrack"`
+	ReplayGainAlbum float64             `json:"replayGainAlbum"`
+	Favorite        bool                `json:"favorite"`
+	Tags            map[string]string   `json:"tags"`
+	AttachedImages  []attachedImageInfo `json:"attachedImages"`
+	BitRate         int                 `json:"bitRate"`
+	SampleRate      uint                `json:"sampleRate"`
+	SampleFormat    string              `json:"sampleFormat"`
+	Dir             string              `json:"dir"`
+}
+
+func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) trackInfoResult {
+	images := make([]attachedImageInfo, 0, len(track.Images))
+	for _, img := range track.Images {
+		images = append(images, attachedImageInfo{
+			MimeType: img.MimeType,
+			Size:     img.Size,
+			Url:      ml.makeImageUrl(img.Hash),
+		})
+	}
+
+	replayGainTrack := 1.0
+	replayGainAlbum := 1.0
+	if track.Metadata.ReplayGain != nil {
+		replayGainTrack = track.Metadata.ReplayGain.Track
+		replayGainAlbum = track.Metadata.ReplayGain.Album
+	}
+
+	trackPath := joinLibraryPath(track.Dir, track.Name)
+	return trackInfoResult{
+		Name:            track.Name,
+		Url:             ml.libraryToUrlPath("tracks", trackPath),
+		Duration:        track.Metadata.Duration,
+		ReplayGainTrack: replayGainTrack,
+		ReplayGainAlbum: replayGainAlbum,
+		Favorite:        favorite,
+		Tags:            track.Tags,
+		AttachedImages:  images,
+		BitRate:         track.Metadata.BitRate,
+		SampleRate:      track.Metadata.SampleRate,
+		SampleFormat:    track.Metadata.SampleFormat,
+		Dir:             ml.libraryToUrlPath("dirs", track.Dir),
 	}
 }
 
@@ -51,70 +108,12 @@ func (ml *Library) handleTrackInfo(
 		return
 	}
 
-	type AttachedImageInfo struct {
-		MimeType string `json:"mimeType"`
-		Size     int    `json:"size"`
-		Url      string `json:"url"`
+	favorite, err := ml.db.IsFavorite(libraryPath)
+	if err != nil {
+		slog.ErrorContext(ctx, "IsFavorite failed", "error", err)
 	}
 
-	type Result struct {
-		Name            string              `json:"name"`
-		Duration        float64             `json:"duration"`
-		ReplayGainTrack float64             `json:"replayGainTrack"`
-		ReplayGainAlbum float64             `json:"replayGainAlbum"`
-		Favorite        bool                `json:"favorite"`
-		Tags            map[string]string   `json:"tags"`
-		AttachedImages  []AttachedImageInfo `json:"attachedImages"`
-		BitRate         int                 `json:"bitRate"`
-		SampleRate      uint                `json:"sampleRate"`
-		SampleFormat    string              `json:"sampleFormat"`
-		Dir             string              `json:"dir"`
-	}
-
-	images := make([]AttachedImageInfo, 0, len(track.Images))
-	for _, img := range track.Images {
-		images = append(images, AttachedImageInfo{
-			MimeType: img.MimeType,
-			Size:     img.Size,
-			Url:      ml.makeImageUrl(img.Hash),
-		})
-	}
-
-	replayGainTrack := 1.0
-	replayGainAlbum := 1.0
-	if track.Metadata.ReplayGain != nil {
-		replayGainTrack = track.Metadata.ReplayGain.Track
-		replayGainAlbum = track.Metadata.ReplayGain.Album
-	}
-
-	result := Result{
-		Name:            track.Name,
-		Duration:        track.Metadata.Duration,
-		ReplayGainTrack: replayGainTrack,
-		ReplayGainAlbum: replayGainAlbum,
-		Tags:            track.Tags,
-		AttachedImages:  images,
-		BitRate:         track.Metadata.BitRate,
-		SampleRate:      track.Metadata.SampleRate,
-		SampleFormat:    track.Metadata.SampleFormat,
-		Dir:             ml.libraryToUrlPath("dirs", track.Dir),
-	}
-
-	if favorite, err := ml.isFavorite(libraryPath); err != nil {
-		slog.ErrorContext(ctx, "isFavorite failed", "error", err)
-	} else {
-		result.Favorite = favorite
-	}
-
-	writeJson(ctx, w, result)
-}
-
-func (ml *Library) isFavorite(path string) (bool, error) {
-	return ml.db.IsFavorite(path)
-}
-
-func (ml *Library) setFavorite(path string, favorite bool) error {
-	return ml.db.SetFavorite(path, favorite)
+	writeJson(ctx, w, ml.buildTrackInfo(track, favorite))
 }
 
 func (ml *Library) handleImageByHash(

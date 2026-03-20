@@ -1,13 +1,10 @@
 import { fetchJson } from "./json";
+import { TrackInfo } from "./track";
 
 export interface PathUrl {
     readonly name: string;
     readonly url: string;
 }
-
-export type TrackPathUrl = PathUrl & {
-    readonly favorite?: boolean;
-};
 
 export interface DirInfo {
     readonly url: string;
@@ -16,7 +13,7 @@ export interface DirInfo {
     readonly path: string;
     readonly dirs: PathUrl[];
     readonly playlists: PathUrl[];
-    readonly tracks: TrackPathUrl[];
+    readonly tracks: TrackInfo[];
 }
 
 export function fetchDirInfo(url: string): Promise<DirInfo> {

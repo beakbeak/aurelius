@@ -32,19 +32,18 @@ func (ml *Library) handleDirInfo(
 	}
 
 	type PathUrl struct {
-		Name     string `json:"name"`
-		Url      string `json:"url"`
-		Favorite bool   `json:"favorite,omitempty"`
+		Name string `json:"name"`
+		Url  string `json:"url"`
 	}
 
 	type Result struct {
-		Url       string    `json:"url"`
-		TopLevel  string    `json:"topLevel"`
-		Parent    string    `json:"parent"`
-		Path      string    `json:"path"`
-		Dirs      []PathUrl `json:"dirs"`
-		Playlists []PathUrl `json:"playlists"`
-		Tracks    []PathUrl `json:"tracks"`
+		Url       string            `json:"url"`
+		TopLevel  string            `json:"topLevel"`
+		Parent    string            `json:"parent"`
+		Path      string            `json:"path"`
+		Dirs      []PathUrl         `json:"dirs"`
+		Playlists []PathUrl         `json:"playlists"`
+		Tracks    []trackInfoResult `json:"tracks"`
 	}
 	result := Result{
 		Url:       ml.libraryToUrlPath("dirs", dirLibraryPath),
@@ -53,7 +52,7 @@ func (ml *Library) handleDirInfo(
 		Path:      dirLibraryPath,
 		Dirs:      make([]PathUrl, 0, len(subdirs)),
 		Playlists: make([]PathUrl, 0),
-		Tracks:    make([]PathUrl, 0, len(tracks)),
+		Tracks:    make([]trackInfoResult, 0, len(tracks)),
 	}
 
 	for _, d := range subdirs {
@@ -76,6 +75,16 @@ func (ml *Library) handleDirInfo(
 		})
 	}
 
+	// Bulk-load images and favorites for all tracks in the directory.
+	trackImages, err := ml.db.GetTrackImagesInDir(dirLibraryPath)
+	if err != nil {
+		slog.ErrorContext(ctx, "GetTrackImagesInDir failed", "error", err)
+	}
+	favorites, err := ml.db.GetFavoritesInDir(dirLibraryPath)
+	if err != nil {
+		slog.ErrorContext(ctx, "GetFavoritesInDir failed", "error", err)
+	}
+
 	// Build set of fragment source files to hide them from track listing.
 	fragmentSourceFiles := make(map[string]bool)
 	for _, t := range tracks {
@@ -90,17 +99,8 @@ func (ml *Library) handleDirInfo(
 		if fragmentSourceFiles[t.Name] {
 			continue
 		}
-		trackPath := joinLibraryPath(t.Dir, t.Name)
-		pu := PathUrl{
-			Name: t.Name,
-			Url:  ml.libraryToUrlPath("tracks", trackPath),
-		}
-		if fav, err := ml.db.IsFavorite(trackPath); err != nil {
-			slog.ErrorContext(ctx, "IsFavorite failed", "path", trackPath, "error", err)
-		} else {
-			pu.Favorite = fav
-		}
-		result.Tracks = append(result.Tracks, pu)
+		t.Images = trackImages[t.ID]
+		result.Tracks = append(result.Tracks, ml.buildTrackInfo(&t, favorites[t.ID]))
 	}
 
 	writeJson(ctx, w, result)

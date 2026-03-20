@@ -25,7 +25,40 @@
       "topLevel": "/prefix/dirs/at:",
       "tracks": [
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/png",
+              "size": 7494,
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+            }
+          ],
+          "bitRate": 127912,
+          "dir": "/prefix/dirs/at:foo%2Fanother%20directory",
+          "duration": 12.599002,
+          "favorite": false,
           "name": "test.m4a",
+          "replayGainAlbum": 0.9885530946569387,
+          "replayGainTrack": 0.9885530946569387,
+          "sampleFormat": "fltp",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "compatible_brands": "isomiso2",
+            "date": "2020",
+            "encoder": "Lavf57.83.100",
+            "genre": "Test Data",
+            "handler_name": "SoundHandler",
+            "language": "und",
+            "major_brand": "M4A ",
+            "minor_version": "512",
+            "replaygain_track_gain": "-0.10 dB",
+            "replaygain_track_peak": "0.921441",
+            "title": "Aurelius Test Data",
+            "track": "1",
+            "vendor_id": "[0][0][0][0]"
+          },
           "url": "/prefix/tracks/at:foo%2Fanother%20directory%2Ftest.m4a"
         }
       ],
@@ -52,35 +85,367 @@
       "topLevel": "/prefix/dirs/at:",
       "tracks": [
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/png",
+              "size": 7494,
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 80000,
+          "dir": "/prefix/dirs/at:",
+          "duration": 12.59932,
+          "favorite": false,
           "name": "test-positive-gain.ogg",
+          "replayGainAlbum": 1.175861906777668,
+          "replayGainTrack": 1.175861906777668,
+          "sampleFormat": "fltp",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "genre": "Test Data",
+            "replaygain_album_gain": "3.5 dB",
+            "replaygain_album_peak": "0.85044265",
+            "replaygain_track_gain": "2.37 dB",
+            "replaygain_track_peak": "0.85044265",
+            "title": "Aurelius Test Data",
+            "track": "1"
+          },
           "url": "/prefix/tracks/at:test-positive-gain.ogg"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/png",
+              "size": 7494,
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 6737,
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+            },
+            {
+              "mimeType": "image/gif",
+              "size": 3604,
+              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 0,
+          "dir": "/prefix/dirs/at:",
+          "duration": 3,
+          "favorite": false,
           "name": "test.flac.1.txt",
+          "replayGainAlbum": 0.750758054119937,
+          "replayGainTrack": 0.750758054119937,
+          "sampleFormat": "s16",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "genre": "Test Data",
+            "replaygain_album_gain": "-2.49 dB",
+            "replaygain_album_peak": "0.89123535",
+            "replaygain_reference_loudness": "89.0 dB",
+            "replaygain_track_gain": "-2.49 dB",
+            "replaygain_track_peak": "0.89123535",
+            "title": "Aurelius Test Data",
+            "track": "1.1"
+          },
           "url": "/prefix/tracks/at:test.flac.1.txt"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/png",
+              "size": 7494,
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 6737,
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+            },
+            {
+              "mimeType": "image/gif",
+              "size": 3604,
+              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 0,
+          "dir": "/prefix/dirs/at:",
+          "duration": 10.59932,
+          "favorite": false,
           "name": "test.flac.2.txt",
+          "replayGainAlbum": 0.750758054119937,
+          "replayGainTrack": 0.750758054119937,
+          "sampleFormat": "s16",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Foo and the Bars",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "genre": "Test Data",
+            "replaygain_album_gain": "-2.49 dB",
+            "replaygain_album_peak": "0.89123535",
+            "replaygain_reference_loudness": "89.0 dB",
+            "replaygain_track_gain": "-2.49 dB",
+            "replaygain_track_peak": "0.89123535",
+            "title": "Baz All Night",
+            "track": "1.2"
+          },
           "url": "/prefix/tracks/at:test.flac.2.txt"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/png",
+              "size": 7494,
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 6737,
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+            },
+            {
+              "mimeType": "image/gif",
+              "size": 3604,
+              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 0,
+          "dir": "/prefix/dirs/at:",
+          "duration": 5,
+          "favorite": false,
           "name": "test.flac.3.txt",
+          "replayGainAlbum": 0.750758054119937,
+          "replayGainTrack": 0.750758054119937,
+          "sampleFormat": "s16",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "genre": "Test Data",
+            "replaygain_album_gain": "-2.49 dB",
+            "replaygain_album_peak": "0.89123535",
+            "replaygain_reference_loudness": "89.0 dB",
+            "replaygain_track_gain": "-2.49 dB",
+            "replaygain_track_peak": "0.89123535",
+            "title": "Aurelius Test Data",
+            "track": "1.3"
+          },
           "url": "/prefix/tracks/at:test.flac.3.txt"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/png",
+              "size": 7494,
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 0,
+          "dir": "/prefix/dirs/at:",
+          "duration": 12.602,
+          "favorite": false,
           "name": "test.mka",
+          "replayGainAlbum": 0.9885530946569387,
+          "replayGainTrack": 0.9885530946569387,
+          "sampleFormat": "fltp",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "date_recorded": "2020",
+            "duration": "00:00:12.602000000",
+            "encoder": "Lavc57.107.100 libvorbis",
+            "genre": "Test Data",
+            "replaygain_gain": "-0.10 dB",
+            "replaygain_peak": "0.921441",
+            "title": "Aurelius Test Data",
+            "track": "1"
+          },
           "url": "/prefix/tracks/at:test.mka"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/jpeg",
+              "size": 6737,
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 49330,
+          "dir": "/prefix/dirs/at:",
+          "duration": 12.669388,
+          "favorite": false,
           "name": "test.mp3",
+          "replayGainAlbum": 0.716143410212902,
+          "replayGainTrack": 0.716143410212902,
+          "sampleFormat": "fltp",
+          "sampleRate": 22050,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "encoder": "LAME3.100",
+            "genre": "Test Data",
+            "title": "Aurelius Test Data",
+            "track": "1"
+          },
           "url": "/prefix/tracks/at:test.mp3"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/jpeg",
+              "size": 91931,
+              "url": "/prefix/images/hash:689244cf3747498924e6f875a31a7aaedd7df3e2f83f8a9ea5f78988bd81a202"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 80000,
+          "dir": "/prefix/dirs/at:",
+          "duration": 12.59932,
+          "favorite": false,
           "name": "test.ogg",
+          "replayGainAlbum": 0.7612021390057184,
+          "replayGainTrack": 0.7612021390057184,
+          "sampleFormat": "fltp",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "genre": "Test Data",
+            "replaygain_album_gain": "-2.37 dB",
+            "replaygain_album_peak": "0.85044265",
+            "replaygain_track_gain": "-2.37 dB",
+            "replaygain_track_peak": "0.85044265",
+            "title": "Aurelius Test Data",
+            "track": "1"
+          },
           "url": "/prefix/tracks/at:test.ogg"
         },
         {
+          "attachedImages": [
+            {
+              "mimeType": "image/jpeg",
+              "size": 99260,
+              "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
+            },
+            {
+              "mimeType": "image/jpeg",
+              "size": 87396,
+              "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
+            }
+          ],
+          "bitRate": 1411200,
+          "dir": "/prefix/dirs/at:",
+          "duration": 12.59932,
+          "favorite": false,
           "name": "test.wav",
+          "replayGainAlbum": 1,
+          "replayGainTrack": 1,
+          "sampleFormat": "s16",
+          "sampleRate": 44100,
+          "tags": {
+            "album": "Aurelius Test Data Greatest Hits",
+            "artist": "Aurelius",
+            "comment": "Testing",
+            "composer": "J. S. Bach",
+            "date": "2020",
+            "genre": "Test Data",
+            "title": "Aurelius Test Data",
+            "track": "1"
+          },
           "url": "/prefix/tracks/at:test.wav"
         }
       ],
@@ -122,7 +487,8 @@
         "title": "Aurelius Test Data",
         "track": "1",
         "vendor_id": "[0][0][0][0]"
-      }
+      },
+      "url": "/prefix/tracks/at:foo%2Fanother%20directory%2Ftest.m4a"
     },
     "StreamHashes": {
       "": "3cca8087dacf6dc639717d01345e3f1f85026e07ecb1f4b2532cca680d439d87"
@@ -191,7 +557,8 @@
         "replaygain_track_peak": "0.89123535",
         "title": "Aurelius Test Data",
         "track": "1"
-      }
+      },
+      "url": "/prefix/tracks/at:test.flac"
     },
     "StreamHashes": {
       "": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7",
@@ -353,7 +720,8 @@
         "replaygain_track_peak": "0.89123535",
         "title": "Aurelius Test Data",
         "track": "1.1"
-      }
+      },
+      "url": "/prefix/tracks/at:test.flac.1.txt"
     },
     "StreamHashes": {
       "": "688edcca6248f4209131364b674e91ea7f4e7ec60e1438921308547f3a762e32"
@@ -411,7 +779,8 @@
         "replaygain_track_peak": "0.89123535",
         "title": "Baz All Night",
         "track": "1.2"
-      }
+      },
+      "url": "/prefix/tracks/at:test.flac.2.txt"
     },
     "StreamHashes": {
       "": "6b026a0d95d8f35e0e0820aefa628c74d1e0759952a076bebdeaddb82ce7541e"
@@ -469,7 +838,8 @@
         "replaygain_track_peak": "0.89123535",
         "title": "Aurelius Test Data",
         "track": "1.3"
-      }
+      },
+      "url": "/prefix/tracks/at:test.flac.3.txt"
     },
     "StreamHashes": {
       "": "aeb74e36f99f08e1ed193d0e737f5f1bb269618cc7e3bbd824f25d4405f59400"
@@ -514,7 +884,8 @@
         "replaygain_peak": "0.921441",
         "title": "Aurelius Test Data",
         "track": "1"
-      }
+      },
+      "url": "/prefix/tracks/at:test.mka"
     },
     "StreamHashes": {
       "": "3c18c321b45eabcc62876de99fca8fc631e37fe5022860292541fc1b3baebdb8"
@@ -557,7 +928,8 @@
         "genre": "Test Data",
         "title": "Aurelius Test Data",
         "track": "1"
-      }
+      },
+      "url": "/prefix/tracks/at:test.mp3"
     },
     "StreamHashes": {
       "": "23599a423c86295523c7d01869d65a0b7dd61a359929ec2f6cd5a64bc932c825"
@@ -604,7 +976,8 @@
         "replaygain_track_peak": "0.85044265",
         "title": "Aurelius Test Data",
         "track": "1"
-      }
+      },
+      "url": "/prefix/tracks/at:test.ogg"
     },
     "StreamHashes": {
       "": "9969a131fa17072b34efea70aecafa47f98ffadf2365fa81d81c6a12bbc135da"
@@ -642,7 +1015,8 @@
         "genre": "Test Data",
         "title": "Aurelius Test Data",
         "track": "1"
-      }
+      },
+      "url": "/prefix/tracks/at:test.wav"
     },
     "StreamHashes": {
       "": "b31c88c7dd43edbc32c3aed032863ae21e12a032fbcd2da161f81206c5900ca7"
