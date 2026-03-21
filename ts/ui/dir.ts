@@ -36,6 +36,7 @@ export async function setupDirUi(inPlayer: Player) {
     dirList = createList();
     playlistList = createList();
     trackList = createList();
+    trackList.classList.add(Class.DirTrackList);
 
     container.innerHTML = "";
     container.appendChild(specialList);
