@@ -547,6 +547,65 @@ func TestWatcherReviveFile(t *testing.T) {
 	}
 }
 
+func TestWatcherMoveFileOutOfDirectory(t *testing.T) {
+	_, db, _, tmpDir, batchApplied := setupWatcherTest(t)
+
+	// Create a subdirectory with a track.
+	subDir := filepath.Join(tmpDir, "subdir")
+	if err := os.Mkdir(subDir, 0o755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+	srcData, err := os.ReadFile(filepath.Join(testMediaPath(), "test.flac"))
+	if err != nil {
+		t.Fatalf("failed to read source: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subDir, "track.flac"), srcData, 0o644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Verify it's in the DB.
+	original, err := db.GetTrack("subdir/track.flac")
+	if err != nil || original == nil {
+		t.Fatal("expected subdir/track.flac to be in DB")
+	}
+	originalID := original.ID
+
+	// Move the file out of the subdirectory to the root, then remove the
+	// now-empty subdirectory. This triggers both individual file Remove
+	// events and a directory Remove event.
+	if err := os.Rename(filepath.Join(subDir, "track.flac"), filepath.Join(tmpDir, "track.flac")); err != nil {
+		t.Fatalf("rename failed: %v", err)
+	}
+	if err := os.Remove(subDir); err != nil {
+		t.Fatalf("failed to remove empty dir: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Old path should be gone.
+	track, err := db.GetTrack("subdir/track.flac")
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track != nil {
+		t.Fatal("expected subdir/track.flac to be gone from DB after move")
+	}
+
+	// New path should exist with the original track ID preserved (move detected).
+	track, err = db.GetTrack("track.flac")
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track == nil {
+		t.Fatal("expected track.flac to be in DB after move")
+	}
+	if track.ID != originalID {
+		t.Errorf("expected move to preserve track ID %d, got %d", originalID, track.ID)
+	}
+}
+
 func TestWatcherBatchCallback(t *testing.T) {
 	_, _, _, tmpDir, batchApplied := setupWatcherTest(t)
 

@@ -343,6 +343,22 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 		return
 	}
 
+	// Deduplicate Removed entries. A track may appear both from an
+	// individual file Remove event and from removeDirRecursive when its
+	// parent directory is also removed.
+	if len(changes.Removed) > 1 {
+		seen := make(map[string]bool, len(changes.Removed))
+		unique := changes.Removed[:0]
+		for _, t := range changes.Removed {
+			key := JoinLibraryPath(t.Dir, t.Name)
+			if !seen[key] {
+				seen[key] = true
+				unique = append(unique, t)
+			}
+		}
+		changes.Removed = unique
+	}
+
 	// Detect moves among added/removed.
 	detectMoves(changes)
 	if err := w.scanner.detectRevivals(changes); err != nil {
