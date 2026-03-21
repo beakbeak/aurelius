@@ -33,9 +33,13 @@ export function formatTrackArtist(track: TrackInfo): string {
     return track.tags["artist"] ?? "";
 }
 
+function formatCodec(track: TrackInfo): string {
+    return track.codec || fileExtension(track.name);
+}
+
 export function formatTrackMeta(track: TrackInfo): string {
     return [
-        fileExtension(track.name),
+        formatCodec(track),
         formatBitRate(track.bitRate),
         track.sampleFormat,
         formatSampleRate(track.sampleRate),

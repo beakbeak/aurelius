@@ -51,6 +51,7 @@ type trackInfoResult struct {
 	Favorite        bool                `json:"favorite"`
 	Tags            map[string]string   `json:"tags"`
 	AttachedImages  []attachedImageInfo `json:"attachedImages"`
+	Codec           string              `json:"codec"`
 	BitRate         int                 `json:"bitRate"`
 	SampleRate      uint                `json:"sampleRate"`
 	SampleFormat    string              `json:"sampleFormat"`
@@ -84,6 +85,7 @@ func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) trackInfo
 		Favorite:        favorite,
 		Tags:            track.Tags,
 		AttachedImages:  images,
+		Codec:           track.Metadata.Codec,
 		BitRate:         track.Metadata.BitRate,
 		SampleRate:      track.Metadata.SampleRate,
 		SampleFormat:    track.Metadata.SampleFormat,

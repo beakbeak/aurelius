@@ -536,6 +536,7 @@ func (s *Scanner) scanFile(entry FSEntry, hash []byte) (*ScannedTrack, error) {
 
 	metadata := TrackMetadata{
 		Duration:     float64(src.Duration()) / float64(time.Second),
+		Codec:        src.CodecName(),
 		BitRate:      src.BitRate(),
 		SampleRate:   streamInfo.SampleRate,
 		SampleFormat: streamInfo.SampleFormat(),

@@ -6,6 +6,7 @@ package aurelib
 #include <libavformat/avformat.h>
 #include <libavformat/version.h>
 #include <libavcodec/avcodec.h>
+#include <libavcodec/codec_desc.h>
 #include <libavcodec/codec_id.h>
 #include <libavutil/replaygain.h>
 #include <stdlib.h>
@@ -160,6 +161,9 @@ type Source interface {
 
 	// BitRate returns the average bit rate of the audio stream in bits per second.
 	BitRate() int
+
+	// CodecName returns the name of the audio codec (e.g. "flac", "mp3", "vorbis").
+	CodecName() string
 }
 
 // ReplayGainMode indicates which set of ReplayGain data to use in volume
@@ -190,6 +194,7 @@ const (
 type sourceBase struct {
 	tags           map[string]string
 	attachedImages []AttachedImage
+	codecName      string
 
 	formatCtx *C.AVFormatContext
 	codecCtx  *C.AVCodecContext
@@ -293,6 +298,9 @@ func (src *sourceBase) init() error {
 	codec := C.avcodec_find_decoder(src.stream.codecpar.codec_id)
 	if codec == nil {
 		return fmt.Errorf("failed to find decoder")
+	}
+	if desc := C.avcodec_descriptor_get(src.stream.codecpar.codec_id); desc != nil {
+		src.codecName = C.GoString(desc.name)
 	}
 
 	if src.codecCtx = C.avcodec_alloc_context3(codec); src.codecCtx == nil {
@@ -623,4 +631,9 @@ func (src *sourceBase) AttachedImages() []AttachedImage {
 // BitRate returns the bit rate of the audio stream in bits per second.
 func (src *sourceBase) BitRate() int {
 	return int(src.stream.codecpar.bit_rate)
+}
+
+// CodecName returns the name of the audio codec (e.g. "flac", "mp3", "vorbis").
+func (src *sourceBase) CodecName() string {
+	return src.codecName
 }

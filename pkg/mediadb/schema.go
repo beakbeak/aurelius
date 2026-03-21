@@ -36,6 +36,7 @@ type ReplayGain struct {
 // TrackMetadata holds audio properties stored in the metadata JSON column.
 type TrackMetadata struct {
 	Duration     float64     `json:"duration"`
+	Codec        string      `json:"codec,omitempty"`
 	BitRate      int         `json:"bitRate"`
 	SampleRate   uint        `json:"sampleRate"`
 	SampleFormat string      `json:"sampleFormat"`

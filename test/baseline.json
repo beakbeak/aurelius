@@ -33,6 +33,7 @@
             }
           ],
           "bitRate": 127912,
+          "codec": "aac",
           "dir": "/prefix/dirs/at:foo%2Fanother%20directory",
           "duration": 12.599002,
           "favorite": false,
@@ -103,6 +104,7 @@
             }
           ],
           "bitRate": 80000,
+          "codec": "vorbis",
           "dir": "/prefix/dirs/at:",
           "duration": 12.59932,
           "favorite": false,
@@ -156,6 +158,7 @@
             }
           ],
           "bitRate": 0,
+          "codec": "flac",
           "dir": "/prefix/dirs/at:",
           "duration": 3,
           "favorite": false,
@@ -210,6 +213,7 @@
             }
           ],
           "bitRate": 0,
+          "codec": "flac",
           "dir": "/prefix/dirs/at:",
           "duration": 10.59932,
           "favorite": false,
@@ -264,6 +268,7 @@
             }
           ],
           "bitRate": 0,
+          "codec": "flac",
           "dir": "/prefix/dirs/at:",
           "duration": 5,
           "favorite": false,
@@ -308,6 +313,7 @@
             }
           ],
           "bitRate": 0,
+          "codec": "vorbis",
           "dir": "/prefix/dirs/at:",
           "duration": 12.602,
           "favorite": false,
@@ -350,6 +356,7 @@
             }
           ],
           "bitRate": 49330,
+          "codec": "mp3",
           "dir": "/prefix/dirs/at:",
           "duration": 12.669388,
           "favorite": false,
@@ -390,6 +397,7 @@
             }
           ],
           "bitRate": 80000,
+          "codec": "vorbis",
           "dir": "/prefix/dirs/at:",
           "duration": 12.59932,
           "favorite": false,
@@ -428,6 +436,7 @@
             }
           ],
           "bitRate": 1411200,
+          "codec": "pcm_s16le",
           "dir": "/prefix/dirs/at:",
           "duration": 12.59932,
           "favorite": false,
@@ -463,6 +472,7 @@
         }
       ],
       "bitRate": 127912,
+      "codec": "aac",
       "dir": "/prefix/dirs/at:foo%2Fanother%20directory",
       "duration": 12.599002,
       "favorite": false,
@@ -535,6 +545,7 @@
         }
       ],
       "bitRate": 0,
+      "codec": "flac",
       "dir": "/prefix/dirs/at:",
       "duration": 12.59932,
       "favorite": false,
@@ -698,6 +709,7 @@
         }
       ],
       "bitRate": 0,
+      "codec": "flac",
       "dir": "/prefix/dirs/at:",
       "duration": 3,
       "favorite": false,
@@ -757,6 +769,7 @@
         }
       ],
       "bitRate": 0,
+      "codec": "flac",
       "dir": "/prefix/dirs/at:",
       "duration": 10.59932,
       "favorite": false,
@@ -816,6 +829,7 @@
         }
       ],
       "bitRate": 0,
+      "codec": "flac",
       "dir": "/prefix/dirs/at:",
       "duration": 5,
       "favorite": false,
@@ -865,6 +879,7 @@
         }
       ],
       "bitRate": 0,
+      "codec": "vorbis",
       "dir": "/prefix/dirs/at:",
       "duration": 12.602,
       "favorite": false,
@@ -911,6 +926,7 @@
         }
       ],
       "bitRate": 49330,
+      "codec": "mp3",
       "dir": "/prefix/dirs/at:",
       "duration": 12.669388,
       "favorite": false,
@@ -955,6 +971,7 @@
         }
       ],
       "bitRate": 80000,
+      "codec": "vorbis",
       "dir": "/prefix/dirs/at:",
       "duration": 12.59932,
       "favorite": false,
@@ -998,6 +1015,7 @@
         }
       ],
       "bitRate": 1411200,
+      "codec": "pcm_s16le",
       "dir": "/prefix/dirs/at:",
       "duration": 12.59932,
       "favorite": false,
