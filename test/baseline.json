@@ -49,7 +49,6 @@
             "compatible_brands": "isomiso2",
             "date": "2020",
             "disc": "1",
-            "encoder": "Lavf57.83.100",
             "genre": "Test Data",
             "handler_name": "SoundHandler",
             "language": "und",
@@ -333,7 +332,6 @@
             "comment": "Testing",
             "date_recorded": "2020",
             "duration": "00:00:12.602000000",
-            "encoder": "Lavc57.107.100 libvorbis",
             "genre": "Test Data",
             "replaygain_gain": "-0.10 dB",
             "replaygain_peak": "0.921441",
@@ -377,7 +375,6 @@
             "composer": "J. S. Bach",
             "date": "2020",
             "disc": "2",
-            "encoder": "LAME3.100",
             "genre": "Test Data",
             "title": "Aurelius Test Data",
             "track": "1"

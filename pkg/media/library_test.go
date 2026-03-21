@@ -1028,6 +1028,13 @@ func TestDirInfo(t *testing.T) {
 				t.Fatalf("failed to decode response as map: %v", err)
 			}
 
+			// FFmpeg returns inconsistent values for "encoder" tag with .mka files
+			if tracks, ok := expectedDirInfo["tracks"].([]interface{}); ok {
+				for _, track := range tracks {
+					removeJsonElement(track, "tags", "encoder")
+				}
+			}
+
 			if updateBaselines {
 				baseline.Info = expectedDirInfo
 				baselines[test.baseline] = baseline

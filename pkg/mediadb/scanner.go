@@ -223,7 +223,7 @@ func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, map[stri
 			fsFiles[libraryPath] = entry
 		case FileTypePlaylist:
 			fsPlaylists[libraryPath] = entry
-		case FileTypeIgnored:
+		case FileTypeImage, FileTypeIgnored:
 		}
 
 		return nil
@@ -636,6 +636,7 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 	cache := &imageHashCache{originalHashToProcessed: make(map[[32]byte][32]byte)}
 	rows, err := tx.Query("SELECT original_hash, hash FROM images")
 	if err == nil {
+		defer rows.Close()
 		for rows.Next() {
 			var origHash, hash []byte
 			if err := rows.Scan(&origHash, &hash); err != nil {
@@ -646,7 +647,9 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 			copy(hk[:], hash)
 			cache.originalHashToProcessed[ok] = hk
 		}
-		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
 	}
 
 	type trackImageMapping struct {
