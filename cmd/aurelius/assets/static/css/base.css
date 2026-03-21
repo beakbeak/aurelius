@@ -355,6 +355,7 @@ body {
 .dir__cell-num {
 	white-space: nowrap;
 	color: hsl(0, 0%, 50%);
+	margin-left: -0.5em;
 }
 .dir__cell-duration {
 	white-space: nowrap;
@@ -365,6 +366,7 @@ body {
 	color: hsl(0, 0%, 50%);
 	font-size: 0.85em;
 	font-style: italic;
+	margin-right: 0.75em;
 }
 .dir__cell-detail {
 	white-space: nowrap;
