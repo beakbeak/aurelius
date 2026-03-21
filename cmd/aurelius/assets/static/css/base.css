@@ -312,6 +312,21 @@ body {
 	text-decoration: none;
 	color: hsl(0, 0%, 66.3%);
 }
+/* Dot leaders: subtle dots connecting track titles to right-aligned metadata */
+.dir__row:has(.dir__cell-detail) .dir__link {
+	display: flex;
+	overflow: hidden;
+}
+.dir__row:has(.dir__cell-detail) .dir__link::after {
+	content: "";
+	flex: 1;
+	margin-left: 1em;
+	margin-bottom: 0.15em;
+	background-image: radial-gradient(circle, hsla(0, 0%, 100%, 0.07) 1px, transparent 1px);
+	background-size: 10px 3px; /* horizontal spacing, vertical size */
+	background-position: bottom;
+	background-repeat: repeat-x;
+}
 .dir__link:hover {
 	text-decoration: underline;
 }
