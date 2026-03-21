@@ -136,7 +136,7 @@ function displayResults(results: SearchResult[]): void {
 
     for (const result of results) {
         const resultElement = document.createElement("div");
-        resultElement.className = `${Class.SearchResult} ${Class.DirEntry}`;
+        resultElement.className = `${Class.SearchResult} ${Class.DirRow}`;
         resultElement.tabIndex = 0; // Make focusable
 
         const icon = document.createElement("i");

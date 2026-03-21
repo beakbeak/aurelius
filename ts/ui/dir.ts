@@ -3,6 +3,7 @@ import { DirInfo, dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "..
 import { ReplayGainMode, fetchTrackInfo } from "../core/track";
 import { Class } from "./class";
 import { closestAncestorWithClass } from "./dom";
+import { formatDuration, formatTrackArtist, formatTrackMeta, formatTrackTitle } from "./format";
 import { RemotePlaylist } from "../core/playlist";
 
 let player: Player;
@@ -26,7 +27,7 @@ export async function setupDirUi(inPlayer: Player) {
 
     const createList = () => {
         const out = document.createElement("ul");
-        out.classList.add(Class.DirListing, Class.Hidden);
+        out.classList.add(Class.DirList, Class.Hidden);
         return out;
     };
 
@@ -71,7 +72,7 @@ function populateSpecial(info?: DirInfo): void {
 
     specialList.innerHTML =
         //
-        `<li class="${Class.DirEntry}">
+        `<li class="${Class.DirRow}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">favorite_border</i>
             <a class="${Class.DirLink}" href="#">${favoritesText}</a>
         </li>`;
@@ -117,10 +118,10 @@ function isPlaying(element: HTMLAnchorElement): boolean {
 }
 
 function setPlayingClass(element: HTMLAnchorElement | undefined): void {
-    lastPlaying?.classList.remove(Class.DirEntry_Playing);
+    lastPlaying?.classList.remove(Class.DirRow_Playing);
     lastPlaying =
-        element !== undefined ? closestAncestorWithClass(element, Class.DirEntry) : undefined;
-    lastPlaying?.classList.add(Class.DirEntry_Playing);
+        element !== undefined ? closestAncestorWithClass(element, Class.DirRow) : undefined;
+    lastPlaying?.classList.add(Class.DirRow_Playing);
 }
 
 async function loadDirFromPageUrl(): Promise<void> {
@@ -199,14 +200,14 @@ function activateDirLinks(list: HTMLElement): void {
 function populateNavigation(info: DirInfo): void {
     navigationList.innerHTML =
         //
-        `<li class="${Class.DirEntry}">
+        `<li class="${Class.DirRow}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">vertical_align_top</i>
             <a class="${Class.DirLink}"
                 href="/media/tree/?dir=${encodeURIComponent(info.topLevel)}"
                 data-url="${info.topLevel}"
             >Top level</a>
         </li>
-        <li class="${Class.DirEntry}">
+        <li class="${Class.DirRow}">
             <i class="${Class.DirIcon} ${Class.MaterialIcons}">arrow_back</i>
             <a class="${Class.DirLink}"
                 href="/media/tree/?dir=${encodeURIComponent(info.parent)}"
@@ -222,7 +223,7 @@ function populateDirs(info: DirInfo): void {
     for (const dir of info.dirs) {
         html +=
             //
-            `<li class="${Class.DirEntry}">
+            `<li class="${Class.DirRow}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">folder_open</i>
                 <a class="${Class.DirLink}"
                     href="/media/tree/?dir=${encodeURIComponent(dir.url)}"
@@ -247,7 +248,7 @@ function populatePlaylists(info: DirInfo): void {
     for (const playlist of info.playlists) {
         html +=
             //
-            `<li class="${Class.DirEntry}">
+            `<li class="${Class.DirRow}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">playlist_play</i>
                 <a class="${Class.DirLink}" href="#" data-url="${playlist.url}">${playlist.name}</a>
                 <a class="${Class.DirLink} ${Class.DirLink_Aux}" href="#" data-url="${playlist.url}">random</a>
@@ -288,25 +289,37 @@ function populateTracks(info: DirInfo): void {
     }
 
     let html = ``;
-    for (const track of info.tracks) {
+    for (let i = 0; i < info.tracks.length; i++) {
+        const track = info.tracks[i];
         const iconName = track.favorite ? "favorite_border" : "music_note";
         html +=
             //
-            `<li class="${Class.DirEntry}">
+            `<li class="${Class.DirRow}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">${iconName}</i>
                 <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}"
                 >play_arrow</i>
+                <span class="${Class.DirCellNum}">${i + 1}</span>
                 <a class="${Class.DirLink}"
                     href="/media/tree/?play=${encodeURIComponent(track.url)}"
                     data-url="${track.url}"
-                >${track.name}</a>
+                ></a>
+                <span class="${Class.DirCellDuration}"></span>
+                <span class="${Class.DirCellArtist}"></span>
+                <span class="${Class.DirCellDetail}"></span>
             </li>`;
     }
     trackList.innerHTML = html;
 
-    const links = trackList.getElementsByTagName("a");
-    for (let i = 0; i < links.length; ++i) {
-        const link = links[i];
+    const rows = trackList.querySelectorAll(`.${Class.DirRow}`);
+    for (let i = 0; i < rows.length; ++i) {
+        const row = rows[i];
+        const track = info.tracks[i];
+        const link = row.querySelector(`.${Class.DirLink}`) as HTMLAnchorElement;
+
+        link.textContent = formatTrackTitle(track);
+        row.querySelector(`.${Class.DirCellDuration}`)!.textContent = formatDuration(track.duration);
+        row.querySelector(`.${Class.DirCellArtist}`)!.textContent = formatTrackArtist(track);
+        row.querySelector(`.${Class.DirCellDetail}`)!.textContent = formatTrackMeta(track);
 
         if (isPlaying(link)) {
             setPlayingClass(link);

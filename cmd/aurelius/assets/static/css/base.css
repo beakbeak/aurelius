@@ -4,10 +4,14 @@ html {
 }
 
 body {
-	background: fixed url("/static/img/bg.svgz"),
+	background:
+		fixed url("/static/img/bg.svgz"),
 		fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
 	color: white;
-	font-family: segoe ui, roboto, sans-serif;
+	font-family:
+		segoe ui,
+		roboto,
+		sans-serif;
 }
 
 .hidden {
@@ -295,12 +299,12 @@ body {
 
 /* .dir {} */
 
-.dir__listing {
+.dir__list {
 	list-style: none;
 	padding: 0;
 }
 
-.dir__entry > * {
+.dir__row > * {
 	vertical-align: middle;
 }
 
@@ -327,14 +331,76 @@ body {
 	font-style: italic;
 }
 
-.dir__entry--playing .dir__link {
+.dir__row--playing .dir__link {
 	color: white;
 }
-.dir__entry--playing .dir__icon {
+.dir__row--playing .dir__icon {
 	display: none;
 }
-.dir__entry--playing .dir__icon--playing {
+.dir__row--playing .dir__icon--playing {
 	display: inline-block;
+}
+
+.dir__list:has(.dir__cell-detail) {
+	display: grid;
+	grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+	column-gap: 0.75em;
+}
+.dir__list > .dir__row:has(.dir__cell-detail) {
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
+	align-items: center;
+}
+.dir__cell-num {
+	white-space: nowrap;
+	color: hsl(0, 0%, 50%);
+}
+.dir__cell-duration {
+	white-space: nowrap;
+	color: hsl(0, 0%, 50%);
+	font-size: 0.85em;
+}
+.dir__cell-artist {
+	color: hsl(0, 0%, 50%);
+	font-size: 0.85em;
+	font-style: italic;
+}
+.dir__cell-detail {
+	white-space: nowrap;
+	color: hsl(0, 0%, 50%);
+	font-size: 0.85em;
+}
+.dir__row--playing .dir__cell-num,
+.dir__row--playing .dir__cell-duration,
+.dir__row--playing .dir__cell-artist,
+.dir__row--playing .dir__cell-detail {
+	color: white;
+}
+
+@media (max-width: 959px) {
+	.dir__list:has(.dir__cell-detail) {
+		grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+	}
+	.dir__cell-detail {
+		display: none;
+	}
+	.dir__row--playing .dir__cell-detail {
+		display: block;
+		grid-column: 3 / -1;
+	}
+}
+
+@media (max-width: 530px) {
+	.dir__list:has(.dir__cell-detail) {
+		grid-template-columns: auto auto minmax(0, 1fr) auto;
+	}
+	.dir__cell-artist {
+		grid-column: 3 / -1;
+	}
+	.dir__row--playing .dir__cell-detail {
+		grid-column: 3 / -1;
+	}
 }
 
 /* Side menu ******************************************************************/

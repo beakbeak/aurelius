@@ -2,6 +2,7 @@ import { Player } from "../core/player";
 import { loadDir } from "./dir";
 import { onDrag, toggleClass } from "./dom";
 import { Class } from "./class";
+import { formatDuration } from "./format";
 import { showModalDialog } from "./modal";
 import { getSettings } from "./settings";
 
@@ -324,16 +325,6 @@ function updateStatus(): void {
     }
 }
 
-function secondsToString(totalSeconds: number): string {
-    const minutes = (totalSeconds / 60) | 0;
-    const seconds = (totalSeconds - minutes * 60) | 0;
-    if (seconds < 10) {
-        return `${minutes}:0${seconds}`;
-    } else {
-        return `${minutes}:${seconds}`;
-    }
-}
-
 function updateTime(): void {
     const track = player.track;
 
@@ -346,8 +337,8 @@ function updateTime(): void {
     const duration = track.info.duration;
     const currentTime =
         _seekSliderPosition !== undefined ? _seekSliderPosition * duration : track.currentTime();
-    const currentTimeStr = secondsToString(currentTime);
-    const durationStr = secondsToString(duration);
+    const currentTimeStr = formatDuration(currentTime);
+    const durationStr = formatDuration(duration);
 
     durationText.textContent = `${currentTimeStr} / ${durationStr}`;
 
