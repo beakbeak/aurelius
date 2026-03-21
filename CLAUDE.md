@@ -30,7 +30,6 @@ go build -tags sqlite_fts5
 - Go lint: `golangci-lint run`
 - Go tests: `go test -tags sqlite_fts5 -asan ./...`
 - Update baselines for Go tests (**ONLY IF** baselines are expected to change): `UPDATE_BASELINES=1 go test -tags sqlite_fts5 -asan ./...`
-  - If there are test failures due to baseline differences, this command will still fail but update `baseline.json`. The next normal test run, without `UPDATE_BASELINES=1`, should pass.
 - TypeScript tests: `npm run test`
 
 # Architecture
