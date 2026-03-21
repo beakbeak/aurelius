@@ -155,6 +155,7 @@ export async function loadDir(url: string, addHistory = true): Promise<DirInfo> 
     }
     currentDirInfo = info;
     setDocumentTitleFromPath(info.path);
+    window.scrollTo(0, 0);
     populateSpecial(info);
     populateNavigation(info);
     populateDirs(info);
