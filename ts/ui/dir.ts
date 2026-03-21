@@ -293,13 +293,14 @@ function populateTracks(info: DirInfo): void {
     for (let i = 0; i < info.tracks.length; i++) {
         const track = info.tracks[i];
         const iconName = track.favorite ? "favorite_border" : "music_note";
+        const displayNum = i + 1;
         html +=
             //
             `<li class="${Class.DirRow}">
                 <i class="${Class.DirIcon} ${Class.MaterialIcons}">${iconName}</i>
                 <i class="${Class.DirIcon} ${Class.DirIcon_Playing} ${Class.MaterialIcons}"
                 >play_arrow</i>
-                <span class="${Class.DirCellNum}">${i + 1}</span>
+                <span class="${Class.DirCellNum}">${displayNum}</span>
                 <a class="${Class.DirLink}"
                     href="/media/tree/?play=${encodeURIComponent(track.url)}"
                     data-url="${track.url}"
@@ -312,13 +313,23 @@ function populateTracks(info: DirInfo): void {
     trackList.innerHTML = html;
 
     const rows = trackList.querySelectorAll(`.${Class.DirRow}`);
+    let currentDisc: string | undefined;
     for (let i = 0; i < rows.length; ++i) {
         const row = rows[i];
         const track = info.tracks[i];
+        const disc = track.tags["disc"];
+        if (disc && disc !== currentDisc) {
+            currentDisc = disc;
+            const header = document.createElement("li");
+            header.classList.add(Class.DirDiscHeader);
+            header.textContent = `Disc ${disc}`;
+            trackList.insertBefore(header, row);
+        }
         const link = row.querySelector(`.${Class.DirLink}`) as HTMLAnchorElement;
-
         link.textContent = formatTrackTitle(track);
-        row.querySelector(`.${Class.DirCellDuration}`)!.textContent = formatDuration(track.duration);
+        row.querySelector(`.${Class.DirCellDuration}`)!.textContent = formatDuration(
+            track.duration,
+        );
         row.querySelector(`.${Class.DirCellArtist}`)!.textContent = formatTrackArtist(track);
         row.querySelector(`.${Class.DirCellDetail}`)!.textContent = formatTrackMeta(track);
 

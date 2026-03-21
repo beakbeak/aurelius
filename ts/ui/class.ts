@@ -11,6 +11,7 @@ export const enum Class {
     DirCellDetail = "dir__cell-detail",
     DirCellDuration = "dir__cell-duration",
     DirCellNum = "dir__cell-num",
+    DirDiscHeader = "dir__disc-header",
     DirList = "dir__list",
     DirTrackList = "dir__track-list",
     Hidden = "hidden",

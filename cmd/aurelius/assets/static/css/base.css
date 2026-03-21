@@ -388,6 +388,13 @@ body {
 	color: hsl(0, 0%, 50%);
 	font-size: 0.85em;
 }
+.dir__disc-header {
+	grid-column: 1 / -1;
+	color: hsl(0, 0%, 50%);
+	font-size: 0.85em;
+	font-style: italic;
+	padding: 0.5em 0 0.25em;
+}
 .dir__row--playing .dir__cell-num,
 .dir__row--playing .dir__cell-duration,
 .dir__row--playing .dir__cell-artist,
