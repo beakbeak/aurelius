@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/beakbeak/aurelius/pkg/fragment"
 )
 
 func (ml *Library) handleDirInfo(
@@ -88,10 +87,8 @@ func (ml *Library) handleDirInfo(
 	// Build set of fragment source files to hide them from track listing.
 	fragmentSourceFiles := make(map[string]bool)
 	for _, t := range tracks {
-		if fragment.IsFragment(t.Name) {
-			if sourceFile := fragment.GetSourceFile(t.Name); sourceFile != "" {
-				fragmentSourceFiles[sourceFile] = true
-			}
+		if t.Metadata.Fragment != nil {
+			fragmentSourceFiles[t.Metadata.Fragment.SourceFile] = true
 		}
 	}
 

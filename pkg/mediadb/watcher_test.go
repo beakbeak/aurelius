@@ -606,6 +606,228 @@ func TestWatcherMoveFileOutOfDirectory(t *testing.T) {
 	}
 }
 
+// setupWatcherTestWithFragments creates a temp directory with a test audio file
+// and an aurelius.yaml defining fragments, runs a full scan, and starts a watcher.
+func setupWatcherTestWithFragments(t *testing.T) (w *Watcher, db *DB, scanner *Scanner, tmpDir string, batchApplied <-chan struct{}) {
+	t.Helper()
+
+	tmpDir = t.TempDir()
+	mediaDir := testMediaPath()
+
+	// Copy a test audio file into the temp dir.
+	srcData, err := os.ReadFile(filepath.Join(mediaDir, "test.ogg"))
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "test.ogg"), srcData, 0o644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	// Write an aurelius.yaml with one fragment.
+	yamlContent := `fragments:
+  - source: test.ogg
+    start: 1s
+    end: 3s
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "aurelius.yaml"), []byte(yamlContent), 0o644); err != nil {
+		t.Fatalf("failed to write aurelius.yaml: %v", err)
+	}
+
+	// Open DB in temp dir.
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err = Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open DB: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	scanner = NewScanner(db, tmpDir)
+	if err := scanner.FullScan(); err != nil {
+		t.Fatalf("full scan failed: %v", err)
+	}
+
+	applied := make(chan struct{}, 8)
+	watcher, err := NewWatcher(scanner, tmpDir, WatcherConfig{
+		QuietPeriod: 500 * time.Millisecond,
+		OnBatchApplied: func() {
+			applied <- struct{}{}
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to create watcher: %v", err)
+	}
+	t.Cleanup(func() { watcher.Close() })
+
+	return watcher, db, scanner, tmpDir, applied
+}
+
+func TestWatcherFragmentDirConfigModify(t *testing.T) {
+	_, db, _, tmpDir, batchApplied := setupWatcherTestWithFragments(t)
+
+	// Verify the fragment exists after initial scan.
+	fragName := MakeFragmentName("test.ogg", 1)
+	track, err := db.GetTrack(fragName)
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track == nil {
+		t.Fatalf("expected fragment %q to be in DB after initial scan", fragName)
+	}
+	if track.Metadata.Fragment == nil {
+		t.Fatal("expected track to have fragment metadata")
+	}
+	originalStart := track.Metadata.Fragment.Start
+
+	// Modify aurelius.yaml to change the fragment start time.
+	yamlContent := `fragments:
+  - source: test.ogg
+    start: 2s
+    end: 4s
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "aurelius.yaml"), []byte(yamlContent), 0o644); err != nil {
+		t.Fatalf("failed to write aurelius.yaml: %v", err)
+	}
+	// Ensure mtime is later than the initial scan so the watcher detects a change.
+	futureTime := time.Unix(track.Mtime+2, 0)
+	if err := os.Chtimes(filepath.Join(tmpDir, "aurelius.yaml"), futureTime, futureTime); err != nil {
+		t.Fatalf("failed to set mtime: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Fragment should be updated with new start time.
+	track, err = db.GetTrack(fragName)
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track == nil {
+		t.Fatalf("expected fragment %q to still be in DB after config modify", fragName)
+	}
+	if track.Metadata.Fragment == nil {
+		t.Fatal("expected track to have fragment metadata after update")
+	}
+	if track.Metadata.Fragment.Start == originalStart {
+		t.Errorf("expected fragment start to change from %v", originalStart)
+	}
+}
+
+func TestWatcherFragmentAddRemove(t *testing.T) {
+	_, db, _, tmpDir, batchApplied := setupWatcherTestWithFragments(t)
+
+	// Verify initial state: one fragment.
+	frag1Name := MakeFragmentName("test.ogg", 1)
+	track, err := db.GetTrack(frag1Name)
+	if err != nil || track == nil {
+		t.Fatalf("expected fragment %q in DB after initial scan", frag1Name)
+	}
+
+	// Add a second fragment to aurelius.yaml.
+	yamlContent := `fragments:
+  - source: test.ogg
+    start: 1s
+    end: 3s
+  - source: test.ogg
+    start: 0s
+    end: 2s
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "aurelius.yaml"), []byte(yamlContent), 0o644); err != nil {
+		t.Fatalf("failed to write aurelius.yaml: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Both fragments should exist.
+	frag2Name := MakeFragmentName("test.ogg", 2)
+	track, err = db.GetTrack(frag1Name)
+	if err != nil || track == nil {
+		t.Fatalf("expected fragment %q to still be in DB", frag1Name)
+	}
+	track, err = db.GetTrack(frag2Name)
+	if err != nil {
+		t.Fatalf("GetTrack error: %v", err)
+	}
+	if track == nil {
+		t.Fatalf("expected fragment %q to be added to DB", frag2Name)
+	}
+	if track.Metadata.Fragment == nil {
+		t.Fatal("expected new fragment to have fragment metadata")
+	}
+
+	// Remove all fragments from the config.
+	yamlContent = `fragments: []
+`
+	if err := os.WriteFile(filepath.Join(tmpDir, "aurelius.yaml"), []byte(yamlContent), 0o644); err != nil {
+		t.Fatalf("failed to write aurelius.yaml: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Both fragments should be soft-deleted (not visible via GetTrack,
+	// but still present in tracks_with_deletes).
+	for _, name := range []string{frag1Name, frag2Name} {
+		track, err = db.GetTrack(name)
+		if err != nil {
+			t.Fatalf("GetTrack(%q) error: %v", name, err)
+		}
+		if track != nil {
+			t.Fatalf("expected fragment %q to not be visible after removal", name)
+		}
+
+		var deleted int
+		err = db.db.QueryRow(
+			`SELECT deleted FROM tracks_with_deletes WHERE dir = '' AND name = ?`, name,
+		).Scan(&deleted)
+		if err != nil {
+			t.Fatalf("expected fragment %q to still exist in tracks_with_deletes: %v", name, err)
+		}
+		if deleted != 1 {
+			t.Errorf("expected fragment %q to be soft-deleted, got deleted=%d", name, deleted)
+		}
+	}
+
+	// Source track should still exist and not be soft-deleted.
+	track, err = db.GetTrack("test.ogg")
+	if err != nil || track == nil {
+		t.Fatal("expected source track test.ogg to still be in DB")
+	}
+}
+
+func TestWatcherFragmentSourceFileModify(t *testing.T) {
+	_, db, _, tmpDir, batchApplied := setupWatcherTestWithFragments(t)
+
+	// Get original fragment state.
+	fragName := MakeFragmentName("test.ogg", 1)
+	original, err := db.GetTrack(fragName)
+	if err != nil || original == nil {
+		t.Fatalf("expected fragment %q in DB after initial scan", fragName)
+	}
+	originalMtime := original.Mtime
+
+	// Modify the source file (overwrite with same content but newer mtime).
+	srcData, err := os.ReadFile(filepath.Join(tmpDir, "test.ogg"))
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "test.ogg"), srcData, 0o644); err != nil {
+		t.Fatalf("failed to overwrite file: %v", err)
+	}
+	futureTime := time.Unix(originalMtime+2, 0)
+	if err := os.Chtimes(filepath.Join(tmpDir, "test.ogg"), futureTime, futureTime); err != nil {
+		t.Fatalf("failed to set mtime: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Fragment should be updated with new mtime (max of source and config).
+	updated, err := db.GetTrack(fragName)
+	if err != nil || updated == nil {
+		t.Fatalf("expected fragment %q to still be in DB after source modify", fragName)
+	}
+	if updated.Mtime <= originalMtime {
+		t.Errorf("expected fragment mtime to increase: original=%d, updated=%d", originalMtime, updated.Mtime)
+	}
+}
+
 func TestWatcherBatchCallback(t *testing.T) {
 	_, _, _, tmpDir, batchApplied := setupWatcherTest(t)
 

@@ -1,4 +1,0 @@
-start 2s 
-  
-artist Foo and the Bars
-title Baz All Night

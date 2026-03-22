@@ -11,14 +11,14 @@ import (
 type FileType int
 
 const (
-	FileTypeIgnored  FileType = iota
+	FileTypeIgnored FileType = iota
 	FileTypePlaylist
 	FileTypeTrack
 	FileTypeImage
+	FileTypeDirConfig
 )
 
 var (
-	reFragment = regexp.MustCompile(`(?i)\.[0-9]+\.txt$`)
 	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
 	reImage    = regexp.MustCompile(`(?i)\.(jpg|jpeg|png|gif)$`)
 	reIgnore   = regexp.MustCompile(`(?i)\.(txt|nfo)$`)
@@ -28,8 +28,8 @@ var (
 // GetFileType determines a file's type.
 func GetFileType(filename string) FileType {
 	switch {
-	case reFragment.MatchString(filename):
-		return FileTypeTrack
+	case filename == dirConfigName:
+		return FileTypeDirConfig
 	case rePlaylist.MatchString(filename):
 		return FileTypePlaylist
 	case reImage.MatchString(filename):

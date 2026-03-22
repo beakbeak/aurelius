@@ -2,7 +2,9 @@ package mediadb
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -90,6 +92,30 @@ type ScanResult struct {
 	RemovedPlaylists []M3UPlaylist
 }
 
+// resolvedFragment holds the pre-resolved data for a fragment entry, used
+// during metadata collection to construct the fragment audio source.
+type resolvedFragment struct {
+	SourceFSPath string
+	SourceFile   string // source audio filename without dir
+	Config       *FragmentConfig
+	Index        int    // 1-based fragment index for this source file.
+	hash         []byte // combined hash of config + source + index.
+}
+
+// WalkResult holds the filesystem state collected by walkFilesystem and
+// enriched by expandFragments.
+type WalkResult struct {
+	Files      map[string]FSEntry // audio tracks keyed by library path
+	Dirs       map[string]Dir     // directories keyed by library path
+	Playlists  map[string]FSEntry // M3U playlists keyed by library path
+	DirConfigs map[string]FSEntry // aurelius.yaml files keyed by directory
+
+	// Fragments maps library paths (dir/syntheticName) to their resolved
+	// fragment definitions. Populated during expandFragments and consumed
+	// during collectMetadata.
+	Fragments map[string]resolvedFragment
+}
+
 // Scanner coordinates filesystem scanning and database reconciliation.
 type Scanner struct {
 	db       *DB
@@ -114,19 +140,23 @@ func (s *Scanner) FullScan() error {
 
 	// Phase 1: Walk filesystem.
 	slog.Info("walking filesystem")
-	fsFiles, fsDirs, fsPlaylists, err := s.walkFilesystem()
+	wr, err := s.walkFilesystem()
 	if err != nil {
 		return fmt.Errorf("filesystem walk failed: %w", err)
 	}
 	slog.Info("filesystem walk complete",
-		"files", len(fsFiles),
-		"dirs", len(fsDirs),
-		"playlists", len(fsPlaylists),
+		"files", len(wr.Files),
+		"dirs", len(wr.Dirs),
+		"playlists", len(wr.Playlists),
+		"dirConfigs", len(wr.DirConfigs),
 	)
+
+	// Phase 1b: Expand fragments from aurelius.yaml files.
+	s.expandFragments(wr)
 
 	// Phase 2: Diff and detect moves.
 	slog.Info("diffing against database")
-	changes, err := s.diffAgainstDB(fsFiles, fsDirs, fsPlaylists)
+	changes, err := s.diffAgainstDB(wr)
 	if err != nil {
 		return fmt.Errorf("diff failed: %w", err)
 	}
@@ -149,14 +179,14 @@ func (s *Scanner) FullScan() error {
 
 	// Phase 3: Collect metadata.
 	slog.Info("collecting metadata")
-	result, err := s.collectMetadata(changes)
+	result, err := s.collectMetadata(wr, changes)
 	if err != nil {
 		return fmt.Errorf("metadata collection failed: %w", err)
 	}
 
 	// Phase 4: Apply.
 	slog.Info("applying changes to database")
-	if err := s.Apply(result); err != nil {
+	if err := s.Apply(wr, result); err != nil {
 		return fmt.Errorf("apply failed: %w", err)
 	}
 
@@ -164,11 +194,15 @@ func (s *Scanner) FullScan() error {
 	return nil
 }
 
-// walkFilesystem walks the media library root and returns maps of files, directories, and playlists.
-func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, map[string]FSEntry, error) {
-	fsFiles := make(map[string]FSEntry)
-	fsDirs := make(map[string]Dir)
-	fsPlaylists := make(map[string]FSEntry)
+// walkFilesystem walks the media library root and returns a WalkResult.
+func (s *Scanner) walkFilesystem() (*WalkResult, error) {
+	wr := &WalkResult{
+		Files:      make(map[string]FSEntry),
+		Dirs:       make(map[string]Dir),
+		Playlists:  make(map[string]FSEntry),
+		DirConfigs: make(map[string]FSEntry),
+		Fragments:  make(map[string]resolvedFragment),
+	}
 
 	err := filepath.WalkDir(s.rootPath, func(fsPath string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -198,7 +232,7 @@ func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, map[stri
 			if libraryPath == "" {
 				return nil
 			}
-			fsDirs[libraryPath] = Dir{Path: libraryPath, Parent: CleanLibraryPath(path.Dir(libraryPath))}
+			wr.Dirs[libraryPath] = Dir{Path: libraryPath, Parent: CleanLibraryPath(path.Dir(libraryPath))}
 			return nil
 		}
 
@@ -220,30 +254,118 @@ func (s *Scanner) walkFilesystem() (map[string]FSEntry, map[string]Dir, map[stri
 
 		switch GetFileType(name) {
 		case FileTypeTrack:
-			fsFiles[libraryPath] = entry
+			wr.Files[libraryPath] = entry
 		case FileTypePlaylist:
-			fsPlaylists[libraryPath] = entry
+			wr.Playlists[libraryPath] = entry
+		case FileTypeDirConfig:
+			wr.DirConfigs[entry.Dir] = entry
 		case FileTypeImage, FileTypeIgnored:
 		}
 
 		return nil
 	})
 
-	return fsFiles, fsDirs, fsPlaylists, err
+	return wr, err
+}
+
+// expandFragments parses aurelius.yaml files and adds synthetic fragment
+// entries to wr.Files. It also populates wr.Fragments for use during
+// metadata collection.
+func (s *Scanner) expandFragments(wr *WalkResult) {
+	for dir, configEntry := range wr.DirConfigs {
+		configPath := s.fsPath(dir, dirConfigName)
+		config, err := LoadDirConfig(configPath)
+		if err != nil {
+			slog.Warn("failed to parse dir config", "path", configPath, "error", err)
+			continue
+		}
+		if len(config.Fragments) == 0 {
+			continue
+		}
+
+		// Pre-compute the config file hash for fragment hashing.
+		configHash, err := computeFullHash(configPath)
+		if err != nil {
+			slog.Warn("failed to hash dir config", "path", configPath, "error", err)
+			continue
+		}
+
+		// Track per-source fragment numbering.
+		sourceFragmentCount := make(map[string]int)
+
+		for i := range config.Fragments {
+			def := &config.Fragments[i]
+			sourceFile := def.Source
+			if _, ok := wr.Files[JoinLibraryPath(dir, sourceFile)]; !ok {
+				slog.Warn("fragment source file not found",
+					"dir", dir, "source", sourceFile)
+				continue
+			}
+
+			sourceFragmentCount[sourceFile]++
+			fragIdx := sourceFragmentCount[sourceFile]
+			syntheticName := MakeFragmentName(sourceFile, fragIdx)
+			libraryPath := JoinLibraryPath(dir, syntheticName)
+
+			// Compute mtime as max(yaml mtime, source mtime).
+			sourcePath := JoinLibraryPath(dir, sourceFile)
+			mtime := configEntry.Mtime
+			if sourceEntry, ok := wr.Files[sourcePath]; ok && sourceEntry.Mtime > mtime {
+				mtime = sourceEntry.Mtime
+			}
+
+			// Compute a combined hash for move detection.
+			sourceHash, err := computePartialHash(s.fsPath(dir, sourceFile))
+			if err != nil {
+				slog.Warn("failed to hash fragment source", "dir", dir, "name", sourceFile, "error", err)
+				continue
+			}
+			fragHash := computeFragmentHash(configHash, sourceHash, fragIdx)
+
+			wr.Files[libraryPath] = FSEntry{
+				Dir:   dir,
+				Name:  syntheticName,
+				Mtime: mtime,
+			}
+
+			wr.Fragments[libraryPath] = resolvedFragment{
+				SourceFSPath: s.fsPath(dir, sourceFile),
+				SourceFile:   sourceFile,
+				Config:       def,
+				Index:        fragIdx,
+				hash:         fragHash,
+			}
+		}
+	}
+
+	if len(wr.Fragments) > 0 {
+		slog.Info("expanded fragments from dir configs", "count", len(wr.Fragments))
+	}
+}
+
+// computeFragmentHash computes a hash for a fragment entry by combining the
+// config file hash, source file hash, and fragment index.
+func computeFragmentHash(configHash, sourceHash []byte, fragmentIndex int) []byte {
+	h := sha256.New()
+	h.Write(configHash)
+	h.Write(sourceHash)
+	_ = binary.Write(h, binary.LittleEndian, int64(fragmentIndex))
+	result := h.Sum(nil)
+	return result
 }
 
 // diffAgainstDB compares filesystem state against the database.
-func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Dir, fsPlaylists map[string]FSEntry) (*ChangeSet, error) {
+func (s *Scanner) diffAgainstDB(wr *WalkResult) (*ChangeSet, error) {
 	changes := &ChangeSet{}
 
 	// Compare tracks.
 	err := s.db.ForEachTrack(func(t *Track) error {
 		key := JoinLibraryPath(t.Dir, t.Name)
-		if fsEntry, ok := fsFiles[key]; ok {
+		if fsEntry, ok := wr.Files[key]; ok {
 			if fsEntry.Mtime != t.Mtime {
 				changes.Changed = append(changes.Changed, fsEntry)
 			}
-			delete(fsFiles, key)
+			delete(wr.Files, key)
 		} else {
 			changes.Removed = append(changes.Removed, *t)
 		}
@@ -253,15 +375,22 @@ func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Di
 		return nil, err
 	}
 
-	// Remaining fsFiles are new.
-	if len(fsFiles) > 0 {
-		slog.Info("hashing new files", "count", len(fsFiles))
+	// Remaining files are new.
+	if len(wr.Files) > 0 {
+		slog.Info("hashing new files", "count", len(wr.Files))
 	}
-	for _, entry := range fsFiles {
-		hash, err := computePartialHash(s.fsPath(entry.Dir, entry.Name))
-		if err != nil {
-			slog.Warn("failed to hash file", "dir", entry.Dir, "name", entry.Name, "error", err)
-			continue
+	for key, entry := range wr.Files {
+		var hash []byte
+		if rf, ok := wr.Fragments[key]; ok {
+			// Use pre-computed hash for fragment entries.
+			hash = rf.hash
+		} else {
+			var err error
+			hash, err = computePartialHash(s.fsPath(entry.Dir, entry.Name))
+			if err != nil {
+				slog.Warn("failed to hash file", "dir", entry.Dir, "name", entry.Name, "error", err)
+				continue
+			}
 		}
 		changes.Added = append(changes.Added, HashedFSEntry{
 			FSEntry: entry,
@@ -274,7 +403,7 @@ func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Di
 	if err != nil {
 		return nil, err
 	}
-	for dirPath, dir := range fsDirs {
+	for dirPath, dir := range wr.Dirs {
 		if _, ok := dbDirs[dirPath]; !ok {
 			changes.AddedDirs = append(changes.AddedDirs, dir)
 		}
@@ -287,11 +416,11 @@ func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Di
 	// Compare playlists.
 	err = s.db.ForEachM3UPlaylist(func(p *M3UPlaylist) error {
 		key := JoinLibraryPath(p.Dir, p.Name)
-		if fsEntry, ok := fsPlaylists[key]; ok {
+		if fsEntry, ok := wr.Playlists[key]; ok {
 			if fsEntry.Mtime != p.Mtime {
 				changes.ChangedPlaylists = append(changes.ChangedPlaylists, fsEntry)
 			}
-			delete(fsPlaylists, key)
+			delete(wr.Playlists, key)
 		} else {
 			changes.RemovedPlaylists = append(changes.RemovedPlaylists, *p)
 		}
@@ -301,8 +430,8 @@ func (s *Scanner) diffAgainstDB(fsFiles map[string]FSEntry, fsDirs map[string]Di
 		return nil, err
 	}
 
-	// Remaining fsPlaylists are new.
-	for _, entry := range fsPlaylists {
+	// Remaining playlists are new.
+	for _, entry := range wr.Playlists {
 		changes.AddedPlaylists = append(changes.AddedPlaylists, entry)
 	}
 
@@ -426,7 +555,7 @@ func (s *Scanner) detectRevivals(changes *ChangeSet) error {
 }
 
 // collectMetadata reads metadata from files for added and changed entries.
-func (s *Scanner) collectMetadata(changes *ChangeSet) (*ScanResult, error) {
+func (s *Scanner) collectMetadata(wr *WalkResult, changes *ChangeSet) (*ScanResult, error) {
 	result := &ScanResult{
 		RemovedTracks: changes.Removed,
 		Moves:         changes.Moves,
@@ -436,7 +565,7 @@ func (s *Scanner) collectMetadata(changes *ChangeSet) (*ScanResult, error) {
 
 	// Collect metadata for added tracks.
 	for _, entry := range changes.Added {
-		scanned, err := s.scanFile(entry.FSEntry, entry.Hash)
+		scanned, err := s.scanFile(wr, entry.FSEntry, entry.Hash)
 		if err != nil {
 			slog.Warn("failed to scan added file", "dir", entry.Dir, "name", entry.Name, "error", err)
 			continue
@@ -446,12 +575,19 @@ func (s *Scanner) collectMetadata(changes *ChangeSet) (*ScanResult, error) {
 
 	// Collect metadata for changed tracks (also recompute hash).
 	for _, entry := range changes.Changed {
-		hash, err := computePartialHash(s.fsPath(entry.Dir, entry.Name))
-		if err != nil {
-			slog.Warn("failed to hash changed file", "dir", entry.Dir, "name", entry.Name, "error", err)
-			continue
+		var hash []byte
+		key := JoinLibraryPath(entry.Dir, entry.Name)
+		if rf, ok := wr.Fragments[key]; ok {
+			hash = rf.hash
+		} else {
+			var err error
+			hash, err = computePartialHash(s.fsPath(entry.Dir, entry.Name))
+			if err != nil {
+				slog.Warn("failed to hash changed file", "dir", entry.Dir, "name", entry.Name, "error", err)
+				continue
+			}
 		}
-		scanned, err := s.scanFile(entry, hash)
+		scanned, err := s.scanFile(wr, entry, hash)
 		if err != nil {
 			slog.Warn("failed to scan changed file", "dir", entry.Dir, "name", entry.Name, "error", err)
 			continue
@@ -520,17 +656,53 @@ func resolvePlaylistTracks(playlistDir string, lines []string) []string {
 	return paths
 }
 
-// scanFile opens an audio file and extracts metadata.
-func (s *Scanner) scanFile(entry FSEntry, hash []byte) (*ScannedTrack, error) {
-	fsPath := s.fsPath(entry.Dir, entry.Name)
+// resolveTrackFSPath returns the filesystem path for a track. For fragment
+// entries, this returns the source audio file path.
+func (s *Scanner) resolveTrackFSPath(wr *WalkResult, dir, name string) string {
+	if wr != nil {
+		if rf, ok := wr.Fragments[JoinLibraryPath(dir, name)]; ok {
+			return rf.SourceFSPath
+		}
+	}
+	return s.fsPath(dir, name)
+}
 
-	src, err := newAudioSource(fsPath)
+// scanFile opens an audio file and extracts metadata.
+func (s *Scanner) scanFile(wr *WalkResult, entry FSEntry, hash []byte) (*ScannedTrack, error) {
+	libraryPath := JoinLibraryPath(entry.Dir, entry.Name)
+	rf, isFragment := wr.Fragments[libraryPath]
+
+	var src aurelib.Source
+	var err error
+	if isFragment {
+		src, err = fragment.New(rf.SourceFSPath, rf.Config.Start, rf.Config.End)
+	} else {
+		src, err = aurelib.NewFileSource(s.fsPath(entry.Dir, entry.Name))
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", fsPath, err)
+		return nil, fmt.Errorf("failed to open %s/%s: %w", entry.Dir, entry.Name, err)
 	}
 	defer src.Destroy()
 
 	tags := maputil.LowerCaseKeys(src.Tags())
+
+	// Apply fragment tag overrides.
+	if isFragment {
+		if rf.Config.Track != "" {
+			tags["track"] = rf.Config.Track
+		} else {
+			tags["track"] = fmt.Sprintf("%v.%v", tags["track"], rf.Index)
+		}
+		if rf.Config.Artist != "" {
+			tags["artist"] = rf.Config.Artist
+		}
+		if rf.Config.Title != "" {
+			tags["title"] = rf.Config.Title
+		}
+		if rf.Config.Album != "" {
+			tags["album"] = rf.Config.Album
+		}
+	}
 
 	streamInfo := src.StreamInfo()
 
@@ -540,6 +712,15 @@ func (s *Scanner) scanFile(entry FSEntry, hash []byte) (*ScannedTrack, error) {
 		BitRate:      src.BitRate(),
 		SampleRate:   streamInfo.SampleRate,
 		SampleFormat: streamInfo.SampleFormat(),
+	}
+
+	// Store fragment info in metadata.
+	if isFragment {
+		metadata.Fragment = &FragmentInfo{
+			SourceFile: rf.SourceFile,
+			Start:      rf.Config.Start.Seconds(),
+			End:        rf.Config.End.Seconds(),
+		}
 	}
 
 	// Collect all four ReplayGain combinations.
@@ -604,7 +785,7 @@ type trackImageWork struct {
 // Uses a two-phase approach: phase 1 inserts all image data (via a streaming
 // channel from workers), phase 2 creates track_images links (after all images
 // are guaranteed to exist in the DB).
-func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWork) error {
+func (s *Scanner) processAndInsertTrackImages(wr *WalkResult, tx *sql.Tx, tracks []trackImageWork) error {
 	if len(tracks) == 0 {
 		return nil
 	}
@@ -711,7 +892,8 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 			defer wg.Done()
 			for group := range work {
 				for _, item := range group.tracks {
-					hashes := collectAndProcessTrackImages(s.fsPath(item.dir, item.name), cache, imageCh)
+					trackPath := s.resolveTrackFSPath(wr, item.dir, item.name)
+					hashes := collectAndProcessTrackImages(trackPath, cache, imageCh)
 					mappingsMu.Lock()
 					mappings = append(mappings, trackImageMapping{trackID: item.trackID, hashes: hashes})
 					mappingsMu.Unlock()
@@ -757,16 +939,8 @@ func (s *Scanner) processAndInsertTrackImages(tx *sql.Tx, tracks []trackImageWor
 	return nil
 }
 
-// newAudioSource opens an audio file as an aurelib.Source.
-func newAudioSource(fsPath string) (aurelib.Source, error) {
-	if fragment.IsFragment(fsPath) {
-		return fragment.New(fsPath)
-	}
-	return aurelib.NewFileSource(fsPath)
-}
-
 // Apply writes a ScanResult to the database in a single transaction.
-func (s *Scanner) Apply(result *ScanResult) error {
+func (s *Scanner) Apply(wr *WalkResult, result *ScanResult) error {
 	tx, err := s.db.db.Begin()
 	if err != nil {
 		return err
@@ -865,7 +1039,7 @@ func (s *Scanner) Apply(result *ScanResult) error {
 
 	// Process and insert images in parallel.
 	slog.Info("starting image processing", "tracks", len(imageWork))
-	if err := s.processAndInsertTrackImages(tx, imageWork); err != nil {
+	if err := s.processAndInsertTrackImages(wr, tx, imageWork); err != nil {
 		return err
 	}
 

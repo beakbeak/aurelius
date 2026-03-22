@@ -47,3 +47,18 @@ func computePartialHash(path string) ([]byte, error) {
 
 	return h.Sum(nil), nil
 }
+
+// computeFullHash computes a SHA-256 hash of the entire file contents.
+func computeFullHash(path string) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return nil, fmt.Errorf("failed to hash file: %w", err)
+	}
+	return h.Sum(nil), nil
+}

@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/vharitonsky/iniflags v0.0.0-20180513140207-a33cd0b5f3de
+	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/image v0.37.0
 )
 

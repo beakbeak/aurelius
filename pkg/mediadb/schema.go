@@ -33,14 +33,23 @@ type ReplayGain struct {
 	AlbumNoclip float64 `json:"albumNoclip"`
 }
 
+// FragmentInfo holds the resolved fragment definition for a track that
+// represents a subsection of another audio file.
+type FragmentInfo struct {
+	SourceFile string  `json:"sourceFile"` // source audio filename (not path)
+	Start      float64 `json:"start"`      // start time in seconds
+	End        float64 `json:"end"`        // end time in seconds (0 = end of file)
+}
+
 // TrackMetadata holds audio properties stored in the metadata JSON column.
 type TrackMetadata struct {
-	Duration     float64     `json:"duration"`
-	Codec        string      `json:"codec,omitempty"`
-	BitRate      int         `json:"bitRate"`
-	SampleRate   uint        `json:"sampleRate"`
-	SampleFormat string      `json:"sampleFormat"`
-	ReplayGain   *ReplayGain `json:"replayGain,omitempty"`
+	Duration     float64       `json:"duration"`
+	Codec        string        `json:"codec,omitempty"`
+	BitRate      int           `json:"bitRate"`
+	SampleRate   uint          `json:"sampleRate"`
+	SampleFormat string        `json:"sampleFormat"`
+	ReplayGain   *ReplayGain   `json:"replayGain,omitempty"`
+	Fragment     *FragmentInfo `json:"fragment,omitempty"`
 }
 
 // ImageInfo describes an image associated with a track. The binary data is

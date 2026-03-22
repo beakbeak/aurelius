@@ -1,0 +1,10 @@
+fragments:
+  - source: test.flac
+    start: 2s
+    end: 5s
+  - source: test.flac
+    start: 2s
+    artist: Foo and the Bars
+    title: "Baz All Night"
+  - source: test.flac
+    end: 5s

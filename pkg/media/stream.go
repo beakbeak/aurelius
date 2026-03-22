@@ -3,6 +3,7 @@ package media
 import (
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -10,11 +11,26 @@ import (
 	"github.com/beakbeak/aurelius/pkg/fragment"
 )
 
-func newAudioSource(path string) (aurelib.Source, error) {
-	if fragment.IsFragment(path) {
-		return fragment.New(path)
+// newAudioSource opens an audio file as an aurelib.Source. For fragment
+// tracks, it uses the stored fragment metadata to construct the source.
+func (ml *Library) newAudioSource(libraryPath string) (aurelib.Source, error) {
+	track, err := ml.db.GetTrack(libraryPath)
+	if err != nil {
+		return nil, err
 	}
-	return aurelib.NewFileSource(path)
+	if track == nil {
+		return aurelib.NewFileSource(ml.libraryToFsPath(libraryPath))
+	}
+
+	if track.Metadata.Fragment != nil {
+		fi := track.Metadata.Fragment
+		sourcePath := filepath.Join(ml.libraryToFsPath(track.Dir), fi.SourceFile)
+		startTime := time.Duration(fi.Start * float64(time.Second))
+		endTime := time.Duration(fi.End * float64(time.Second))
+		return fragment.New(sourcePath, startTime, endTime)
+	}
+
+	return aurelib.NewFileSource(ml.libraryToFsPath(libraryPath))
 }
 
 func (ml *Library) handleTrackStream(
@@ -22,7 +38,6 @@ func (ml *Library) handleTrackStream(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	fsPath := ml.libraryToFsPath(libraryPath)
 	ctx := req.Context()
 	reject := func(status int, format string, args ...interface{}) {
 		w.WriteHeader(status)
@@ -39,9 +54,9 @@ func (ml *Library) handleTrackStream(
 	}
 
 	// set up source
-	src, err := newAudioSource(fsPath)
+	src, err := ml.newAudioSource(libraryPath)
 	if err != nil {
-		rejectNotFound("failed to open '%v': %v\n", fsPath, err)
+		rejectNotFound("failed to open '%v': %v\n", libraryPath, err)
 		return
 	}
 	defer src.Destroy()

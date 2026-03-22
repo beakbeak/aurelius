@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/beakbeak/aurelius/pkg/aurelib"
 	"golang.org/x/image/draw"
 )
 
@@ -246,8 +247,9 @@ func collectAndProcessTrackImages(
 		hashes = append(hashes, hash)
 	}
 
-	// Attached images from the audio file.
-	src, err := newAudioSource(trackFsPath)
+	// Attached images from the audio file. The path is already resolved to
+	// the real source file (even for fragments), so open directly.
+	src, err := aurelib.NewFileSource(trackFsPath)
 	if err != nil {
 		slog.Warn("failed to open source for images", "path", trackFsPath, "error", err)
 		return nil

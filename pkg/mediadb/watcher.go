@@ -46,7 +46,7 @@ const (
 )
 
 type pendingEvent struct {
-	kind eventKind
+	kind  eventKind
 	isDir bool
 }
 
@@ -327,12 +327,46 @@ func (w *Watcher) toLibraryDirPath(absPath string) (string, bool) {
 func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 	changes := &ChangeSet{}
 
+	// Initialize a WalkResult for this batch so that processDirConfigEvent
+	// can store fragment metadata for collectMetadata to use.
+	wr := &WalkResult{
+		Fragments: make(map[string]resolvedFragment),
+	}
+	processedDirConfigs := make(map[string]bool)
+	modifiedTrackDirs := make(map[string]bool)
+
 	for absPath, ev := range events {
 		if ev.isDir {
 			w.processDirEvent(absPath, ev, changes)
 		} else {
-			w.processFileEvent(absPath, ev, changes)
+			w.processFileEvent(absPath, ev, wr, changes)
+
+			dir, name, ok := w.toLibraryPath(absPath)
+			if ok {
+				switch GetFileType(name) {
+				case FileTypeDirConfig:
+					processedDirConfigs[dir] = true
+				case FileTypeTrack:
+					if ev.kind == eventModified || ev.kind == eventCreated {
+						modifiedTrackDirs[dir] = true
+					}
+				case FileTypePlaylist, FileTypeImage, FileTypeIgnored:
+				}
+			}
 		}
+	}
+
+	// When a source audio file is modified, re-evaluate the dir config for
+	// that directory so fragments derived from it are updated.
+	for dir := range modifiedTrackDirs {
+		if processedDirConfigs[dir] {
+			continue
+		}
+		configPath := w.scanner.fsPath(dir, dirConfigName)
+		if _, err := os.Lstat(configPath); err != nil {
+			continue
+		}
+		w.processDirConfigEvent(configPath, dir, &pendingEvent{kind: eventModified}, wr, changes)
 	}
 
 	if len(changes.Added) == 0 && len(changes.Changed) == 0 &&
@@ -379,14 +413,14 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 	)
 
 	// Collect metadata for added/changed files.
-	result, err := w.scanner.collectMetadata(changes)
+	result, err := w.scanner.collectMetadata(wr, changes)
 	if err != nil {
 		slog.Error("watcher metadata collection failed", "error", err)
 		return
 	}
 
 	// Apply to database.
-	if err := w.scanner.Apply(result); err != nil {
+	if err := w.scanner.Apply(wr, result); err != nil {
 		slog.Error("watcher apply failed", "error", err)
 		return
 	}
@@ -397,7 +431,7 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 }
 
 // processFileEvent handles a single file event in the batch.
-func (w *Watcher) processFileEvent(absPath string, ev *pendingEvent, changes *ChangeSet) {
+func (w *Watcher) processFileEvent(absPath string, ev *pendingEvent, wr *WalkResult, changes *ChangeSet) {
 	dir, name, ok := w.toLibraryPath(absPath)
 	if !ok {
 		return
@@ -410,6 +444,8 @@ func (w *Watcher) processFileEvent(absPath string, ev *pendingEvent, changes *Ch
 		w.processPlaylistEvent(absPath, dir, name, ev, changes)
 	case FileTypeImage:
 		w.processImageFileEvent(dir, ev, changes)
+	case FileTypeDirConfig:
+		w.processDirConfigEvent(absPath, dir, ev, wr, changes)
 	case FileTypeIgnored:
 	}
 }
@@ -585,5 +621,130 @@ func (w *Watcher) removeDirRecursive(libraryDir string, changes *ChangeSet) {
 	}
 	for _, d := range subdirs {
 		w.removeDirRecursive(d.Path, changes)
+	}
+}
+
+// processDirConfigEvent handles a change to an aurelius.yaml file. It diffs
+// the new fragment definitions against the existing fragment tracks in the
+// database and emits the appropriate add/change/remove entries.
+func (w *Watcher) processDirConfigEvent(absPath, dir string, ev *pendingEvent, wr *WalkResult, changes *ChangeSet) {
+	// Get existing fragment tracks from the database.
+	existingTracks, err := w.scanner.db.GetTracksInDir(dir)
+	if err != nil {
+		slog.Warn("watcher: failed to look up tracks for dir config event", "dir", dir, "error", err)
+		return
+	}
+
+	// Separate existing fragments from regular tracks.
+	existingFragments := make(map[string]*Track)
+	for i := range existingTracks {
+		t := &existingTracks[i]
+		if t.Metadata.Fragment != nil {
+			existingFragments[t.Name] = t
+		}
+	}
+
+	if ev.kind == eventRemoved {
+		// Config removed: all fragments should be removed.
+		for _, t := range existingFragments {
+			changes.Removed = append(changes.Removed, *t)
+		}
+		return
+	}
+
+	// Config created or modified: parse and diff.
+	config, err := LoadDirConfig(absPath)
+	if err != nil {
+		slog.Warn("watcher: failed to parse dir config", "path", absPath, "error", err)
+		return
+	}
+
+	info, err := os.Lstat(absPath)
+	if err != nil {
+		slog.Warn("watcher: failed to stat dir config", "path", absPath, "error", err)
+		return
+	}
+	configMtime := info.ModTime().Unix()
+
+	// Build a set of non-fragment audio filenames from existing DB tracks.
+	audioNameSet := make(map[string]bool)
+	for _, t := range existingTracks {
+		if t.Metadata.Fragment == nil {
+			audioNameSet[t.Name] = true
+		}
+	}
+
+	// Pre-compute config file hash.
+	configHash, err := computeFullHash(absPath)
+	if err != nil {
+		slog.Warn("watcher: failed to hash dir config", "path", absPath, "error", err)
+		return
+	}
+
+	// Expand new fragments.
+	newFragments := make(map[string]bool)
+	sourceFragmentCount := make(map[string]int)
+
+	for i := range config.Fragments {
+		def := &config.Fragments[i]
+		sourceFile := def.Source
+		if !audioNameSet[sourceFile] {
+			slog.Warn("watcher: fragment source file not found",
+				"dir", dir, "source", sourceFile)
+			continue
+		}
+
+		sourceFragmentCount[sourceFile]++
+		fragIdx := sourceFragmentCount[sourceFile]
+		syntheticName := MakeFragmentName(sourceFile, fragIdx)
+		newFragments[syntheticName] = true
+
+		// Compute mtime as max(configMtime, sourceMtime).
+		mtime := configMtime
+		sourceFSPath := w.scanner.fsPath(dir, sourceFile)
+		if sourceInfo, err := os.Lstat(sourceFSPath); err == nil {
+			if sourceMtime := sourceInfo.ModTime().Unix(); sourceMtime > mtime {
+				mtime = sourceMtime
+			}
+		}
+
+		if existing, ok := existingFragments[syntheticName]; ok {
+			// Fragment exists — check if changed.
+			if existing.Mtime != mtime {
+				changes.Changed = append(changes.Changed, FSEntry{
+					Dir: dir, Name: syntheticName, Mtime: mtime,
+				})
+			}
+		} else {
+			// New fragment.
+			sourceHash, err := computePartialHash(sourceFSPath)
+			if err != nil {
+				slog.Warn("watcher: failed to hash fragment source", "dir", dir, "name", sourceFile, "error", err)
+				continue
+			}
+			fragHash := computeFragmentHash(configHash, sourceHash, fragIdx)
+			changes.Added = append(changes.Added, HashedFSEntry{
+				FSEntry: FSEntry{Dir: dir, Name: syntheticName, Mtime: mtime},
+				Hash:    fragHash,
+			})
+		}
+
+		// Store resolved fragment for metadata collection.
+		libraryPath := JoinLibraryPath(dir, syntheticName)
+		sourceHash, _ := computePartialHash(w.scanner.fsPath(dir, sourceFile))
+		wr.Fragments[libraryPath] = resolvedFragment{
+			SourceFSPath: w.scanner.fsPath(dir, sourceFile),
+			SourceFile:   sourceFile,
+			Config:       def,
+			Index:        fragIdx,
+			hash:         computeFragmentHash(configHash, sourceHash, fragIdx),
+		}
+	}
+
+	// Remove fragments that no longer exist in the config.
+	for name, t := range existingFragments {
+		if !newFragments[name] {
+			changes.Removed = append(changes.Removed, *t)
+		}
 	}
 }
