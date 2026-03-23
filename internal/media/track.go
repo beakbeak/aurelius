@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/beakbeak/aurelius/pkg/mediadb"
+	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
 func (ml *Library) handleTrackFavorite(

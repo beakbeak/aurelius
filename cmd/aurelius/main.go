@@ -18,7 +18,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/beakbeak/aurelius/pkg/media"
+	"github.com/beakbeak/aurelius/internal/media"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"

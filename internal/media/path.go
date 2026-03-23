@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/beakbeak/aurelius/pkg/mediadb"
+	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
 // libraryToFsPath converts a URL-style path relative to the root of the media

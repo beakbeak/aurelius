@@ -19,8 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/beakbeak/aurelius/pkg/media"
-	"github.com/beakbeak/aurelius/pkg/mediadb"
+	"github.com/beakbeak/aurelius/internal/media"
+	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
 var (

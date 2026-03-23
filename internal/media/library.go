@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/beakbeak/aurelius/pkg/mediadb"
+	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
 // LibraryConfig contains configuration parameters used by NewLibrary. It should
