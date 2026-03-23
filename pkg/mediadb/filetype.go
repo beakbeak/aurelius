@@ -21,7 +21,7 @@ const (
 var (
 	rePlaylist = regexp.MustCompile(`(?i)\.m3u$`)
 	reImage    = regexp.MustCompile(`(?i)\.(jpg|jpeg|png|gif)$`)
-	reIgnore   = regexp.MustCompile(`(?i)\.(txt|nfo)$`)
+	reIgnore   = regexp.MustCompile(`(?i)\.(txt|nfo|diz)$`)
 	reTrack    = regexp.MustCompile(`(?i)\.(opus|m4a|wma|wmv|wav|` + strings.Join(aurelib.InputExtensions(), "|") + `)$`)
 )
 
