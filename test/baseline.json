@@ -163,7 +163,7 @@
           "dir": "/prefix/dirs/at:",
           "duration": 3,
           "favorite": false,
-          "name": "test.flac::1",
+          "name": "test.flac::001",
           "replayGainAlbum": 0.750758054119937,
           "replayGainTrack": 0.750758054119937,
           "sampleFormat": "s16",
@@ -184,7 +184,7 @@
             "title": "Aurelius Test Data",
             "track": "1.1"
           },
-          "url": "/prefix/tracks/at:test.flac::1"
+          "url": "/prefix/tracks/at:test.flac::001"
         },
         {
           "attachedImages": [
@@ -219,7 +219,7 @@
           "dir": "/prefix/dirs/at:",
           "duration": 10.59932,
           "favorite": false,
-          "name": "test.flac::2",
+          "name": "test.flac::002",
           "replayGainAlbum": 0.750758054119937,
           "replayGainTrack": 0.750758054119937,
           "sampleFormat": "s16",
@@ -240,7 +240,7 @@
             "title": "Baz All Night",
             "track": "1.2"
           },
-          "url": "/prefix/tracks/at:test.flac::2"
+          "url": "/prefix/tracks/at:test.flac::002"
         },
         {
           "attachedImages": [
@@ -275,7 +275,7 @@
           "dir": "/prefix/dirs/at:",
           "duration": 5,
           "favorite": false,
-          "name": "test.flac::3",
+          "name": "test.flac::003",
           "replayGainAlbum": 0.750758054119937,
           "replayGainTrack": 0.750758054119937,
           "sampleFormat": "s16",
@@ -296,7 +296,7 @@
             "title": "Aurelius Test Data",
             "track": "1.3"
           },
-          "url": "/prefix/tracks/at:test.flac::3"
+          "url": "/prefix/tracks/at:test.flac::003"
         },
         {
           "attachedImages": [
@@ -686,7 +686,7 @@
       "?startTime=2s": "6b026a0d95d8f35e0e0820aefa628c74d1e0759952a076bebdeaddb82ce7541e"
     }
   },
-  "test.flac.1.txt": {
+  "test.flac::001": {
     "Info": {
       "attachedImages": [
         {
@@ -720,7 +720,7 @@
       "dir": "/prefix/dirs/at:",
       "duration": 3,
       "favorite": false,
-      "name": "test.flac.1.txt",
+      "name": "test.flac::001",
       "replayGainAlbum": 0.750758054119937,
       "replayGainTrack": 0.750758054119937,
       "sampleFormat": "s16",
@@ -741,13 +741,13 @@
         "title": "Aurelius Test Data",
         "track": "1.1"
       },
-      "url": "/prefix/tracks/at:test.flac.1.txt"
+      "url": "/prefix/tracks/at:test.flac::001"
     },
     "StreamHashes": {
       "": "688edcca6248f4209131364b674e91ea7f4e7ec60e1438921308547f3a762e32"
     }
   },
-  "test.flac.2.txt": {
+  "test.flac::002": {
     "Info": {
       "attachedImages": [
         {
@@ -781,7 +781,7 @@
       "dir": "/prefix/dirs/at:",
       "duration": 10.59932,
       "favorite": false,
-      "name": "test.flac.2.txt",
+      "name": "test.flac::002",
       "replayGainAlbum": 0.750758054119937,
       "replayGainTrack": 0.750758054119937,
       "sampleFormat": "s16",
@@ -802,13 +802,13 @@
         "title": "Baz All Night",
         "track": "1.2"
       },
-      "url": "/prefix/tracks/at:test.flac.2.txt"
+      "url": "/prefix/tracks/at:test.flac::002"
     },
     "StreamHashes": {
       "": "6b026a0d95d8f35e0e0820aefa628c74d1e0759952a076bebdeaddb82ce7541e"
     }
   },
-  "test.flac.3.txt": {
+  "test.flac::003": {
     "Info": {
       "attachedImages": [
         {
@@ -842,7 +842,7 @@
       "dir": "/prefix/dirs/at:",
       "duration": 5,
       "favorite": false,
-      "name": "test.flac.3.txt",
+      "name": "test.flac::003",
       "replayGainAlbum": 0.750758054119937,
       "replayGainTrack": 0.750758054119937,
       "sampleFormat": "s16",
@@ -863,190 +863,7 @@
         "title": "Aurelius Test Data",
         "track": "1.3"
       },
-      "url": "/prefix/tracks/at:test.flac.3.txt"
-    },
-    "StreamHashes": {
-      "": "aeb74e36f99f08e1ed193d0e737f5f1bb269618cc7e3bbd824f25d4405f59400"
-    }
-  },
-  "test.flac::1": {
-    "Info": {
-      "attachedImages": [
-        {
-          "mimeType": "image/png",
-          "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
-        },
-        {
-          "mimeType": "image/gif",
-          "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 99260,
-          "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 87396,
-          "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
-        }
-      ],
-      "bitRate": 0,
-      "codec": "flac",
-      "dir": "/prefix/dirs/at:",
-      "duration": 3,
-      "favorite": false,
-      "name": "test.flac::1",
-      "replayGainAlbum": 0.750758054119937,
-      "replayGainTrack": 0.750758054119937,
-      "sampleFormat": "s16",
-      "sampleRate": 44100,
-      "tags": {
-        "album": "Aurelius Test Data Greatest Hits",
-        "artist": "Aurelius",
-        "comment": "Testing",
-        "composer": "J. S. Bach",
-        "date": "2020",
-        "disc": "1",
-        "genre": "Test Data",
-        "replaygain_album_gain": "-2.49 dB",
-        "replaygain_album_peak": "0.89123535",
-        "replaygain_reference_loudness": "89.0 dB",
-        "replaygain_track_gain": "-2.49 dB",
-        "replaygain_track_peak": "0.89123535",
-        "title": "Aurelius Test Data",
-        "track": "1.1"
-      },
-      "url": "/prefix/tracks/at:test.flac::1"
-    },
-    "StreamHashes": {
-      "": "688edcca6248f4209131364b674e91ea7f4e7ec60e1438921308547f3a762e32"
-    }
-  },
-  "test.flac::2": {
-    "Info": {
-      "attachedImages": [
-        {
-          "mimeType": "image/png",
-          "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
-        },
-        {
-          "mimeType": "image/gif",
-          "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 99260,
-          "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 87396,
-          "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
-        }
-      ],
-      "bitRate": 0,
-      "codec": "flac",
-      "dir": "/prefix/dirs/at:",
-      "duration": 10.59932,
-      "favorite": false,
-      "name": "test.flac::2",
-      "replayGainAlbum": 0.750758054119937,
-      "replayGainTrack": 0.750758054119937,
-      "sampleFormat": "s16",
-      "sampleRate": 44100,
-      "tags": {
-        "album": "Aurelius Test Data Greatest Hits",
-        "artist": "Foo and the Bars",
-        "comment": "Testing",
-        "composer": "J. S. Bach",
-        "date": "2020",
-        "disc": "1",
-        "genre": "Test Data",
-        "replaygain_album_gain": "-2.49 dB",
-        "replaygain_album_peak": "0.89123535",
-        "replaygain_reference_loudness": "89.0 dB",
-        "replaygain_track_gain": "-2.49 dB",
-        "replaygain_track_peak": "0.89123535",
-        "title": "Baz All Night",
-        "track": "1.2"
-      },
-      "url": "/prefix/tracks/at:test.flac::2"
-    },
-    "StreamHashes": {
-      "": "6b026a0d95d8f35e0e0820aefa628c74d1e0759952a076bebdeaddb82ce7541e"
-    }
-  },
-  "test.flac::3": {
-    "Info": {
-      "attachedImages": [
-        {
-          "mimeType": "image/png",
-          "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
-        },
-        {
-          "mimeType": "image/gif",
-          "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 99260,
-          "url": "/prefix/images/hash:b9f1171267c6bced56132aaa1f71e89ccd72a9e7efd6be70d64e562cd35b03ab"
-        },
-        {
-          "mimeType": "image/jpeg",
-          "size": 87396,
-          "url": "/prefix/images/hash:31f4b28af1b07aa1ae12a7c083855eb4fd57d123090d4e4d7525e7c83582fea9"
-        }
-      ],
-      "bitRate": 0,
-      "codec": "flac",
-      "dir": "/prefix/dirs/at:",
-      "duration": 5,
-      "favorite": false,
-      "name": "test.flac::3",
-      "replayGainAlbum": 0.750758054119937,
-      "replayGainTrack": 0.750758054119937,
-      "sampleFormat": "s16",
-      "sampleRate": 44100,
-      "tags": {
-        "album": "Aurelius Test Data Greatest Hits",
-        "artist": "Aurelius",
-        "comment": "Testing",
-        "composer": "J. S. Bach",
-        "date": "2020",
-        "disc": "1",
-        "genre": "Test Data",
-        "replaygain_album_gain": "-2.49 dB",
-        "replaygain_album_peak": "0.89123535",
-        "replaygain_reference_loudness": "89.0 dB",
-        "replaygain_track_gain": "-2.49 dB",
-        "replaygain_track_peak": "0.89123535",
-        "title": "Aurelius Test Data",
-        "track": "1.3"
-      },
-      "url": "/prefix/tracks/at:test.flac::3"
+      "url": "/prefix/tracks/at:test.flac::003"
     },
     "StreamHashes": {
       "": "aeb74e36f99f08e1ed193d0e737f5f1bb269618cc7e3bbd824f25d4405f59400"

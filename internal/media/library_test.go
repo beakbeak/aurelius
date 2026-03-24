@@ -42,9 +42,9 @@ var (
 		"test.wav",
 		"test.mka",
 		"foo/another directory/test.m4a",
-		"test.flac::1",
-		"test.flac::2",
-		"test.flac::3",
+		"test.flac::001",
+		"test.flac::002",
+		"test.flac::003",
 	}
 )
 

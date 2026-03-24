@@ -86,5 +86,5 @@ func LoadDirConfig(fsPath string) (*DirConfig, error) {
 // MakeFragmentName creates a synthetic fragment name from a source filename
 // and a 1-based fragment index.
 func MakeFragmentName(sourceFile string, index int) string {
-	return fmt.Sprintf("%s::%d", sourceFile, index)
+	return fmt.Sprintf("%s::%03d", sourceFile, index)
 }

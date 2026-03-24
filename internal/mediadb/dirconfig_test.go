@@ -12,8 +12,8 @@ func TestMakeFragmentName(t *testing.T) {
 		index  int
 		want   string
 	}{
-		{"test.flac", 1, "test.flac::1"},
-		{"test.flac", 42, "test.flac::42"},
+		{"test.flac", 1, "test.flac::001"},
+		{"test.flac", 42, "test.flac::042"},
 	}
 	for _, tt := range tests {
 		if got := MakeFragmentName(tt.source, tt.index); got != tt.want {
