@@ -278,32 +278,6 @@ func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Re
 	}
 }
 
-func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
-	if query == "" {
-		writeJson(r.Context(), w, &mediadb.SearchResponse{Results: []mediadb.SearchResult{}, Total: 0})
-		return
-	}
-
-	results, err := ml.db.Search(query, 50)
-	if err != nil {
-		slog.ErrorContext(r.Context(), "search failed", "query", query, "error", err)
-		http.Error(w, "Search failed", http.StatusInternalServerError)
-		return
-	}
-
-	// Add URLs to results.
-	for i := range results.Results {
-		result := &results.Results[i]
-		if result.Type == mediadb.DocTypeTrack {
-			result.URL = ml.libraryToUrlPath("tracks", result.Path)
-		} else if result.Type == mediadb.DocTypeDirectory {
-			result.URL = ml.libraryToUrlPath("dirs", result.Path)
-		}
-	}
-
-	writeJson(r.Context(), w, results)
-}
 
 func writeJson(
 	ctx context.Context,

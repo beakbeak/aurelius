@@ -20,7 +20,6 @@ describe("search", () => {
                 results: [
                     { path: "test.mp3", type: "track" as const, url: "/media/tracks/test.mp3" }
                 ],
-                total: 1
             };
             
             let calledUrl = "";
@@ -36,7 +35,7 @@ describe("search", () => {
         });
 
         it("URL encodes query parameters", async () => {
-            const mockResponse = { results: [], total: 0 };
+            const mockResponse = { results: [] };
             
             let calledUrl = "";
             (jsonModule as any).fetchJson = async (url: string) => {
@@ -50,7 +49,7 @@ describe("search", () => {
         });
 
         it("handles empty query", async () => {
-            const mockResponse = { results: [], total: 0 };
+            const mockResponse = { results: [] };
             
             let calledUrl = "";
             (jsonModule as any).fetchJson = async (url: string) => {
@@ -70,7 +69,6 @@ describe("search", () => {
                     { path: "foo", type: "dir" as const, url: "/media/dirs/foo" },
                     { path: "bar.mp3", type: "track" as const, url: "/media/tracks/bar.mp3" }
                 ],
-                total: 2
             };
             
             (jsonModule as any).fetchJson = async () => mockResponse;
@@ -80,7 +78,6 @@ describe("search", () => {
             strictEqual(result.results.length, 2);
             strictEqual(result.results[0].type, "dir");
             strictEqual(result.results[1].type, "track");
-            strictEqual(result.total, 2);
         });
 
         it("propagates errors from fetchJson", async () => {

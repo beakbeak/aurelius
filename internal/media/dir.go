@@ -42,7 +42,7 @@ func (ml *Library) handleDirInfo(
 		Path      string            `json:"path"`
 		Dirs      []PathUrl         `json:"dirs"`
 		Playlists []PathUrl         `json:"playlists"`
-		Tracks    []trackInfoResult `json:"tracks"`
+		Tracks    []TrackInfoResult `json:"tracks"`
 	}
 	result := Result{
 		Url:       ml.libraryToUrlPath("dirs", dirLibraryPath),
@@ -51,7 +51,7 @@ func (ml *Library) handleDirInfo(
 		Path:      dirLibraryPath,
 		Dirs:      make([]PathUrl, 0, len(subdirs)),
 		Playlists: make([]PathUrl, 0),
-		Tracks:    make([]trackInfoResult, 0, len(tracks)),
+		Tracks:    make([]TrackInfoResult, 0, len(tracks)),
 	}
 
 	for _, d := range subdirs {

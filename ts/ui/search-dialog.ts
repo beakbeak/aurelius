@@ -141,16 +141,34 @@ function displayResults(results: SearchResult[]): void {
 
         const icon = document.createElement("i");
         icon.className = `${Class.DirIcon} ${Class.MaterialIcons}`;
-        icon.textContent = result.type === "dir" ? "folder_open" : "music_note";
+        if (result.type === "dir") {
+            icon.textContent = "folder_open";
+        } else if (result.track?.favorite) {
+            icon.textContent = "favorite_border";
+        } else {
+            icon.textContent = "music_note";
+        }
 
-        const pathElement = document.createElement("span");
-        pathElement.className = Class.DirLink;
-        pathElement.textContent = result.path;
+        const textElement = document.createElement("span");
+        textElement.className = Class.DirLink;
+        textElement.textContent = formatSearchResult(result);
 
         resultElement.appendChild(icon);
-        resultElement.appendChild(pathElement);
+        resultElement.appendChild(textElement);
         searchResults.appendChild(resultElement);
     }
+}
+
+function formatSearchResult(result: SearchResult): string {
+    if (result.track) {
+        const title = result.track.tags["title"];
+        const artist = result.track.tags["artist"];
+        if (title && artist) {
+            const album = result.track.tags["album"];
+            return album ? `${title} \u00b7 ${artist} \u00b7 ${album}` : `${title} \u00b7 ${artist}`;
+        }
+    }
+    return result.path;
 }
 
 function displayError(message: string): void {

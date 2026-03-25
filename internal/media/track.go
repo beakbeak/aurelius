@@ -36,13 +36,15 @@ func (ml *Library) handleTrackFavorite(
 	}
 }
 
-type attachedImageInfo struct {
+// AttachedImageInfo describes an image attached to a track.
+type AttachedImageInfo struct {
 	MimeType string `json:"mimeType"`
 	Size     int    `json:"size"`
 	Url      string `json:"url"`
 }
 
-type trackInfoResult struct {
+// TrackInfoResult is the JSON representation of a track returned by the API.
+type TrackInfoResult struct {
 	Name            string              `json:"name"`
 	Url             string              `json:"url"`
 	Duration        float64             `json:"duration"`
@@ -50,7 +52,7 @@ type trackInfoResult struct {
 	ReplayGainAlbum float64             `json:"replayGainAlbum"`
 	Favorite        bool                `json:"favorite"`
 	Tags            map[string]string   `json:"tags"`
-	AttachedImages  []attachedImageInfo `json:"attachedImages"`
+	AttachedImages  []AttachedImageInfo `json:"attachedImages"`
 	Codec           string              `json:"codec"`
 	BitRate         int                 `json:"bitRate"`
 	SampleRate      uint                `json:"sampleRate"`
@@ -58,10 +60,10 @@ type trackInfoResult struct {
 	Dir             string              `json:"dir"`
 }
 
-func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) trackInfoResult {
-	images := make([]attachedImageInfo, 0, len(track.Images))
+func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) TrackInfoResult {
+	images := make([]AttachedImageInfo, 0, len(track.Images))
 	for _, img := range track.Images {
-		images = append(images, attachedImageInfo{
+		images = append(images, AttachedImageInfo{
 			MimeType: img.MimeType,
 			Size:     img.Size,
 			Url:      ml.makeImageUrl(img.Hash),
@@ -76,7 +78,7 @@ func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) trackInfo
 	}
 
 	trackPath := joinLibraryPath(track.Dir, track.Name)
-	return trackInfoResult{
+	return TrackInfoResult{
 		Name:            track.Name,
 		Url:             ml.libraryToUrlPath("tracks", trackPath),
 		Duration:        track.Metadata.Duration,

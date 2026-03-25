@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/beakbeak/aurelius/internal/media"
-	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
 var (
@@ -1054,17 +1053,13 @@ func TestDirInfo(t *testing.T) {
 func TestSearch(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	doSearch := func(query string) []mediadb.SearchResult {
+	doSearch := func(query string) []media.SearchResultJSON {
 		t.Helper()
 		uri := api("search") + "?q=" + url.QueryEscape(query)
 		responseBody := simpleRequest(t, ml, "GET", uri, "")
 
-		var response mediadb.SearchResponse
+		var response media.SearchResponseJSON
 		unmarshalJson(t, responseBody, &response)
-
-		if len(response.Results) != response.Total {
-			t.Errorf("results length (%d) doesn't match total (%d)", len(response.Results), response.Total)
-		}
 
 		return response.Results
 	}
@@ -1121,6 +1116,47 @@ func TestSearch(t *testing.T) {
 		}
 		if !found {
 			t.Error("search for 'foo' should find foo directory")
+		}
+	})
+
+	t.Run("TrackResultsIncludeTrackInfo", func(t *testing.T) {
+		results := doSearch("test.flac")
+		var found *media.SearchResultJSON
+		for i, result := range results {
+			if result.Type == "track" && strings.HasSuffix(result.Path, "test.flac") {
+				found = &results[i]
+				break
+			}
+		}
+		if found == nil {
+			t.Fatal("expected to find test.flac in search results")
+		}
+		if found.Track == nil {
+			t.Fatal("expected track result to include track info")
+		}
+		if found.Track.Tags["title"] != "Aurelius Test Data" {
+			t.Errorf("expected title tag 'Aurelius Test Data', got %q", found.Track.Tags["title"])
+		}
+		if found.Track.Tags["artist"] != "Aurelius" {
+			t.Errorf("expected artist tag 'Aurelius', got %q", found.Track.Tags["artist"])
+		}
+		if found.Track.Tags["album"] != "Aurelius Test Data Greatest Hits" {
+			t.Errorf("expected album tag 'Aurelius Test Data Greatest Hits', got %q", found.Track.Tags["album"])
+		}
+		if found.Track.Url == "" {
+			t.Error("expected track info to include url")
+		}
+		if found.Track.Dir == "" {
+			t.Error("expected track info to include dir")
+		}
+	})
+
+	t.Run("DirectoryResultsHaveNoTrackInfo", func(t *testing.T) {
+		results := doSearch("foo")
+		for _, result := range results {
+			if result.Type == "dir" && result.Track != nil {
+				t.Errorf("directory result %q should not have track info", result.Path)
+			}
 		}
 	})
 

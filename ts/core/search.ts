@@ -1,14 +1,15 @@
 import { fetchJson } from "./json";
+import { TrackInfo } from "./track";
 
 export interface SearchResult {
     path: string;
     type: "dir" | "track";
     url: string;
+    track?: TrackInfo;
 }
 
 export interface SearchResponse {
     results: SearchResult[];
-    total: number;
 }
 
 export async function searchMedia(query: string): Promise<SearchResponse> {

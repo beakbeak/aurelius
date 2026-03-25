@@ -7,15 +7,13 @@ import (
 
 // SearchResult represents a single search result.
 type SearchResult struct {
-	Path string `json:"path"`
-	Type string `json:"type"`
-	URL  string `json:"url"`
+	Path string
+	Type string
 }
 
 // SearchResponse represents the response from a search query.
 type SearchResponse struct {
-	Results []SearchResult `json:"results"`
-	Total   int            `json:"total"`
+	Results []SearchResult
 }
 
 const (
@@ -28,7 +26,7 @@ const (
 func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 	ftsQuery := buildFTSQuery(query)
 	if ftsQuery == "" {
-		return &SearchResponse{Results: []SearchResult{}, Total: 0}, nil
+		return &SearchResponse{Results: []SearchResult{}}, nil
 	}
 
 	rows, err := db.db.Query(
@@ -57,7 +55,6 @@ func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 
 	return &SearchResponse{
 		Results: results,
-		Total:   len(results),
 	}, nil
 }
 
