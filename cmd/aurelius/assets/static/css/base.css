@@ -454,6 +454,11 @@ body {
 	color: inherit;
 }
 
+.search__result-detail {
+	font-style: italic;
+	opacity: 0.7;
+}
+
 #search-dialog .ui__section-body--scroll {
 	max-height: 30em;
 }

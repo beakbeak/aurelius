@@ -22,5 +22,6 @@ export const enum Class {
     SearchResults = "search__results",
     SearchResult = "search__result",
     SearchResult_Focused = "search__result--focused",
+    SearchResultDetail = "search__result-detail",
     UiEntryInput_Error = "ui__entry-input--error",
 }

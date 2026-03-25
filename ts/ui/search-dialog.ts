@@ -151,7 +151,7 @@ function displayResults(results: SearchResult[]): void {
 
         const textElement = document.createElement("span");
         textElement.className = Class.DirLink;
-        textElement.textContent = formatSearchResult(result);
+        populateSearchResultText(textElement, result);
 
         resultElement.appendChild(icon);
         resultElement.appendChild(textElement);
@@ -159,16 +159,21 @@ function displayResults(results: SearchResult[]): void {
     }
 }
 
-function formatSearchResult(result: SearchResult): string {
+function populateSearchResultText(container: HTMLElement, result: SearchResult): void {
     if (result.track) {
         const title = result.track.tags["title"];
         const artist = result.track.tags["artist"];
         if (title && artist) {
+            container.append(title);
+            const detail = document.createElement("span");
+            detail.className = Class.SearchResultDetail;
             const album = result.track.tags["album"];
-            return album ? `${title} \u00b7 ${artist} \u00b7 ${album}` : `${title} \u00b7 ${artist}`;
+            detail.textContent = album ? ` \u00b7 ${artist} \u00b7 ${album}` : ` \u00b7 ${artist}`;
+            container.appendChild(detail);
+            return;
         }
     }
-    return result.path;
+    container.textContent = result.path;
 }
 
 function displayError(message: string): void {
