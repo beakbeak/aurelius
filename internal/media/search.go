@@ -7,24 +7,24 @@ import (
 	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
-// SearchResultJSON is the JSON representation of a single search result.
-type SearchResultJSON struct {
-	Path  string           `json:"path"`
-	Type  string           `json:"type"`
-	URL   string           `json:"url"`
-	Track *TrackInfoResult `json:"track,omitempty"`
+// SearchResult is the JSON representation of a single search result.
+type SearchResult struct {
+	Path  string `json:"path"`
+	Type  string `json:"type"`
+	URL   string `json:"url"`
+	Track *Track `json:"track,omitempty"`
 }
 
-// SearchResponseJSON is the JSON representation of a search response.
-type SearchResponseJSON struct {
-	Results []SearchResultJSON `json:"results"`
+// SearchResponse is the JSON representation of a search response.
+type SearchResponse struct {
+	Results []SearchResult `json:"results"`
 }
 
 func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		writeJson(ctx, w, &SearchResponseJSON{Results: []SearchResultJSON{}})
+		writeJson(ctx, w, &SearchResponse{Results: []SearchResult{}})
 		return
 	}
 
@@ -35,9 +35,9 @@ func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonResults := make([]SearchResultJSON, len(results.Results))
+	jsonResults := make([]SearchResult, len(results.Results))
 	for i, result := range results.Results {
-		jr := SearchResultJSON{
+		jr := SearchResult{
 			Path: result.Path,
 			Type: result.Type,
 		}
@@ -53,7 +53,7 @@ func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					slog.ErrorContext(ctx, "IsFavorite failed for search result", "path", result.Path, "error", err)
 				}
-				info := ml.buildTrackInfo(track, favorite)
+				info := ml.makeTrack(track, favorite)
 				jr.Track = &info
 			}
 		} else if result.Type == mediadb.DocTypeDirectory {
@@ -63,5 +63,5 @@ func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 		jsonResults[i] = jr
 	}
 
-	writeJson(ctx, w, &SearchResponseJSON{Results: jsonResults})
+	writeJson(ctx, w, &SearchResponse{Results: jsonResults})
 }

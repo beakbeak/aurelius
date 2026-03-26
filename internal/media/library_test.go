@@ -355,22 +355,17 @@ func isFavorite(
 	return track.Favorite
 }
 
-type PlaylistEntry struct {
-	Path string
-	Pos  int
-}
-
 func getPlaylistEntry(
 	t *testing.T,
 	ml *media.Library,
 	path string,
 	pos int,
-) PlaylistEntry {
+) media.PlaylistTrack {
 	t.Helper()
 	url := fmt.Sprintf("%s/tracks/%v", path, pos)
 	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
-	var entry PlaylistEntry
+	var entry media.PlaylistTrack
 	unmarshalJson(t, jsonBytes, &entry)
 	return entry
 }
@@ -381,12 +376,12 @@ func getPlaylistEntryWithPrefix(
 	basePath string,
 	pos int,
 	prefix string,
-) PlaylistEntry {
+) media.PlaylistTrack {
 	t.Helper()
 	url := fmt.Sprintf("%s/tracks/%v?prefix=%s", basePath, pos, prefix)
 	jsonBytes := simpleRequest(t, ml, "GET", url, "")
 
-	var entry PlaylistEntry
+	var entry media.PlaylistTrack
 	unmarshalJson(t, jsonBytes, &entry)
 	return entry
 }
@@ -436,32 +431,22 @@ func getPlaylistLength(
 	return info.Length
 }
 
-type PathUrl struct {
-	Name, Url string
-	Favorite  bool `json:"favorite,omitempty"`
-}
-
-type DirInfo struct {
-	Path                    string
-	Dirs, Playlists, Tracks []PathUrl
-}
-
 func getDirInfo(
 	t *testing.T,
 	ml *media.Library,
 	path string,
-) DirInfo {
+) media.Dir {
 	t.Helper()
 	jsonBytes := simpleRequest(t, ml, "GET", path, "")
 
-	var info DirInfo
+	var info media.Dir
 	unmarshalJson(t, jsonBytes, &info)
 	return info
 }
 
 // Tests ///////////////////////////////////////////////////////////////////////
 
-func TestTrackInfo(t *testing.T) {
+func TestTrack(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
 	simpleRequestShouldFail(t, ml, "GET", trackAt("nonexistent.mp3"), "")
@@ -516,7 +501,7 @@ func TestFavorite(t *testing.T) {
 	checkFavoriteInDirListing := func(expectedFavorite bool) {
 		t.Helper()
 		dirInfo := getDirInfo(t, ml, dirAt(""))
-		idx := slices.IndexFunc(dirInfo.Tracks, func(u PathUrl) bool { return u.Name == path })
+		idx := slices.IndexFunc(dirInfo.Tracks, func(u media.Track) bool { return u.Name == path })
 		if idx < 0 {
 			t.Fatalf("track %q not found in directory listing", path)
 		}
@@ -823,15 +808,7 @@ func TestTrackImages(t *testing.T) {
 	// Test file with images - fetch track info first
 	infoBody := simpleRequest(t, ml, "GET", trackAt("test.flac"), "")
 
-	type AttachedImageInfo struct {
-		MimeType string `json:"mimeType"`
-		Size     int    `json:"size"`
-		Url      string `json:"url"`
-	}
-	type TrackInfo struct {
-		AttachedImages []AttachedImageInfo `json:"attachedImages"`
-	}
-	var trackInfo TrackInfo
+	var trackInfo media.Track
 	if err := json.Unmarshal(infoBody, &trackInfo); err != nil {
 		t.Fatalf("failed to decode track info JSON: %v\n%s", err, indentJson(t, infoBody))
 	}
@@ -889,13 +866,7 @@ func TestTrackImageETag(t *testing.T) {
 	// Get track info to find images
 	infoBody := simpleRequest(t, ml, "GET", trackAt("test.flac"), "")
 
-	type AttachedImageInfo struct {
-		Size int `json:"size"`
-	}
-	type TrackInfo struct {
-		AttachedImages []AttachedImageInfo `json:"attachedImages"`
-	}
-	var trackInfo TrackInfo
+	var trackInfo media.Track
 	if err := json.Unmarshal(infoBody, &trackInfo); err != nil {
 		t.Fatalf("failed to decode track info JSON: %v", err)
 	}
@@ -947,13 +918,7 @@ func TestHashImageRoute(t *testing.T) {
 	// Get a valid image URL from track info
 	infoBody := simpleRequest(t, ml, "GET", trackAt("test.flac"), "")
 
-	type AttachedImageInfo struct {
-		Url string `json:"url"`
-	}
-	type TrackInfo struct {
-		AttachedImages []AttachedImageInfo `json:"attachedImages"`
-	}
-	var trackInfo TrackInfo
+	var trackInfo media.Track
 	if err := json.Unmarshal(infoBody, &trackInfo); err != nil {
 		t.Fatalf("failed to decode track info JSON: %v", err)
 	}
@@ -987,7 +952,7 @@ func TestHashImageRoute(t *testing.T) {
 	simpleRequestShouldFail(t, ml, "GET", api("images", "something"), "")
 }
 
-func TestDirInfo(t *testing.T) {
+func TestDir(t *testing.T) {
 	ml := createDefaultLibrary(t)
 	baselines := readBaselines()
 
@@ -1008,11 +973,7 @@ func TestDirInfo(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			responseBody := simpleRequest(t, ml, "GET", dirAt(test.path), "")
 
-			type DirInfo struct {
-				Path string `json:"path"`
-			}
-
-			var dirInfo DirInfo
+			var dirInfo media.Dir
 			if err := json.Unmarshal(responseBody, &dirInfo); err != nil {
 				t.Fatalf("failed to decode dir info JSON: %v", err)
 			}
@@ -1053,12 +1014,12 @@ func TestDirInfo(t *testing.T) {
 func TestSearch(t *testing.T) {
 	ml := createDefaultLibrary(t)
 
-	doSearch := func(query string) []media.SearchResultJSON {
+	doSearch := func(query string) []media.SearchResult {
 		t.Helper()
 		uri := api("search") + "?q=" + url.QueryEscape(query)
 		responseBody := simpleRequest(t, ml, "GET", uri, "")
 
-		var response media.SearchResponseJSON
+		var response media.SearchResponse
 		unmarshalJson(t, responseBody, &response)
 
 		return response.Results
@@ -1121,7 +1082,7 @@ func TestSearch(t *testing.T) {
 
 	t.Run("TrackResultsIncludeTrackInfo", func(t *testing.T) {
 		results := doSearch("test.flac")
-		var found *media.SearchResultJSON
+		var found *media.SearchResult
 		for i, result := range results {
 			if result.Type == "track" && strings.HasSuffix(result.Path, "test.flac") {
 				found = &results[i]

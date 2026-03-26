@@ -6,10 +6,26 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
-
 )
 
-func (ml *Library) handleDirInfo(
+// DirEntry describes an element of a Dir.
+type DirEntry struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
+}
+
+// Dir describes a directory in the media library.
+type Dir struct {
+	Url       string     `json:"url"`
+	TopLevel  string     `json:"topLevel"`
+	Parent    string     `json:"parent"`
+	Path      string     `json:"path"`
+	Dirs      []DirEntry `json:"dirs"`
+	Playlists []DirEntry `json:"playlists"`
+	Tracks    []Track    `json:"tracks"`
+}
+
+func (ml *Library) handleDir(
 	ctx context.Context,
 	dirLibraryPath string,
 	w http.ResponseWriter,
@@ -30,32 +46,18 @@ func (ml *Library) handleDirInfo(
 		return
 	}
 
-	type PathUrl struct {
-		Name string `json:"name"`
-		Url  string `json:"url"`
-	}
-
-	type Result struct {
-		Url       string            `json:"url"`
-		TopLevel  string            `json:"topLevel"`
-		Parent    string            `json:"parent"`
-		Path      string            `json:"path"`
-		Dirs      []PathUrl         `json:"dirs"`
-		Playlists []PathUrl         `json:"playlists"`
-		Tracks    []TrackInfoResult `json:"tracks"`
-	}
-	result := Result{
+	result := Dir{
 		Url:       ml.libraryToUrlPath("dirs", dirLibraryPath),
 		TopLevel:  ml.libraryToUrlPath("dirs", ""),
 		Parent:    ml.libraryToUrlPath("dirs", cleanLibraryPath(path.Dir(dirLibraryPath))),
 		Path:      dirLibraryPath,
-		Dirs:      make([]PathUrl, 0, len(subdirs)),
-		Playlists: make([]PathUrl, 0),
-		Tracks:    make([]TrackInfoResult, 0, len(tracks)),
+		Dirs:      make([]DirEntry, 0, len(subdirs)),
+		Playlists: make([]DirEntry, 0),
+		Tracks:    make([]Track, 0, len(tracks)),
 	}
 
 	for _, d := range subdirs {
-		result.Dirs = append(result.Dirs, PathUrl{
+		result.Dirs = append(result.Dirs, DirEntry{
 			Name: filepath.Base(d.Path),
 			Url:  ml.libraryToUrlPath("dirs", d.Path),
 		})
@@ -68,7 +70,7 @@ func (ml *Library) handleDirInfo(
 	}
 	for _, p := range dbPlaylists {
 		playlistPath := joinLibraryPath(p.Dir, p.Name)
-		result.Playlists = append(result.Playlists, PathUrl{
+		result.Playlists = append(result.Playlists, DirEntry{
 			Name: p.Name,
 			Url:  ml.libraryToUrlPath("playlists", playlistPath),
 		})
@@ -97,7 +99,7 @@ func (ml *Library) handleDirInfo(
 			continue
 		}
 		t.Images = trackImages[t.ID]
-		result.Tracks = append(result.Tracks, ml.buildTrackInfo(&t, favorites[t.ID]))
+		result.Tracks = append(result.Tracks, ml.makeTrack(&t, favorites[t.ID]))
 	}
 
 	writeJson(ctx, w, result)

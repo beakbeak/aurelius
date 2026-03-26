@@ -110,7 +110,7 @@ func (db *DB) GetTrack(libraryPath string) (*Track, error) {
 
 // getTrackImages returns image metadata for a track (hash, mime type, size)
 // without loading the image data blob.
-func (db *DB) getTrackImages(trackID int64) ([]ImageInfo, error) {
+func (db *DB) getTrackImages(trackID int64) ([]Image, error) {
 	rows, err := db.db.Query(
 		`SELECT i.hash, i.mime_type, length(i.data)
 		FROM track_images ti
@@ -124,9 +124,9 @@ func (db *DB) getTrackImages(trackID int64) ([]ImageInfo, error) {
 	}
 	defer rows.Close()
 
-	var images []ImageInfo
+	var images []Image
 	for rows.Next() {
-		var img ImageInfo
+		var img Image
 		if err := rows.Scan(&img.Hash, &img.MimeType, &img.Size); err != nil {
 			return nil, err
 		}
@@ -190,7 +190,7 @@ func (db *DB) GetTracksInDir(dir string) ([]Track, error) {
 
 // GetTrackImagesInDir returns image metadata for all tracks in the given
 // directory, keyed by track ID.
-func (db *DB) GetTrackImagesInDir(dir string) (map[int64][]ImageInfo, error) {
+func (db *DB) GetTrackImagesInDir(dir string) (map[int64][]Image, error) {
 	rows, err := db.db.Query(
 		`SELECT t.id, i.hash, i.mime_type, length(i.data)
 		FROM tracks t
@@ -205,10 +205,10 @@ func (db *DB) GetTrackImagesInDir(dir string) (map[int64][]ImageInfo, error) {
 	}
 	defer rows.Close()
 
-	result := make(map[int64][]ImageInfo)
+	result := make(map[int64][]Image)
 	for rows.Next() {
 		var trackID int64
-		var img ImageInfo
+		var img Image
 		if err := rows.Scan(&trackID, &img.Hash, &img.MimeType, &img.Size); err != nil {
 			return nil, err
 		}

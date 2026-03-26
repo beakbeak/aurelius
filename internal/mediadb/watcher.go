@@ -467,9 +467,9 @@ func (w *Watcher) processTrackEvent(absPath, dir, name string, ev *pendingEvent,
 			slog.Warn("watcher: failed to hash created file", "path", absPath, "error", err)
 			return
 		}
-		changes.Added = append(changes.Added, HashedFSEntry{
-			FSEntry: FSEntry{Dir: dir, Name: name, Mtime: info.ModTime().Unix()},
-			Hash:    hash,
+		changes.Added = append(changes.Added, HashedFileInfo{
+			FileInfo: FileInfo{Dir: dir, Name: name, Mtime: info.ModTime().Unix()},
+			Hash:     hash,
 		})
 
 	case eventModified:
@@ -481,7 +481,7 @@ func (w *Watcher) processTrackEvent(absPath, dir, name string, ev *pendingEvent,
 		if !info.Mode().IsRegular() {
 			return
 		}
-		changes.Changed = append(changes.Changed, FSEntry{
+		changes.Changed = append(changes.Changed, FileInfo{
 			Dir: dir, Name: name, Mtime: info.ModTime().Unix(),
 		})
 
@@ -510,7 +510,7 @@ func (w *Watcher) processPlaylistEvent(absPath, dir, name string, ev *pendingEve
 		if !info.Mode().IsRegular() {
 			return
 		}
-		changes.AddedPlaylists = append(changes.AddedPlaylists, FSEntry{
+		changes.AddedPlaylists = append(changes.AddedPlaylists, FileInfo{
 			Dir: dir, Name: name, Mtime: info.ModTime().Unix(),
 		})
 
@@ -523,7 +523,7 @@ func (w *Watcher) processPlaylistEvent(absPath, dir, name string, ev *pendingEve
 		if !info.Mode().IsRegular() {
 			return
 		}
-		changes.ChangedPlaylists = append(changes.ChangedPlaylists, FSEntry{
+		changes.ChangedPlaylists = append(changes.ChangedPlaylists, FileInfo{
 			Dir: dir, Name: name, Mtime: info.ModTime().Unix(),
 		})
 
@@ -553,7 +553,7 @@ func (w *Watcher) processImageFileEvent(dir string, ev *pendingEvent, changes *C
 		if err != nil {
 			continue
 		}
-		changes.Changed = append(changes.Changed, FSEntry{
+		changes.Changed = append(changes.Changed, FileInfo{
 			Dir: t.Dir, Name: t.Name, Mtime: info.ModTime().Unix(),
 		})
 	}
@@ -711,7 +711,7 @@ func (w *Watcher) processDirConfigEvent(absPath, dir string, ev *pendingEvent, w
 		if existing, ok := existingFragments[syntheticName]; ok {
 			// Fragment exists — check if changed.
 			if existing.Mtime != mtime {
-				changes.Changed = append(changes.Changed, FSEntry{
+				changes.Changed = append(changes.Changed, FileInfo{
 					Dir: dir, Name: syntheticName, Mtime: mtime,
 				})
 			}
@@ -723,9 +723,9 @@ func (w *Watcher) processDirConfigEvent(absPath, dir string, ev *pendingEvent, w
 				continue
 			}
 			fragHash := computeFragmentHash(configHash, sourceHash, fragIdx)
-			changes.Added = append(changes.Added, HashedFSEntry{
-				FSEntry: FSEntry{Dir: dir, Name: syntheticName, Mtime: mtime},
-				Hash:    fragHash,
+			changes.Added = append(changes.Added, HashedFileInfo{
+				FileInfo: FileInfo{Dir: dir, Name: syntheticName, Mtime: mtime},
+				Hash:     fragHash,
 			})
 		}
 

@@ -27,16 +27,16 @@ const (
 	imageProcessingLogInterval = 5 * time.Second
 )
 
-// FSEntry represents a file found on the filesystem during scanning.
-type FSEntry struct {
+// FileInfo represents a file found on the filesystem during scanning.
+type FileInfo struct {
 	Dir   string
 	Name  string
 	Mtime int64
 }
 
-// HashedFSEntry is an FSEntry with a computed partial hash.
-type HashedFSEntry struct {
-	FSEntry
+// HashedFileInfo is a FileInfo with a computed partial hash.
+type HashedFileInfo struct {
+	FileInfo
 	Hash []byte
 }
 
@@ -51,28 +51,28 @@ type Move struct {
 
 // ChangeSet describes the differences between the filesystem and database.
 type ChangeSet struct {
-	Added   []HashedFSEntry
-	Changed []FSEntry
+	Added   []HashedFileInfo
+	Changed []FileInfo
 	Removed []Track
 	Moves   []Move
 
 	AddedDirs   []Dir
 	RemovedDirs []Dir
 
-	AddedPlaylists   []FSEntry
-	ChangedPlaylists []FSEntry
+	AddedPlaylists   []FileInfo
+	ChangedPlaylists []FileInfo
 	RemovedPlaylists []M3UPlaylist
 }
 
-// ScannedPlaylist is an FSEntry enriched with resolved track library paths.
+// ScannedPlaylist is a FileInfo enriched with resolved track library paths.
 type ScannedPlaylist struct {
-	FSEntry
+	FileInfo
 	TrackPaths []string
 }
 
-// ScannedTrack is an FSEntry enriched with metadata read from the file.
+// ScannedTrack is a FileInfo enriched with metadata read from the file.
 type ScannedTrack struct {
-	FSEntry
+	FileInfo
 	Hash     []byte
 	Tags     map[string]string
 	Metadata TrackMetadata
@@ -105,10 +105,10 @@ type resolvedFragment struct {
 // WalkResult holds the filesystem state collected by walkFilesystem and
 // enriched by expandFragments.
 type WalkResult struct {
-	Files      map[string]FSEntry // audio tracks keyed by library path
-	Dirs       map[string]Dir     // directories keyed by library path
-	Playlists  map[string]FSEntry // M3U playlists keyed by library path
-	DirConfigs map[string]FSEntry // aurelius.yaml files keyed by directory
+	Files      map[string]FileInfo // audio tracks keyed by library path
+	Dirs       map[string]Dir      // directories keyed by library path
+	Playlists  map[string]FileInfo // M3U playlists keyed by library path
+	DirConfigs map[string]FileInfo // aurelius.yaml files keyed by directory
 
 	// Fragments maps library paths (dir/syntheticName) to their resolved
 	// fragment definitions. Populated during expandFragments and consumed
@@ -197,10 +197,10 @@ func (s *Scanner) FullScan() error {
 // walkFilesystem walks the media library root and returns a WalkResult.
 func (s *Scanner) walkFilesystem() (*WalkResult, error) {
 	wr := &WalkResult{
-		Files:      make(map[string]FSEntry),
+		Files:      make(map[string]FileInfo),
 		Dirs:       make(map[string]Dir),
-		Playlists:  make(map[string]FSEntry),
-		DirConfigs: make(map[string]FSEntry),
+		Playlists:  make(map[string]FileInfo),
+		DirConfigs: make(map[string]FileInfo),
 		Fragments:  make(map[string]resolvedFragment),
 	}
 
@@ -246,7 +246,7 @@ func (s *Scanner) walkFilesystem() (*WalkResult, error) {
 			return nil
 		}
 
-		entry := FSEntry{
+		entry := FileInfo{
 			Dir:   CleanLibraryPath(path.Dir(libraryPath)),
 			Name:  name,
 			Mtime: info.ModTime().Unix(),
@@ -322,7 +322,7 @@ func (s *Scanner) expandFragments(wr *WalkResult) {
 			}
 			fragHash := computeFragmentHash(configHash, sourceHash, fragIdx)
 
-			wr.Files[libraryPath] = FSEntry{
+			wr.Files[libraryPath] = FileInfo{
 				Dir:   dir,
 				Name:  syntheticName,
 				Mtime: mtime,
@@ -361,9 +361,9 @@ func (s *Scanner) diffAgainstDB(wr *WalkResult) (*ChangeSet, error) {
 	// Compare tracks.
 	err := s.db.ForEachTrack(func(t *Track) error {
 		key := JoinLibraryPath(t.Dir, t.Name)
-		if fsEntry, ok := wr.Files[key]; ok {
-			if fsEntry.Mtime != t.Mtime {
-				changes.Changed = append(changes.Changed, fsEntry)
+		if fileInfo, ok := wr.Files[key]; ok {
+			if fileInfo.Mtime != t.Mtime {
+				changes.Changed = append(changes.Changed, fileInfo)
 			}
 			delete(wr.Files, key)
 		} else {
@@ -392,9 +392,9 @@ func (s *Scanner) diffAgainstDB(wr *WalkResult) (*ChangeSet, error) {
 				continue
 			}
 		}
-		changes.Added = append(changes.Added, HashedFSEntry{
-			FSEntry: entry,
-			Hash:    hash,
+		changes.Added = append(changes.Added, HashedFileInfo{
+			FileInfo: entry,
+			Hash:     hash,
 		})
 	}
 
@@ -416,9 +416,9 @@ func (s *Scanner) diffAgainstDB(wr *WalkResult) (*ChangeSet, error) {
 	// Compare playlists.
 	err = s.db.ForEachM3UPlaylist(func(p *M3UPlaylist) error {
 		key := JoinLibraryPath(p.Dir, p.Name)
-		if fsEntry, ok := wr.Playlists[key]; ok {
-			if fsEntry.Mtime != p.Mtime {
-				changes.ChangedPlaylists = append(changes.ChangedPlaylists, fsEntry)
+		if fileInfo, ok := wr.Playlists[key]; ok {
+			if fileInfo.Mtime != p.Mtime {
+				changes.ChangedPlaylists = append(changes.ChangedPlaylists, fileInfo)
 			}
 			delete(wr.Playlists, key)
 		} else {
@@ -491,7 +491,7 @@ func detectMoves(changes *ChangeSet) {
 
 	// Remove matched entries from Added and Removed.
 	if len(matchedAdded) > 0 {
-		var newAdded []HashedFSEntry
+		var newAdded []HashedFileInfo
 		for i, a := range changes.Added {
 			if !matchedAdded[i] {
 				newAdded = append(newAdded, a)
@@ -542,7 +542,7 @@ func (s *Scanner) detectRevivals(changes *ChangeSet) error {
 
 	if len(matched) > 0 {
 		slog.Info("revived soft-deleted tracks", "count", len(matched))
-		var newAdded []HashedFSEntry
+		var newAdded []HashedFileInfo
 		for i, a := range changes.Added {
 			if !matched[i] {
 				newAdded = append(newAdded, a)
@@ -565,7 +565,7 @@ func (s *Scanner) collectMetadata(wr *WalkResult, changes *ChangeSet) (*ScanResu
 
 	// Collect metadata for added tracks.
 	for _, entry := range changes.Added {
-		scanned, err := s.scanFile(wr, entry.FSEntry, entry.Hash)
+		scanned, err := s.scanFile(wr, entry.FileInfo, entry.Hash)
 		if err != nil {
 			slog.Warn("failed to scan added file", "dir", entry.Dir, "name", entry.Name, "error", err)
 			continue
@@ -603,7 +603,7 @@ func (s *Scanner) collectMetadata(wr *WalkResult, changes *ChangeSet) (*ScanResu
 			continue
 		}
 		result.AddedPlaylists = append(result.AddedPlaylists, ScannedPlaylist{
-			FSEntry:    entry,
+			FileInfo:   entry,
 			TrackPaths: resolvePlaylistTracks(entry.Dir, lines),
 		})
 	}
@@ -616,7 +616,7 @@ func (s *Scanner) collectMetadata(wr *WalkResult, changes *ChangeSet) (*ScanResu
 			continue
 		}
 		result.ChangedPlaylists = append(result.ChangedPlaylists, ScannedPlaylist{
-			FSEntry:    entry,
+			FileInfo:   entry,
 			TrackPaths: resolvePlaylistTracks(entry.Dir, lines),
 		})
 	}
@@ -668,7 +668,7 @@ func (s *Scanner) resolveTrackFSPath(wr *WalkResult, dir, name string) string {
 }
 
 // scanFile opens an audio file and extracts metadata.
-func (s *Scanner) scanFile(wr *WalkResult, entry FSEntry, hash []byte) (*ScannedTrack, error) {
+func (s *Scanner) scanFile(wr *WalkResult, entry FileInfo, hash []byte) (*ScannedTrack, error) {
 	libraryPath := JoinLibraryPath(entry.Dir, entry.Name)
 	rf, isFragment := wr.Fragments[libraryPath]
 
@@ -716,7 +716,7 @@ func (s *Scanner) scanFile(wr *WalkResult, entry FSEntry, hash []byte) (*Scanned
 
 	// Store fragment info in metadata.
 	if isFragment {
-		metadata.Fragment = &FragmentInfo{
+		metadata.Fragment = &Fragment{
 			SourceFile: rf.SourceFile,
 			Start:      rf.Config.Start.Seconds(),
 			End:        rf.Config.End.Seconds(),
@@ -741,7 +741,7 @@ func (s *Scanner) scanFile(wr *WalkResult, entry FSEntry, hash []byte) (*Scanned
 	}
 
 	return &ScannedTrack{
-		FSEntry:  entry,
+		FileInfo: entry,
 		Hash:     hash,
 		Tags:     tags,
 		Metadata: metadata,

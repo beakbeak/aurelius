@@ -33,7 +33,7 @@ func (ml *Library) newAudioSource(libraryPath string) (aurelib.Source, error) {
 	return aurelib.NewFileSource(ml.libraryToFsPath(libraryPath))
 }
 
-func (ml *Library) handleTrackStream(
+func (ml *Library) handleStreamTrack(
 	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,

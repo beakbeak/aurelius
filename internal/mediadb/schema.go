@@ -33,9 +33,9 @@ type ReplayGain struct {
 	AlbumNoclip float64 `json:"albumNoclip"`
 }
 
-// FragmentInfo holds the resolved fragment definition for a track that
+// Fragment holds the resolved fragment definition for a track that
 // represents a subsection of another audio file.
-type FragmentInfo struct {
+type Fragment struct {
 	SourceFile string  `json:"sourceFile"` // source audio filename (not path)
 	Start      float64 `json:"start"`      // start time in seconds
 	End        float64 `json:"end"`        // end time in seconds (0 = end of file)
@@ -43,18 +43,18 @@ type FragmentInfo struct {
 
 // TrackMetadata holds audio properties stored in the metadata JSON column.
 type TrackMetadata struct {
-	Duration     float64       `json:"duration"`
-	Codec        string        `json:"codec,omitempty"`
-	BitRate      int           `json:"bitRate"`
-	SampleRate   uint          `json:"sampleRate"`
-	SampleFormat string        `json:"sampleFormat"`
-	ReplayGain   *ReplayGain   `json:"replayGain,omitempty"`
-	Fragment     *FragmentInfo `json:"fragment,omitempty"`
+	Duration     float64     `json:"duration"`
+	Codec        string      `json:"codec,omitempty"`
+	BitRate      int         `json:"bitRate"`
+	SampleRate   uint        `json:"sampleRate"`
+	SampleFormat string      `json:"sampleFormat"`
+	ReplayGain   *ReplayGain `json:"replayGain,omitempty"`
+	Fragment     *Fragment   `json:"fragment,omitempty"`
 }
 
-// ImageInfo describes an image associated with a track. The binary data is
+// Image describes an image associated with a track. The binary data is
 // stored in the images table and referenced by hash.
-type ImageInfo struct {
+type Image struct {
 	Hash     []byte
 	MimeType string
 	Size     int
@@ -68,7 +68,7 @@ type Track struct {
 	Mtime    int64
 	Hash     []byte
 	Tags     map[string]string
-	Images   []ImageInfo
+	Images   []Image
 	Metadata TrackMetadata
 }
 

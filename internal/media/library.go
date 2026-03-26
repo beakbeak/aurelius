@@ -153,15 +153,15 @@ func (ml *Library) ServeHTTP(
 
 func (ml *Library) setupHandler() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /dirs/{dir}", makeHandler(ml, handleDirInfoWrapper))
-	mux.HandleFunc("GET /playlists/{playlist}", makeHandler(ml, handlePlaylistInfoWrapper))
-	mux.HandleFunc("GET /playlists/{playlist}/tracks/{track}", makeHandler(ml, handlePlaylistTrackWrapper))
-	mux.HandleFunc("GET /tracks/{track}", makeHandler(ml, handleTrackInfoWrapper))
-	mux.HandleFunc("GET /tracks/{track}/stream", makeHandler(ml, handleTrackStreamWrapper))
-	mux.HandleFunc("GET /images/{image}", makeHandler(ml, handleImageByHashWrapper))
-	mux.HandleFunc("GET /tracks/{track}/images/{image}", makeHandler(ml, handleTrackImageWrapper))
-	mux.HandleFunc("POST /tracks/{track}/favorite", makeHandler(ml, handleTrackFavoriteWrapper))
-	mux.HandleFunc("POST /tracks/{track}/unfavorite", makeHandler(ml, handleTrackUnfavoriteWrapper))
+	mux.HandleFunc("GET /dirs/{dir}", makeHandler(ml, handleGetDirWrapper))
+	mux.HandleFunc("GET /playlists/{playlist}", makeHandler(ml, handleGetPlaylistWrapper))
+	mux.HandleFunc("GET /playlists/{playlist}/tracks/{track}", makeHandler(ml, handleGetPlaylistTrackWrapper))
+	mux.HandleFunc("GET /tracks/{track}", makeHandler(ml, handleGetTrackWrapper))
+	mux.HandleFunc("GET /tracks/{track}/stream", makeHandler(ml, handleStreamTrackWrapper))
+	mux.HandleFunc("GET /images/{image}", makeHandler(ml, handleGetImageWrapper))
+	mux.HandleFunc("GET /tracks/{track}/images/{image}", makeHandler(ml, handleGetTrackImageWrapper))
+	mux.HandleFunc("POST /tracks/{track}/favorite", makeHandler(ml, handleSetTrackFavoriteWrapper))
+	mux.HandleFunc("POST /tracks/{track}/unfavorite", makeHandler(ml, handleUnsetTrackFavoriteWrapper))
 	mux.HandleFunc("GET /search", makeHandler(ml, handleSearch))
 	ml.handler = http.StripPrefix(ml.config.Prefix, mux)
 }
@@ -184,18 +184,18 @@ func parseAt(s string) (string, bool) {
 	return "", false
 }
 
-func handleDirInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleGetDirWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("dir")); ok {
-		ml.handleDirInfo(r.Context(), path, w)
+		ml.handleDir(r.Context(), path, w)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handlePlaylistInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleGetPlaylistWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("playlist")
 	if id == "favorites" {
-		ml.handleFavoritesInfo(w, r)
+		ml.handleGetFavorites(w, r)
 		return
 	}
 	path, ok := parseAt(id)
@@ -203,10 +203,10 @@ func handlePlaylistInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Reque
 		http.NotFound(w, r)
 		return
 	}
-	ml.handleM3UPlaylistInfo(path, w, r)
+	ml.handleGetM3UPlaylist(path, w, r)
 }
 
-func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleGetPlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	posStr := r.PathValue("track")
 	pos, err := strconv.Atoi(posStr)
 	if err != nil {
@@ -217,7 +217,7 @@ func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Requ
 
 	id := r.PathValue("playlist")
 	if id == "favorites" {
-		ml.handleFavoritesTrack(pos, w, r)
+		ml.handleGetFavoritesTrack(pos, w, r)
 		return
 	}
 	path, ok := parseAt(id)
@@ -225,59 +225,58 @@ func handlePlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Requ
 		http.NotFound(w, r)
 		return
 	}
-	ml.handleM3UPlaylistTrack(path, pos, w, r)
+	ml.handleGetM3UPlaylistTrack(path, pos, w, r)
 }
 
-func handleTrackInfoWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleGetTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackInfo(path, w, r)
+		ml.handleGetTrack(path, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handleTrackStreamWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleStreamTrackWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
 		slog.InfoContext(r.Context(), "stream", "path", path)
-		ml.handleTrackStream(path, w, r)
+		ml.handleStreamTrack(path, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handleImageByHashWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleGetImageWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	image := r.PathValue("image")
 	if hashHex, ok := strings.CutPrefix(image, "hash:"); ok {
-		ml.handleImageByHash(hashHex, w, r)
+		ml.handleGetImage(hashHex, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handleTrackImageWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleGetTrackImageWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackImage(path, r.PathValue("image"), w, r)
+		ml.handleGetTrackImage(path, r.PathValue("image"), w, r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handleTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleSetTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackFavorite(path, true, w, r)
+		ml.handleSetTrackFavorite(path, true, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func handleTrackUnfavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
+func handleUnsetTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("track")); ok {
-		ml.handleTrackFavorite(path, false, w, r)
+		ml.handleSetTrackFavorite(path, false, w, r)
 	} else {
 		http.NotFound(w, r)
 	}
 }
-
 
 func writeJson(
 	ctx context.Context,

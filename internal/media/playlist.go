@@ -5,7 +5,18 @@ import (
 	"net/http"
 )
 
-func (ml *Library) handleM3UPlaylistInfo(
+// PlaylistTrack describes a track in a playlist.
+type PlaylistTrack struct {
+	Pos  int    `json:"pos"`
+	Path string `json:"path"`
+}
+
+// Playlist describes a playlist.
+type Playlist struct {
+	Length int `json:"length"`
+}
+
+func (ml *Library) handleGetM3UPlaylist(
 	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -17,13 +28,10 @@ func (ml *Library) handleM3UPlaylistInfo(
 		return
 	}
 
-	type Result struct {
-		Length int `json:"length"`
-	}
-	writeJson(req.Context(), w, Result{Length: count})
+	writeJson(req.Context(), w, Playlist{Length: count})
 }
 
-func (ml *Library) handleM3UPlaylistTrack(
+func (ml *Library) handleGetM3UPlaylistTrack(
 	libraryPath string,
 	pos int,
 	w http.ResponseWriter,
@@ -42,17 +50,13 @@ func (ml *Library) handleM3UPlaylistTrack(
 		return
 	}
 
-	type Result struct {
-		Pos  int    `json:"pos"`
-		Path string `json:"path"`
-	}
-	writeJson(ctx, w, Result{
+	writeJson(ctx, w, PlaylistTrack{
 		Pos:  pos,
 		Path: ml.libraryToUrlPath("tracks", trackPath),
 	})
 }
 
-func (ml *Library) handleFavoritesInfo(
+func (ml *Library) handleGetFavorites(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
@@ -64,13 +68,10 @@ func (ml *Library) handleFavoritesInfo(
 		return
 	}
 
-	type Result struct {
-		Length int `json:"length"`
-	}
-	writeJson(req.Context(), w, Result{Length: count})
+	writeJson(req.Context(), w, Playlist{Length: count})
 }
 
-func (ml *Library) handleFavoritesTrack(
+func (ml *Library) handleGetFavoritesTrack(
 	pos int,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -89,11 +90,7 @@ func (ml *Library) handleFavoritesTrack(
 		return
 	}
 
-	type Result struct {
-		Pos  int    `json:"pos"`
-		Path string `json:"path"`
-	}
-	writeJson(ctx, w, Result{
+	writeJson(ctx, w, PlaylistTrack{
 		Pos:  pos,
 		Path: ml.libraryToUrlPath("tracks", libraryPath),
 	})

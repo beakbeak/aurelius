@@ -10,7 +10,31 @@ import (
 	"github.com/beakbeak/aurelius/internal/mediadb"
 )
 
-func (ml *Library) handleTrackFavorite(
+// Image describes an image attached to a track.
+type Image struct {
+	MimeType string `json:"mimeType"`
+	Size     int    `json:"size"`
+	Url      string `json:"url"`
+}
+
+// Track is the JSON representation of a track returned by the API.
+type Track struct {
+	Name            string            `json:"name"`
+	Url             string            `json:"url"`
+	Duration        float64           `json:"duration"`
+	ReplayGainTrack float64           `json:"replayGainTrack"`
+	ReplayGainAlbum float64           `json:"replayGainAlbum"`
+	Favorite        bool              `json:"favorite"`
+	Tags            map[string]string `json:"tags"`
+	AttachedImages  []Image           `json:"attachedImages"`
+	Codec           string            `json:"codec"`
+	BitRate         int               `json:"bitRate"`
+	SampleRate      uint              `json:"sampleRate"`
+	SampleFormat    string            `json:"sampleFormat"`
+	Dir             string            `json:"dir"`
+}
+
+func (ml *Library) handleSetTrackFavorite(
 	libraryPath string,
 	favorite bool,
 	w http.ResponseWriter,
@@ -36,34 +60,10 @@ func (ml *Library) handleTrackFavorite(
 	}
 }
 
-// AttachedImageInfo describes an image attached to a track.
-type AttachedImageInfo struct {
-	MimeType string `json:"mimeType"`
-	Size     int    `json:"size"`
-	Url      string `json:"url"`
-}
-
-// TrackInfoResult is the JSON representation of a track returned by the API.
-type TrackInfoResult struct {
-	Name            string              `json:"name"`
-	Url             string              `json:"url"`
-	Duration        float64             `json:"duration"`
-	ReplayGainTrack float64             `json:"replayGainTrack"`
-	ReplayGainAlbum float64             `json:"replayGainAlbum"`
-	Favorite        bool                `json:"favorite"`
-	Tags            map[string]string   `json:"tags"`
-	AttachedImages  []AttachedImageInfo `json:"attachedImages"`
-	Codec           string              `json:"codec"`
-	BitRate         int                 `json:"bitRate"`
-	SampleRate      uint                `json:"sampleRate"`
-	SampleFormat    string              `json:"sampleFormat"`
-	Dir             string              `json:"dir"`
-}
-
-func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) TrackInfoResult {
-	images := make([]AttachedImageInfo, 0, len(track.Images))
+func (ml *Library) makeTrack(track *mediadb.Track, favorite bool) Track {
+	images := make([]Image, 0, len(track.Images))
 	for _, img := range track.Images {
-		images = append(images, AttachedImageInfo{
+		images = append(images, Image{
 			MimeType: img.MimeType,
 			Size:     img.Size,
 			Url:      ml.makeImageUrl(img.Hash),
@@ -78,7 +78,7 @@ func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) TrackInfo
 	}
 
 	trackPath := joinLibraryPath(track.Dir, track.Name)
-	return TrackInfoResult{
+	return Track{
 		Name:            track.Name,
 		Url:             ml.libraryToUrlPath("tracks", trackPath),
 		Duration:        track.Metadata.Duration,
@@ -95,7 +95,7 @@ func (ml *Library) buildTrackInfo(track *mediadb.Track, favorite bool) TrackInfo
 	}
 }
 
-func (ml *Library) handleTrackInfo(
+func (ml *Library) handleGetTrack(
 	libraryPath string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -117,10 +117,10 @@ func (ml *Library) handleTrackInfo(
 		slog.ErrorContext(ctx, "IsFavorite failed", "error", err)
 	}
 
-	writeJson(ctx, w, ml.buildTrackInfo(track, favorite))
+	writeJson(ctx, w, ml.makeTrack(track, favorite))
 }
 
-func (ml *Library) handleImageByHash(
+func (ml *Library) handleGetImage(
 	hashHex string,
 	w http.ResponseWriter,
 	req *http.Request,
@@ -151,7 +151,7 @@ func (ml *Library) handleImageByHash(
 	}
 }
 
-func (ml *Library) handleTrackImage(
+func (ml *Library) handleGetTrackImage(
 	libraryPath string,
 	indexStr string,
 	w http.ResponseWriter,
