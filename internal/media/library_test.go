@@ -1081,7 +1081,7 @@ func TestSearch(t *testing.T) {
 	})
 
 	t.Run("TrackResultsIncludeTrackInfo", func(t *testing.T) {
-		results := doSearch("test.flac")
+		results := doSearch("Aurelius Test Data")
 		var found *media.SearchResult
 		for i, result := range results {
 			if result.Type == "track" && strings.HasSuffix(result.Path, "test.flac") {
@@ -1090,7 +1090,7 @@ func TestSearch(t *testing.T) {
 			}
 		}
 		if found == nil {
-			t.Fatal("expected to find test.flac in search results")
+			t.Fatal("expected to find test.flac in search results via metadata")
 		}
 		if found.Track == nil {
 			t.Fatal("expected track result to include track info")
@@ -1152,9 +1152,57 @@ func TestSearch(t *testing.T) {
 	})
 
 	t.Run("SearchForToken", func(t *testing.T) {
-		results := doSearch("positive")
+		results := doSearch("Aurelius Test Data")
 		if len(results) == 0 {
-			t.Error("search for 'positive' should find test-positive-gain.ogg")
+			t.Error("search for 'Aurelius Test Data' should find tracks via metadata")
+		}
+	})
+
+	t.Run("SearchByArtist", func(t *testing.T) {
+		results := doSearch("Aurelius")
+		if len(results) == 0 {
+			t.Error("search for 'Aurelius' should find tracks by artist tag")
+		}
+		foundTrack := false
+		for _, result := range results {
+			if result.Type == "track" {
+				foundTrack = true
+				break
+			}
+		}
+		if !foundTrack {
+			t.Error("search for 'Aurelius' should return at least one track result")
+		}
+	})
+
+	t.Run("SearchByTitle", func(t *testing.T) {
+		results := doSearch("Baz All Night")
+		found := false
+		for _, result := range results {
+			if result.Type == "track" && result.Track != nil && result.Track.Tags["title"] == "Baz All Night" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("search for 'Baz All Night' should find the fragment track by title tag")
+		}
+	})
+
+	t.Run("SearchByAlbum", func(t *testing.T) {
+		results := doSearch("Greatest Hits")
+		if len(results) == 0 {
+			t.Error("search for 'Greatest Hits' should find tracks by album tag")
+		}
+		foundTrack := false
+		for _, result := range results {
+			if result.Type == "track" {
+				foundTrack = true
+				break
+			}
+		}
+		if !foundTrack {
+			t.Error("search for 'Greatest Hits' should return at least one track result")
 		}
 	})
 }

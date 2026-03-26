@@ -19,41 +19,6 @@ CREATE TABLE favorites (
     track_id INTEGER PRIMARY KEY REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
     added_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
-CREATE VIRTUAL TABLE path_search_index USING fts5(
-    path,
-    type UNINDEXED,
-    tokenize='trigram case_sensitive 0 remove_diacritics 1'
-)
-/* path_search_index(path,type) */;
-CREATE TABLE IF NOT EXISTS 'path_search_index_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'path_search_index_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'path_search_index_content'(id INTEGER PRIMARY KEY, c0, c1);
-CREATE TABLE IF NOT EXISTS 'path_search_index_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'path_search_index_config'(k PRIMARY KEY, v) WITHOUT ROWID;
-CREATE TRIGGER path_search_track_ai AFTER INSERT ON tracks_with_deletes
-WHEN NEW.deleted = 0
-BEGIN
-    INSERT INTO path_search_index (path, type) VALUES (
-        CASE WHEN NEW.dir = '' THEN NEW.name
-             ELSE NEW.dir || '/' || NEW.name END,
-        'track'
-    );
-END;
-CREATE TRIGGER path_search_track_ad AFTER DELETE ON tracks_with_deletes
-BEGIN
-    DELETE FROM path_search_index
-    WHERE type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
-END;
-CREATE TRIGGER path_search_dir_ai AFTER INSERT ON dirs
-BEGIN
-    INSERT INTO path_search_index (path, type) VALUES (NEW.path, 'dir');
-END;
-CREATE TRIGGER path_search_dir_ad AFTER DELETE ON dirs
-BEGIN
-    DELETE FROM path_search_index WHERE path = OLD.path AND type = 'dir';
-END;
 CREATE TABLE m3u_playlists (
     id    INTEGER PRIMARY KEY,
     dir   TEXT NOT NULL,
@@ -89,20 +54,6 @@ CREATE VIEW tracks AS
   FROM tracks_with_deletes
   WHERE deleted = 0
 /* tracks(id,dir,name,mtime,hash,tags,metadata) */;
-CREATE TRIGGER path_search_track_au AFTER UPDATE ON tracks_with_deletes
-WHEN OLD.dir != NEW.dir OR OLD.name != NEW.name OR OLD.deleted != NEW.deleted
-BEGIN
-    DELETE FROM path_search_index
-    WHERE OLD.deleted = 0
-      AND type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
-    INSERT INTO path_search_index (path, type)
-    SELECT CASE WHEN NEW.dir = '' THEN NEW.name
-                ELSE NEW.dir || '/' || NEW.name END,
-           'track'
-    WHERE NEW.deleted = 0;
-END;
 CREATE TABLE play_history (
     id        INTEGER PRIMARY KEY,
     track_id  INTEGER NOT NULL REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
@@ -130,3 +81,71 @@ SELECT
     END AS is_skipped
 FROM base
 /* play_history_plus(id,track_id,played_at,duration,seconds_played,is_skipped) */;
+CREATE VIRTUAL TABLE search_index USING fts5(
+    text,
+    path UNINDEXED,
+    type UNINDEXED,
+    tokenize='trigram case_sensitive 0 remove_diacritics 1'
+)
+/* search_index(text,path,type) */;
+CREATE TABLE IF NOT EXISTS 'search_index_data'(id INTEGER PRIMARY KEY, block BLOB);
+CREATE TABLE IF NOT EXISTS 'search_index_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS 'search_index_content'(id INTEGER PRIMARY KEY, c0, c1, c2);
+CREATE TABLE IF NOT EXISTS 'search_index_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
+CREATE TABLE IF NOT EXISTS 'search_index_config'(k PRIMARY KEY, v) WITHOUT ROWID;
+CREATE TRIGGER search_track_ai AFTER INSERT ON tracks_with_deletes
+WHEN NEW.deleted = 0
+BEGIN
+    INSERT INTO search_index (text, path, type) VALUES (
+        NEW.dir || ' ' || CASE
+            WHEN json_extract(NEW.tags, '$.artist') IS NOT NULL
+             AND json_extract(NEW.tags, '$.title') IS NOT NULL
+            THEN json_extract(NEW.tags, '$.artist')
+                 || ' ' || json_extract(NEW.tags, '$.title')
+                 || ' ' || COALESCE(json_extract(NEW.tags, '$.album'), '')
+            ELSE NEW.name
+        END,
+        CASE WHEN NEW.dir = '' THEN NEW.name
+             ELSE NEW.dir || '/' || NEW.name END,
+        'track'
+    );
+END;
+CREATE TRIGGER search_track_au AFTER UPDATE ON tracks_with_deletes
+WHEN OLD.dir != NEW.dir OR OLD.name != NEW.name
+  OR OLD.deleted != NEW.deleted OR OLD.tags != NEW.tags
+BEGIN
+    DELETE FROM search_index
+    WHERE OLD.deleted = 0
+      AND type = 'track'
+      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
+                      ELSE OLD.dir || '/' || OLD.name END;
+    INSERT INTO search_index (text, path, type)
+    SELECT
+        NEW.dir || ' ' || CASE
+            WHEN json_extract(NEW.tags, '$.artist') IS NOT NULL
+             AND json_extract(NEW.tags, '$.title') IS NOT NULL
+            THEN json_extract(NEW.tags, '$.artist')
+                 || ' ' || json_extract(NEW.tags, '$.title')
+                 || ' ' || COALESCE(json_extract(NEW.tags, '$.album'), '')
+            ELSE NEW.name
+        END,
+        CASE WHEN NEW.dir = '' THEN NEW.name
+             ELSE NEW.dir || '/' || NEW.name END,
+        'track'
+    WHERE NEW.deleted = 0;
+END;
+CREATE TRIGGER search_track_ad AFTER DELETE ON tracks_with_deletes
+BEGIN
+    DELETE FROM search_index
+    WHERE type = 'track'
+      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
+                      ELSE OLD.dir || '/' || OLD.name END;
+END;
+CREATE TRIGGER search_dir_ai AFTER INSERT ON dirs
+BEGIN
+    INSERT INTO search_index (text, path, type) VALUES (NEW.path, NEW.path, 'dir');
+END;
+CREATE TRIGGER search_dir_ad AFTER DELETE ON dirs
+BEGIN
+    DELETE FROM search_index WHERE path = OLD.path AND type = 'dir';
+END;

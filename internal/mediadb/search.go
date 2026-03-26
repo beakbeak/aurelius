@@ -30,7 +30,7 @@ func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 	}
 
 	rows, err := db.db.Query(
-		`SELECT path, type FROM path_search_index WHERE path_search_index MATCH ? ORDER BY rank LIMIT ?`,
+		`SELECT path, type FROM search_index WHERE search_index MATCH ? ORDER BY rank LIMIT ?`,
 		ftsQuery, limit,
 	)
 	if err != nil {
