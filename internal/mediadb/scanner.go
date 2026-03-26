@@ -132,6 +132,29 @@ func (s *Scanner) fsPath(dir, name string) string {
 	return filepath.Join(s.rootPath, filepath.FromSlash(dir), name)
 }
 
+// computeFragmentMtime computes a fragment's mtime from its config and source
+// file mtimes.
+func computeFragmentMtime(configMtime, sourceMtime int64) int64 {
+	if sourceMtime > configMtime {
+		return sourceMtime
+	}
+	return configMtime
+}
+
+// loadFragmentMtime computes a fragment's mtime by stat-ing the config and source
+// files on disk. Returns 0 if the config file cannot be found.
+func (s *Scanner) loadFragmentMtime(dir, sourceFile string) int64 {
+	configInfo, err := os.Lstat(s.fsPath(dir, dirConfigName))
+	if err != nil {
+		return 0
+	}
+	var sourceMtime int64
+	if sourceInfo, err := os.Lstat(s.fsPath(dir, sourceFile)); err == nil {
+		sourceMtime = sourceInfo.ModTime().Unix()
+	}
+	return computeFragmentMtime(configInfo.ModTime().Unix(), sourceMtime)
+}
+
 // FullScan walks the entire filesystem, diffs against the DB, detects moves,
 // collects metadata, and applies the result.
 func (s *Scanner) FullScan() error {
@@ -307,12 +330,11 @@ func (s *Scanner) expandFragments(wr *WalkResult) {
 			syntheticName := MakeFragmentName(sourceFile, fragIdx)
 			libraryPath := JoinLibraryPath(dir, syntheticName)
 
-			// Compute mtime as max(yaml mtime, source mtime).
-			sourcePath := JoinLibraryPath(dir, sourceFile)
-			mtime := configEntry.Mtime
-			if sourceEntry, ok := wr.Files[sourcePath]; ok && sourceEntry.Mtime > mtime {
-				mtime = sourceEntry.Mtime
+			var sourceMtime int64
+			if sourceEntry, ok := wr.Files[JoinLibraryPath(dir, sourceFile)]; ok {
+				sourceMtime = sourceEntry.Mtime
 			}
+			mtime := computeFragmentMtime(configEntry.Mtime, sourceMtime)
 
 			// Compute a combined hash for move detection.
 			sourceHash, err := computePartialHash(s.fsPath(dir, sourceFile))

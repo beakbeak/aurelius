@@ -350,7 +350,11 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 					if ev.kind == eventModified || ev.kind == eventCreated {
 						modifiedTrackDirs[dir] = true
 					}
-				case FileTypePlaylist, FileTypeImage, FileTypeIgnored:
+				case FileTypeImage:
+					if ev.kind == eventModified || ev.kind == eventCreated {
+						modifiedTrackDirs[dir] = true
+					}
+				case FileTypePlaylist, FileTypeIgnored:
 				}
 			}
 		}
@@ -549,12 +553,18 @@ func (w *Watcher) processImageFileEvent(dir string, ev *pendingEvent, changes *C
 		return
 	}
 	for _, t := range tracks {
-		info, err := os.Lstat(w.scanner.fsPath(t.Dir, t.Name))
-		if err != nil {
-			continue
+		var mtime int64
+		if t.Metadata.Fragment != nil {
+			mtime = w.scanner.loadFragmentMtime(t.Dir, t.Metadata.Fragment.SourceFile)
+		} else {
+			info, err := os.Lstat(w.scanner.fsPath(t.Dir, t.Name))
+			if err != nil {
+				continue
+			}
+			mtime = info.ModTime().Unix()
 		}
 		changes.Changed = append(changes.Changed, FileInfo{
-			Dir: t.Dir, Name: t.Name, Mtime: info.ModTime().Unix(),
+			Dir: t.Dir, Name: t.Name, Mtime: mtime,
 		})
 	}
 }
@@ -659,13 +669,6 @@ func (w *Watcher) processDirConfigEvent(absPath, dir string, ev *pendingEvent, w
 		return
 	}
 
-	info, err := os.Lstat(absPath)
-	if err != nil {
-		slog.Warn("watcher: failed to stat dir config", "path", absPath, "error", err)
-		return
-	}
-	configMtime := info.ModTime().Unix()
-
 	// Build a set of non-fragment audio filenames from existing DB tracks.
 	audioNameSet := make(map[string]bool)
 	for _, t := range existingTracks {
@@ -699,14 +702,7 @@ func (w *Watcher) processDirConfigEvent(absPath, dir string, ev *pendingEvent, w
 		syntheticName := MakeFragmentName(sourceFile, fragIdx)
 		newFragments[syntheticName] = true
 
-		// Compute mtime as max(configMtime, sourceMtime).
-		mtime := configMtime
-		sourceFSPath := w.scanner.fsPath(dir, sourceFile)
-		if sourceInfo, err := os.Lstat(sourceFSPath); err == nil {
-			if sourceMtime := sourceInfo.ModTime().Unix(); sourceMtime > mtime {
-				mtime = sourceMtime
-			}
-		}
+		mtime := w.scanner.loadFragmentMtime(dir, sourceFile)
 
 		if existing, ok := existingFragments[syntheticName]; ok {
 			// Fragment exists — check if changed.
@@ -717,7 +713,7 @@ func (w *Watcher) processDirConfigEvent(absPath, dir string, ev *pendingEvent, w
 			}
 		} else {
 			// New fragment.
-			sourceHash, err := computePartialHash(sourceFSPath)
+			sourceHash, err := computePartialHash(w.scanner.fsPath(dir, sourceFile))
 			if err != nil {
 				slog.Warn("watcher: failed to hash fragment source", "dir", dir, "name", sourceFile, "error", err)
 				continue

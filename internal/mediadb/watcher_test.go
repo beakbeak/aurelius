@@ -828,6 +828,55 @@ func TestWatcherFragmentSourceFileModify(t *testing.T) {
 	}
 }
 
+func TestWatcherFragmentImageAdd(t *testing.T) {
+	_, db, _, tmpDir, batchApplied := setupWatcherTestWithFragments(t)
+
+	// Verify the fragment and the source track exist after initial scan.
+	fragName := MakeFragmentName("test.ogg", 1)
+	fragTrack, err := db.GetTrack(fragName)
+	if err != nil || fragTrack == nil {
+		t.Fatalf("expected fragment %q in DB after initial scan", fragName)
+	}
+	sourceTrack, err := db.GetTrack("test.ogg")
+	if err != nil || sourceTrack == nil {
+		t.Fatalf("expected source track in DB after initial scan")
+	}
+
+	// Record initial image counts (source may have embedded images).
+	initialSourceImages := len(sourceTrack.Images)
+	initialFragImages := len(fragTrack.Images)
+
+	// Add a directory image file.
+	imgData, err := os.ReadFile(filepath.Join(testMediaPath(), "front.jpg"))
+	if err != nil {
+		t.Fatalf("failed to read test image: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "front.jpg"), imgData, 0o644); err != nil {
+		t.Fatalf("failed to write image file: %v", err)
+	}
+
+	waitForBatch(t, batchApplied)
+
+	// Both the source track and the fragment should have gained the new image.
+	sourceTrack, err = db.GetTrack("test.ogg")
+	if err != nil || sourceTrack == nil {
+		t.Fatalf("expected source track in DB after image add")
+	}
+	if len(sourceTrack.Images) <= initialSourceImages {
+		t.Errorf("expected source track image count to increase from %d, got %d",
+			initialSourceImages, len(sourceTrack.Images))
+	}
+
+	fragTrack, err = db.GetTrack(fragName)
+	if err != nil || fragTrack == nil {
+		t.Fatalf("expected fragment %q in DB after image add", fragName)
+	}
+	if len(fragTrack.Images) <= initialFragImages {
+		t.Errorf("expected fragment image count to increase from %d, got %d",
+			initialFragImages, len(fragTrack.Images))
+	}
+}
+
 func TestWatcherBatchCallback(t *testing.T) {
 	_, _, _, tmpDir, batchApplied := setupWatcherTest(t)
 
