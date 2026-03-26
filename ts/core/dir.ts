@@ -1,7 +1,7 @@
 import { fetchJson } from "./json";
 import { TrackInfo } from "./track";
 
-export interface PathUrl {
+export interface DirEntry {
     readonly name: string;
     readonly url: string;
 }
@@ -11,8 +11,8 @@ export interface DirInfo {
     readonly topLevel: string;
     readonly parent: string;
     readonly path: string;
-    readonly dirs: PathUrl[];
-    readonly playlists: PathUrl[];
+    readonly dirs: DirEntry[];
+    readonly playlists: DirEntry[];
     readonly tracks: TrackInfo[];
 }
 

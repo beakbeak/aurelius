@@ -1,14 +1,14 @@
 import { fetchJson, nullToUndefined } from "./json";
 
-export interface PlaylistItem {
+export interface PlaylistTrack {
     readonly path: string;
     readonly pos: number;
 }
 
 export interface Playlist {
     length(): number;
-    at(pos: number): Promise<PlaylistItem | undefined>;
-    random(): Promise<PlaylistItem | undefined>;
+    at(pos: number): Promise<PlaylistTrack | undefined>;
+    random(): Promise<PlaylistTrack | undefined>;
 }
 
 /** Return a random integer in the range `[min, max)`.*/
@@ -30,7 +30,7 @@ export class LocalPlaylist implements Playlist {
         return this._urls.length;
     }
 
-    public async at(pos: number): Promise<PlaylistItem | undefined> {
+    public async at(pos: number): Promise<PlaylistTrack | undefined> {
         const url = this._urls[pos];
         if (url === undefined) {
             return undefined;
@@ -38,7 +38,7 @@ export class LocalPlaylist implements Playlist {
         return { path: url, pos: pos };
     }
 
-    public async random(): Promise<PlaylistItem | undefined> {
+    public async random(): Promise<PlaylistTrack | undefined> {
         if (this._urls.length < 1) {
             return undefined;
         }
@@ -67,7 +67,7 @@ export class RemotePlaylist implements Playlist {
         interface Info {
             length: number;
         }
-        
+
         // Add prefix to the info fetch URL if provided
         const fetchUrl = prefix ? `${url}?prefix=${encodeURIComponent(prefix)}` : url;
         const info = await fetchJson<Info>(fetchUrl);
@@ -78,18 +78,22 @@ export class RemotePlaylist implements Playlist {
         return this._length;
     }
 
-    public async at(pos: number): Promise<PlaylistItem | undefined> {
+    public async at(pos: number): Promise<PlaylistTrack | undefined> {
         const baseUrl = `${this.url}/tracks/${pos}`;
-        const fetchUrl = this._prefix ? `${baseUrl}?prefix=${encodeURIComponent(this._prefix)}` : baseUrl;
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(fetchUrl));
+        const fetchUrl = this._prefix
+            ? `${baseUrl}?prefix=${encodeURIComponent(this._prefix)}`
+            : baseUrl;
+        return nullToUndefined(await fetchJson<PlaylistTrack | null>(fetchUrl));
     }
 
-    public async random(): Promise<PlaylistItem | undefined> {
+    public async random(): Promise<PlaylistTrack | undefined> {
         if (this._length < 1) {
             return Promise.resolve(undefined);
         }
         const baseUrl = `${this.url}/tracks/${randomInt(0, this._length)}`;
-        const fetchUrl = this._prefix ? `${baseUrl}?prefix=${encodeURIComponent(this._prefix)}` : baseUrl;
-        return nullToUndefined(await fetchJson<PlaylistItem | null>(fetchUrl));
+        const fetchUrl = this._prefix
+            ? `${baseUrl}?prefix=${encodeURIComponent(this._prefix)}`
+            : baseUrl;
+        return nullToUndefined(await fetchJson<PlaylistTrack | null>(fetchUrl));
     }
 }

@@ -1,5 +1,5 @@
 import { Track, StreamConfig, ReplayGainMode } from "./track";
-import { Playlist, PlaylistItem, LocalPlaylist, RemotePlaylist } from "./playlist";
+import { Playlist, PlaylistTrack, LocalPlaylist, RemotePlaylist } from "./playlist";
 import { PlayHistory } from "./history";
 import EventDispatcher from "./eventdispatcher";
 import { copyJson } from "./json";
@@ -44,7 +44,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     private _isRestarting = false;
     private _stallDetectionEnabled = true;
 
-    private _preload?: { track?: Track; item: PlaylistItem };
+    private _preload?: { track?: Track; item: PlaylistTrack };
     private _streamConfig: PlayerStreamConfig;
 
     public track?: Track;
@@ -72,7 +72,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         this._preload = undefined;
     }
 
-    private async _peekNextItem(): Promise<PlaylistItem | undefined> {
+    private async _peekNextItem(): Promise<PlaylistTrack | undefined> {
         const historyNext = this._history.peekNext();
         if (historyNext !== undefined) {
             return historyNext;
@@ -98,7 +98,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             if (!nextItem) {
                 return;
             }
-            const preload: { track?: Track; item: PlaylistItem } = { item: nextItem };
+            const preload: { track?: Track; item: PlaylistTrack } = { item: nextItem };
             this._preload = preload;
 
             const streamConfig = this._resolveStreamConfig();

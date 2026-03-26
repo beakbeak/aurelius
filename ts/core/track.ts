@@ -1,6 +1,6 @@
 import { fetchJson, postJson, copyJson } from "./json";
 
-export interface AttachedImageInfo {
+export interface ImageInfo {
     readonly mimeType: string;
     readonly size: number;
     readonly url: string;
@@ -13,7 +13,7 @@ export interface TrackInfo {
     readonly replayGainTrack: number;
     readonly replayGainAlbum: number;
     readonly tags: { [key: string]: string | undefined };
-    readonly attachedImages: AttachedImageInfo[];
+    readonly attachedImages: ImageInfo[];
     readonly codec: string;
     readonly bitRate: number;
     readonly sampleRate: number;

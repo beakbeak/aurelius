@@ -1,12 +1,12 @@
-import { PlaylistItem } from "./playlist";
+import { PlaylistTrack } from "./playlist";
 
 export class PlayHistory {
     private static readonly _maxLength = 1024;
 
-    private _items: PlaylistItem[] = [];
+    private _items: PlaylistTrack[] = [];
     private _index = 0;
 
-    public push(item: PlaylistItem): void {
+    public push(item: PlaylistTrack): void {
         this._items.splice(this._index + 1, this._items.length - (this._index + 1), item);
         if (this._items.length > PlayHistory._maxLength) {
             this._items.shift();
@@ -15,7 +15,7 @@ export class PlayHistory {
         }
     }
 
-    public pushFront(item: PlaylistItem): void {
+    public pushFront(item: PlaylistTrack): void {
         this._items.splice(this._index, 0, item);
         if (this._items.length > PlayHistory._maxLength) {
             this._items.pop();
@@ -30,7 +30,7 @@ export class PlayHistory {
         return this._index < this._items.length - 1;
     }
 
-    public previous(): PlaylistItem | undefined {
+    public previous(): PlaylistTrack | undefined {
         if (this._index === 0) {
             return undefined;
         }
@@ -38,14 +38,14 @@ export class PlayHistory {
         return this._items[this._index];
     }
 
-    public peekNext(): PlaylistItem | undefined {
+    public peekNext(): PlaylistTrack | undefined {
         if (this._index >= this._items.length - 1) {
             return undefined;
         }
         return this._items[this._index + 1];
     }
 
-    public next(): PlaylistItem | undefined {
+    public next(): PlaylistTrack | undefined {
         if (this._index >= this._items.length - 1) {
             return undefined;
         }
