@@ -77,6 +77,7 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - Uses VS Code Remote Containers (`.devcontainer/`)
 - Docker support with multiple Dockerfiles for different platforms
 - Native development possible with npm, Go, FFmpeg, and pkg-config
+- **Browser testing**: The `playwright-cli` Claude skill is installed for headless browser interaction. Use it to navigate to the running app, take screenshots, click elements, type text, and evaluate JS — no custom tooling needed. Start the backend first, then use the skill to verify UI changes visually. Run with `npx playwright-cli`.
 
 ## Implementation Plans
 
