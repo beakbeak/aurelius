@@ -74,8 +74,9 @@ type Track struct {
 
 // Dir represents a row in the dirs table.
 type Dir struct {
-	Path   string
-	Parent string
+	Path             string
+	Parent           string
+	ImageFingerprint []byte
 }
 
 // M3UPlaylist represents a row in the m3u_playlists table.

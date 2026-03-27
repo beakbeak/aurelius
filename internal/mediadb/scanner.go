@@ -2,6 +2,7 @@ package mediadb
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
@@ -56,8 +57,9 @@ type ChangeSet struct {
 	Removed []Track
 	Moves   []Move
 
-	AddedDirs   []Dir
-	RemovedDirs []Dir
+	AddedDirs        []Dir
+	RemovedDirs      []Dir
+	ImageChangedDirs []string // dirs whose image files changed
 
 	AddedPlaylists   []FileInfo
 	ChangedPlaylists []FileInfo
@@ -80,12 +82,13 @@ type ScannedTrack struct {
 
 // ScanResult contains the fully resolved changes, ready to apply.
 type ScanResult struct {
-	AddedTracks   []ScannedTrack
-	ChangedTracks []ScannedTrack
-	RemovedTracks []Track
-	Moves         []Move
-	AddedDirs     []Dir
-	RemovedDirs   []Dir
+	AddedTracks      []ScannedTrack
+	ChangedTracks    []ScannedTrack
+	RemovedTracks    []Track
+	Moves            []Move
+	AddedDirs        []Dir
+	RemovedDirs      []Dir
+	ImageChangedDirs []string // dirs whose image files changed
 
 	AddedPlaylists   []ScannedPlaylist
 	ChangedPlaylists []ScannedPlaylist
@@ -114,6 +117,10 @@ type WalkResult struct {
 	// fragment definitions. Populated during expandFragments and consumed
 	// during collectMetadata.
 	Fragments map[string]resolvedFragment
+
+	// DirImages maps directory library paths to the image files found in
+	// each directory during the walk. Used to compute image fingerprints.
+	DirImages map[string][]imageFileEntry
 }
 
 // Scanner coordinates filesystem scanning and database reconciliation.
@@ -195,6 +202,7 @@ func (s *Scanner) FullScan() error {
 		"moved", len(changes.Moves),
 		"addedDirs", len(changes.AddedDirs),
 		"removedDirs", len(changes.RemovedDirs),
+		"imageChangedDirs", len(changes.ImageChangedDirs),
 		"addedPlaylists", len(changes.AddedPlaylists),
 		"changedPlaylists", len(changes.ChangedPlaylists),
 		"removedPlaylists", len(changes.RemovedPlaylists),
@@ -225,6 +233,7 @@ func (s *Scanner) walkFilesystem() (*WalkResult, error) {
 		Playlists:  make(map[string]FileInfo),
 		DirConfigs: make(map[string]FileInfo),
 		Fragments:  make(map[string]resolvedFragment),
+		DirImages:  make(map[string][]imageFileEntry),
 	}
 
 	err := filepath.WalkDir(s.rootPath, func(fsPath string, d fs.DirEntry, err error) error {
@@ -282,7 +291,12 @@ func (s *Scanner) walkFilesystem() (*WalkResult, error) {
 			wr.Playlists[libraryPath] = entry
 		case FileTypeDirConfig:
 			wr.DirConfigs[entry.Dir] = entry
-		case FileTypeImage, FileTypeIgnored:
+		case FileTypeImage:
+			wr.DirImages[entry.Dir] = append(wr.DirImages[entry.Dir], imageFileEntry{
+				Name:  name,
+				Mtime: entry.Mtime,
+			})
+		case FileTypeIgnored:
 		}
 
 		return nil
@@ -426,8 +440,14 @@ func (s *Scanner) diffAgainstDB(wr *WalkResult) (*ChangeSet, error) {
 		return nil, err
 	}
 	for dirPath, dir := range wr.Dirs {
-		if _, ok := dbDirs[dirPath]; !ok {
+		dbDir, exists := dbDirs[dirPath]
+		if !exists {
 			changes.AddedDirs = append(changes.AddedDirs, dir)
+		}
+		// Compare image fingerprints for existing and new dirs.
+		newFP := computeDirImageFingerprint(wr.DirImages[dirPath])
+		if !bytes.Equal(newFP, dbDir.ImageFingerprint) {
+			changes.ImageChangedDirs = append(changes.ImageChangedDirs, dirPath)
 		}
 		delete(dbDirs, dirPath)
 	}
@@ -579,10 +599,11 @@ func (s *Scanner) detectRevivals(changes *ChangeSet) error {
 // collectMetadata reads metadata from files for added and changed entries.
 func (s *Scanner) collectMetadata(wr *WalkResult, changes *ChangeSet) (*ScanResult, error) {
 	result := &ScanResult{
-		RemovedTracks: changes.Removed,
-		Moves:         changes.Moves,
-		AddedDirs:     changes.AddedDirs,
-		RemovedDirs:   changes.RemovedDirs,
+		RemovedTracks:    changes.Removed,
+		Moves:            changes.Moves,
+		AddedDirs:        changes.AddedDirs,
+		RemovedDirs:      changes.RemovedDirs,
+		ImageChangedDirs: changes.ImageChangedDirs,
 	}
 
 	// Collect metadata for added tracks.
@@ -797,6 +818,7 @@ type trackImageWork struct {
 	dir     string
 	name    string
 	trackID int64
+	fsPath  string // pre-resolved filesystem path; overrides resolveTrackFSPath when set
 }
 
 // processAndInsertTrackImages processes images for the given tracks in parallel
@@ -914,7 +936,10 @@ func (s *Scanner) processAndInsertTrackImages(wr *WalkResult, tx *sql.Tx, tracks
 			defer wg.Done()
 			for group := range work {
 				for _, item := range group.tracks {
-					trackPath := s.resolveTrackFSPath(wr, item.dir, item.name)
+					trackPath := item.fsPath
+					if trackPath == "" {
+						trackPath = s.resolveTrackFSPath(wr, item.dir, item.name)
+					}
 					hashes := collectAndProcessTrackImages(trackPath, cache, imageCh)
 					mappingsMu.Lock()
 					mappings = append(mappings, trackImageMapping{trackID: item.trackID, hashes: hashes})
@@ -1059,6 +1084,50 @@ func (s *Scanner) Apply(wr *WalkResult, result *ScanResult) error {
 		}
 	}
 
+	// Add tracks from directories with changed images (image-only reprocessing).
+	if len(result.ImageChangedDirs) > 0 {
+		imageWorkIDs := make(map[int64]bool, len(imageWork))
+		for _, w := range imageWork {
+			imageWorkIDs[w.trackID] = true
+		}
+		imgDirStmt, err := tx.Prepare(
+			`SELECT ` + trackColumns + ` FROM tracks WHERE dir = ? ORDER BY name`,
+		)
+		if err != nil {
+			return err
+		}
+		defer imgDirStmt.Close()
+		for _, dir := range result.ImageChangedDirs {
+			if err := func() error {
+				rows, err := imgDirStmt.Query(dir)
+				if err != nil {
+					return fmt.Errorf("failed to query tracks for image-changed dir: %w", err)
+				}
+				defer rows.Close()
+				for rows.Next() {
+					t, err := scanTrack(rows)
+					if err != nil {
+						return fmt.Errorf("failed to scan track for image-changed dir: %w", err)
+					}
+					if imageWorkIDs[t.ID] {
+						continue
+					}
+					imageWorkIDs[t.ID] = true
+					fsPath := s.fsPath(t.Dir, t.Name)
+					if t.Metadata.Fragment != nil {
+						fsPath = s.fsPath(t.Dir, t.Metadata.Fragment.SourceFile)
+					}
+					imageWork = append(imageWork, trackImageWork{
+						dir: t.Dir, name: t.Name, trackID: t.ID, fsPath: fsPath,
+					})
+				}
+				return rows.Err()
+			}(); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Process and insert images in parallel.
 	slog.Info("starting image processing", "tracks", len(imageWork))
 	if err := s.processAndInsertTrackImages(wr, tx, imageWork); err != nil {
@@ -1089,6 +1158,21 @@ func (s *Scanner) Apply(wr *WalkResult, result *ScanResult) error {
 		for _, d := range result.AddedDirs {
 			if _, err := stmt.Exec(d.Path, d.Parent); err != nil {
 				return fmt.Errorf("failed to insert dir: %w", err)
+			}
+		}
+	}
+
+	// Update image fingerprints for dirs whose images changed.
+	if len(result.ImageChangedDirs) > 0 {
+		fpStmt, err := tx.Prepare(`UPDATE dirs SET image_fingerprint = ? WHERE path = ?`)
+		if err != nil {
+			return err
+		}
+		defer fpStmt.Close()
+		for _, dir := range result.ImageChangedDirs {
+			fp := loadDirImageFingerprint(filepath.Join(s.rootPath, filepath.FromSlash(dir)))
+			if _, err := fpStmt.Exec(fp, dir); err != nil {
+				return fmt.Errorf("failed to update dir image fingerprint: %w", err)
 			}
 		}
 	}

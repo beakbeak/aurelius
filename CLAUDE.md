@@ -41,6 +41,7 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - **Main application**: `cmd/aurelius/main.go` - HTTP server with Gorilla Mux router
 - **Media library**: `internal/media/` - Core media management, HTTP API for browsing/streaming
 - **Media database**: `internal/mediadb/` - SQLite database for persisting track metadata, directory structure, and attached image info. Includes a scanner that walks the filesystem, diffs against the DB, detects moves via partial file hashing, and applies changes transactionally. Uses version-based migrations via `PRAGMA user_version`. Public `DB` methods accept joined library paths (e.g. `"dir/file.mp3"`) rather than split `(dir, name)` pairs, because the `media` package — the primary consumer — works with joined paths.
+  - **Watcher/scanner parity**: The filesystem watcher (real-time) and full scanner (startup) must detect the same set of changes. Both use `ChangeSet` and `ScanResult` as shared data structures, and the same `Apply` method processes changes from either source. When adding detection for a new kind of change, ensure both paths handle it — changes missed by the watcher are lost until restart, and changes missed by the scanner are lost across restarts.
 - **Audio processing**: `pkg/aurelib/` - FFmpeg wrapper for audio decoding/encoding with CGO bindings
 - **Fragment support**: `pkg/fragment/` - Subsection playback of tracks
 
@@ -92,7 +93,7 @@ When in planning mode, after the user has finished giving feedback and approved 
 - Commit messages should follow best practices.
 - **DO NOT** include implementation details unless requested. Focus on the behavioral and interface changes.
 - Commit messages **MUST** additionally include a whimsical but poignant closing haiku at the end of the message, capturing the spirit of the change. The haiku must be placed at the end of the commit message, but before any attribution to Claude or Claude Code. **DO NOT** include any non-ASCII characters in the haiku. The first line **MUST** have 5 syllables; the second line **MUST** have 7 syllables; the third line **MUST** have 5 syllables.
-- A commit containing a new SQL migration **MUST** update the combined schema SQL using the `sqlite3` command. After running the Go tests, dump the output of `sqlite3 test/storage/aurelius.db .schema` into `pkg/mediadb/schema.sql`.
+- A commit containing a new SQL migration **MUST** update the combined schema SQL using the `sqlite3` command. After running the Go tests, dump the output of `sqlite3 test/storage/aurelius.db .schema` into `internal/mediadb/schema.sql`.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

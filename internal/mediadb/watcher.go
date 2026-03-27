@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"slices"
 	"path/filepath"
 	"strings"
 	"time"
@@ -350,11 +351,7 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 					if ev.kind == eventModified || ev.kind == eventCreated {
 						modifiedTrackDirs[dir] = true
 					}
-				case FileTypeImage:
-					if ev.kind == eventModified || ev.kind == eventCreated {
-						modifiedTrackDirs[dir] = true
-					}
-				case FileTypePlaylist, FileTypeIgnored:
+				case FileTypeImage, FileTypePlaylist, FileTypeIgnored:
 				}
 			}
 		}
@@ -375,7 +372,7 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 
 	if len(changes.Added) == 0 && len(changes.Changed) == 0 &&
 		len(changes.Removed) == 0 && len(changes.AddedDirs) == 0 &&
-		len(changes.RemovedDirs) == 0 &&
+		len(changes.RemovedDirs) == 0 && len(changes.ImageChangedDirs) == 0 &&
 		len(changes.AddedPlaylists) == 0 && len(changes.ChangedPlaylists) == 0 &&
 		len(changes.RemovedPlaylists) == 0 {
 		return
@@ -411,6 +408,7 @@ func (w *Watcher) processBatch(events map[string]*pendingEvent) {
 		"moved", len(changes.Moves),
 		"addedDirs", len(changes.AddedDirs),
 		"removedDirs", len(changes.RemovedDirs),
+		"imageChangedDirs", len(changes.ImageChangedDirs),
 		"addedPlaylists", len(changes.AddedPlaylists),
 		"changedPlaylists", len(changes.ChangedPlaylists),
 		"removedPlaylists", len(changes.RemovedPlaylists),
@@ -544,28 +542,11 @@ func (w *Watcher) processPlaylistEvent(absPath, dir, name string, ev *pendingEve
 	}
 }
 
-// processImageFileEvent handles a directory image file change by marking all
-// tracks in the same directory as changed so their images are re-collected.
+// processImageFileEvent records that a directory's image files changed so that
+// all tracks in the directory have their images re-collected during apply.
 func (w *Watcher) processImageFileEvent(dir string, ev *pendingEvent, changes *ChangeSet) {
-	tracks, err := w.scanner.db.GetTracksInDir(dir)
-	if err != nil {
-		slog.Warn("watcher: failed to look up tracks for image event", "dir", dir, "error", err)
-		return
-	}
-	for _, t := range tracks {
-		var mtime int64
-		if t.Metadata.Fragment != nil {
-			mtime = w.scanner.loadFragmentMtime(t.Dir, t.Metadata.Fragment.SourceFile)
-		} else {
-			info, err := os.Lstat(w.scanner.fsPath(t.Dir, t.Name))
-			if err != nil {
-				continue
-			}
-			mtime = info.ModTime().Unix()
-		}
-		changes.Changed = append(changes.Changed, FileInfo{
-			Dir: t.Dir, Name: t.Name, Mtime: mtime,
-		})
+	if !slices.Contains(changes.ImageChangedDirs, dir) {
+		changes.ImageChangedDirs = append(changes.ImageChangedDirs, dir)
 	}
 }
 

@@ -13,7 +13,7 @@ CREATE INDEX idx_tracks_dir_name ON "tracks_with_deletes"(dir, name);
 CREATE TABLE dirs (
     path    TEXT PRIMARY KEY,
     parent  TEXT NOT NULL
-);
+, image_fingerprint BLOB);
 CREATE INDEX idx_dirs_parent ON dirs(parent);
 CREATE TABLE favorites (
     track_id INTEGER PRIMARY KEY REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,

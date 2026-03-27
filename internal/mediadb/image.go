@@ -3,6 +3,7 @@ package mediadb
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -122,6 +123,63 @@ var knownImageExts = map[string]string{
 	".jpeg": "image/jpeg",
 	".png":  "image/png",
 	".gif":  "image/gif",
+}
+
+// imageFileEntry records an image file's name and mtime for fingerprinting.
+type imageFileEntry struct {
+	Name  string
+	Mtime int64
+}
+
+// computeDirImageFingerprint computes a SHA-256 fingerprint from a list
+// of image file entries. Returns nil if the slice is empty.
+func computeDirImageFingerprint(images []imageFileEntry) []byte {
+	if len(images) == 0 {
+		return nil
+	}
+	sorted := slices.Clone(images)
+	slices.SortFunc(sorted, func(a, b imageFileEntry) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	h := sha256.New()
+	for _, img := range sorted {
+		h.Write([]byte(img.Name))
+		_ = binary.Write(h, binary.LittleEndian, img.Mtime)
+	}
+	sum := h.Sum(nil)
+	return sum
+}
+
+// loadDirImageFingerprint lists image files in a directory and computes their
+// fingerprint. Returns nil if the directory contains no image files or cannot
+// be read.
+func loadDirImageFingerprint(dirFSPath string) []byte {
+	entries, err := os.ReadDir(dirFSPath)
+	if err != nil {
+		return nil
+	}
+	var images []imageFileEntry
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
+		if _, ok := knownImageExts[ext]; !ok {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		images = append(images, imageFileEntry{
+			Name:  entry.Name(),
+			Mtime: info.ModTime().Unix(),
+		})
+	}
+	return computeDirImageFingerprint(images)
 }
 
 // collectDirectoryImagePaths discovers image files in the same directory as the

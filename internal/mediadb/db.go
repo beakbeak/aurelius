@@ -307,7 +307,7 @@ func (db *DB) SoftDeletedTrackByHash(hash []byte) (*Track, error) {
 
 // AllDirs returns all directories in the database.
 func (db *DB) AllDirs() (map[string]Dir, error) {
-	rows, err := db.db.Query(`SELECT path, parent FROM dirs`)
+	rows, err := db.db.Query(`SELECT path, parent, image_fingerprint FROM dirs`)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func (db *DB) AllDirs() (map[string]Dir, error) {
 	dirs := make(map[string]Dir)
 	for rows.Next() {
 		var d Dir
-		if err := rows.Scan(&d.Path, &d.Parent); err != nil {
+		if err := rows.Scan(&d.Path, &d.Parent, &d.ImageFingerprint); err != nil {
 			return nil, err
 		}
 		dirs[d.Path] = d
