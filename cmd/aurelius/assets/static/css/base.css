@@ -450,6 +450,10 @@ body {
 
 /* Search dialog **************************************************************/
 
+.search__result {
+	cursor: pointer;
+}
+
 .search__result .dir__link {
 	color: inherit;
 }
