@@ -1214,6 +1214,66 @@ func TestSearch(t *testing.T) {
 			t.Error("search for 'Greatest Hits' should return at least one track result")
 		}
 	})
+
+	t.Run("DirOnlyModifier", func(t *testing.T) {
+		results := doSearch(".d foo")
+		if len(results) == 0 {
+			t.Fatal("expected results for '.d foo'")
+		}
+		for _, result := range results {
+			if result.Type != "dir" {
+				t.Errorf("expected only dir results with .d modifier, got type %q for %q", result.Type, result.Path)
+			}
+		}
+	})
+
+	t.Run("DirOnlyModifierAtEnd", func(t *testing.T) {
+		results := doSearch("foo .d")
+		if len(results) == 0 {
+			t.Fatal("expected results for 'foo .d'")
+		}
+		for _, result := range results {
+			if result.Type != "dir" {
+				t.Errorf("expected only dir results with .d modifier at end, got type %q", result.Type)
+			}
+		}
+	})
+
+	t.Run("FavoritesOnlyModifier", func(t *testing.T) {
+		// Favorite a track first.
+		favPath := testFiles[1]
+		simpleRequest(t, ml, "POST", trackAt(favPath, "favorite"), "")
+
+		results := doSearch(".f test")
+		if len(results) == 0 {
+			t.Fatal("expected results for '.f test' after favoriting a track")
+		}
+		for _, result := range results {
+			if result.Type != "track" {
+				t.Errorf("expected only track results with .f modifier, got type %q", result.Type)
+			}
+			if result.Track == nil || !result.Track.Favorite {
+				t.Errorf("expected only favorite tracks with .f modifier, got non-favorite %q", result.Path)
+			}
+		}
+
+		// Clean up.
+		simpleRequest(t, ml, "POST", trackAt(favPath, "unfavorite"), "")
+	})
+
+	t.Run("BothModifiersEmpty", func(t *testing.T) {
+		results := doSearch(".d .f test")
+		if len(results) != 0 {
+			t.Errorf("expected 0 results with both .d and .f modifiers, got %d", len(results))
+		}
+	})
+
+	t.Run("ModifierAloneNoQuery", func(t *testing.T) {
+		results := doSearch(".d")
+		if len(results) != 0 {
+			t.Errorf("expected 0 results for modifier alone with no search terms, got %d", len(results))
+		}
+	})
 }
 
 func TestPlayHistory(t *testing.T) {
