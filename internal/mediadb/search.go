@@ -30,7 +30,21 @@ func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 	}
 
 	rows, err := db.db.Query(
-		`SELECT path, type FROM search_index WHERE search_index MATCH ? ORDER BY rank LIMIT ?`,
+		// Exclude tracks that are hidden because fragments reference them
+		// as source files.
+		`SELECT si.dir, si.name, si.type
+		 FROM search_index si
+		 WHERE search_index MATCH ?
+		   AND (
+		     si.type != 'track'
+		     OR NOT EXISTS (
+		       SELECT 1 FROM tracks frag
+		       WHERE frag.dir = si.dir
+		         AND json_extract(frag.metadata, '$.fragment.sourceFile') = si.name
+		     )
+		   )
+		 ORDER BY rank
+		 LIMIT ?`,
 		ftsQuery, limit,
 	)
 	if err != nil {
@@ -40,9 +54,15 @@ func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 
 	var results []SearchResult
 	for rows.Next() {
+		var dir, name string
 		var r SearchResult
-		if err := rows.Scan(&r.Path, &r.Type); err != nil {
+		if err := rows.Scan(&dir, &name, &r.Type); err != nil {
 			return nil, fmt.Errorf("failed to scan search result: %w", err)
+		}
+		if name == "" {
+			r.Path = dir
+		} else {
+			r.Path = JoinLibraryPath(dir, name)
 		}
 		results = append(results, r)
 	}

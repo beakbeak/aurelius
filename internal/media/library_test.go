@@ -1055,7 +1055,7 @@ func TestSearch(t *testing.T) {
 
 		found := false
 		for _, result := range results {
-			if result.Type == "track" && strings.HasSuffix(result.URL, "/tracks/at:test.flac") {
+			if result.Type == "track" && strings.HasSuffix(result.URL, "/tracks/at:test.mp3") {
 				found = true
 				break
 			}
@@ -1084,13 +1084,13 @@ func TestSearch(t *testing.T) {
 		results := doSearch("Aurelius Test Data")
 		var found *media.SearchResult
 		for i, result := range results {
-			if result.Type == "track" && strings.HasSuffix(result.Path, "test.flac") {
+			if result.Type == "track" && strings.HasSuffix(result.Path, "test.mp3") {
 				found = &results[i]
 				break
 			}
 		}
 		if found == nil {
-			t.Fatal("expected to find test.flac in search results via metadata")
+			t.Fatal("expected to find test.mp3 in search results via metadata")
 		}
 		if found.Track == nil {
 			t.Fatal("expected track result to include track info")
@@ -1186,6 +1186,15 @@ func TestSearch(t *testing.T) {
 		}
 		if !found {
 			t.Error("search for 'Baz All Night' should find the fragment track by title tag")
+		}
+	})
+
+	t.Run("FragmentSourceFilesExcluded", func(t *testing.T) {
+		results := doSearch("test.flac")
+		for _, result := range results {
+			if result.Type == "track" && strings.HasSuffix(result.Path, "test.flac") {
+				t.Error("fragment source file test.flac should not appear in search results")
+			}
 		}
 	})
 

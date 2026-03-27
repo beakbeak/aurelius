@@ -83,20 +83,21 @@ FROM base
 /* play_history_plus(id,track_id,played_at,duration,seconds_played,is_skipped) */;
 CREATE VIRTUAL TABLE search_index USING fts5(
     text,
-    path UNINDEXED,
+    dir UNINDEXED,
+    name UNINDEXED,
     type UNINDEXED,
     tokenize='trigram case_sensitive 0 remove_diacritics 1'
 )
-/* search_index(text,path,type) */;
+/* search_index(text,dir,name,type) */;
 CREATE TABLE IF NOT EXISTS 'search_index_data'(id INTEGER PRIMARY KEY, block BLOB);
 CREATE TABLE IF NOT EXISTS 'search_index_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'search_index_content'(id INTEGER PRIMARY KEY, c0, c1, c2);
+CREATE TABLE IF NOT EXISTS 'search_index_content'(id INTEGER PRIMARY KEY, c0, c1, c2, c3);
 CREATE TABLE IF NOT EXISTS 'search_index_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'search_index_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 CREATE TRIGGER search_track_ai AFTER INSERT ON tracks_with_deletes
 WHEN NEW.deleted = 0
 BEGIN
-    INSERT INTO search_index (text, path, type) VALUES (
+    INSERT INTO search_index (text, dir, name, type) VALUES (
         NEW.dir || ' ' || CASE
             WHEN json_extract(NEW.tags, '$.artist') IS NOT NULL
              AND json_extract(NEW.tags, '$.title') IS NOT NULL
@@ -105,8 +106,8 @@ BEGIN
                  || ' ' || COALESCE(json_extract(NEW.tags, '$.album'), '')
             ELSE NEW.name
         END,
-        CASE WHEN NEW.dir = '' THEN NEW.name
-             ELSE NEW.dir || '/' || NEW.name END,
+        NEW.dir,
+        NEW.name,
         'track'
     );
 END;
@@ -117,9 +118,9 @@ BEGIN
     DELETE FROM search_index
     WHERE OLD.deleted = 0
       AND type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
-    INSERT INTO search_index (text, path, type)
+      AND dir = OLD.dir
+      AND name = OLD.name;
+    INSERT INTO search_index (text, dir, name, type)
     SELECT
         NEW.dir || ' ' || CASE
             WHEN json_extract(NEW.tags, '$.artist') IS NOT NULL
@@ -129,8 +130,8 @@ BEGIN
                  || ' ' || COALESCE(json_extract(NEW.tags, '$.album'), '')
             ELSE NEW.name
         END,
-        CASE WHEN NEW.dir = '' THEN NEW.name
-             ELSE NEW.dir || '/' || NEW.name END,
+        NEW.dir,
+        NEW.name,
         'track'
     WHERE NEW.deleted = 0;
 END;
@@ -138,14 +139,14 @@ CREATE TRIGGER search_track_ad AFTER DELETE ON tracks_with_deletes
 BEGIN
     DELETE FROM search_index
     WHERE type = 'track'
-      AND path = CASE WHEN OLD.dir = '' THEN OLD.name
-                      ELSE OLD.dir || '/' || OLD.name END;
+      AND dir = OLD.dir
+      AND name = OLD.name;
 END;
 CREATE TRIGGER search_dir_ai AFTER INSERT ON dirs
 BEGIN
-    INSERT INTO search_index (text, path, type) VALUES (NEW.path, NEW.path, 'dir');
+    INSERT INTO search_index (text, dir, name, type) VALUES (NEW.path, NEW.path, '', 'dir');
 END;
 CREATE TRIGGER search_dir_ad AFTER DELETE ON dirs
 BEGIN
-    DELETE FROM search_index WHERE path = OLD.path AND type = 'dir';
+    DELETE FROM search_index WHERE dir = OLD.path AND name = '' AND type = 'dir';
 END;
