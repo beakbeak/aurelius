@@ -17,6 +17,7 @@
     "mocha": "^11.7.5",
     "mocha-suppress-logs": "^0.6.0",
     "nyc": "^17.1.0",
+    "svelte-check": "^4.4.5",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0"
   },
@@ -24,7 +25,7 @@
     "gobuild": "go build -tags sqlite_fts5 ./cmd/aurelius",
     "gotest": "LSAN_OPTIONS=suppressions=${PWD}/test/lsan.supp go test -tags sqlite_fts5 -asan ./...",
     "build": "vite build",
-    "build-debug": "vite build --mode development --minify false",
+    "build-debug": "svelte-check && vite build --mode development --minify false",
     "mocha": "mocha --require mocha-suppress-logs",
     "test": "killall aurelius; go run ./cmd/aurelius -log error -media test/media -storage test/storage & npm run mocha; killall aurelius",
     "coverage": "nyc --reporter=lcov --reporter=text mocha"

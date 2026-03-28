@@ -1,17 +1,14 @@
 <script lang="ts">
     import type { TrackInfo } from "../core/track";
-    import type { Player } from "../core/player";
     import type { PlayerState } from "./state/playerState.svelte";
     import { formatTrackTitle, formatTrackArtist, formatTrackMeta, formatDuration } from "./format";
 
     let {
         tracks,
-        player,
         playerState,
         dirState,
     }: {
         tracks: TrackInfo[];
-        player: Player;
         playerState: PlayerState;
         dirState: ReturnType<typeof import("./state/dirState.svelte").createDirState>;
     } = $props();

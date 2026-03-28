@@ -1,3 +1,6 @@
+<script lang="ts">
+</script>
+
 <div class="ui__section-header">Keyboard Shortcuts</div>
 <div class="ui__section-body">
     <table class="ui__table">

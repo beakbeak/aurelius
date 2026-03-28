@@ -26,6 +26,7 @@
                 document.removeEventListener("keydown", handleKeydown);
             };
         }
+        return undefined;
     });
 </script>
 

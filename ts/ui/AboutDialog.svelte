@@ -1,3 +1,6 @@
+<script lang="ts">
+</script>
+
 <div class="about-dialog-content">
     <div class="ui__section-header">About</div>
     <div class="ui__section-body">

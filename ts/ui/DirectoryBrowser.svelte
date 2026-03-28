@@ -137,6 +137,6 @@
 
     <!-- Tracks -->
     {#if info && info.tracks.length > 0}
-        <TrackList tracks={info.tracks} {player} {playerState} {dirState} />
+        <TrackList tracks={info.tracks} {playerState} {dirState} />
     {/if}
 </div>

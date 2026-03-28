@@ -21,7 +21,7 @@ Run `go build -tags sqlite_fts5` from within `cmd/aurelius`.
 ```bash
 npm install
 npm run gobuild
-npm run build
+npm run build-debug
 ```
 
 ## Testing

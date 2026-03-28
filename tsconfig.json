@@ -11,7 +11,9 @@
         "noUnusedLocals": true,
         "rootDir": "ts",
         "outDir": "cmd/aurelius/assets/static/js",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "isolatedModules": true,
+        "esModuleInterop": true
     },
     "include": [
         "ts/**/*.ts",
