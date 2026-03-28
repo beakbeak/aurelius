@@ -7,7 +7,6 @@
     "@types/node": "^22.13.10",
     "@types/wicg-mediasession": "^1.1.8",
     "svelte": "^5.55.0",
-    "tslib": "^2.8.1",
     "typescript": "^5.8.2",
     "vite": "^8.0.3"
   },
@@ -18,7 +17,6 @@
     "mocha-suppress-logs": "^0.6.0",
     "nyc": "^17.1.0",
     "svelte-check": "^4.4.5",
-    "ts-node": "^10.9.2",
     "tsx": "^4.21.0"
   },
   "scripts": {
