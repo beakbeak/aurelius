@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@types/jsdom": "^21.1.7",

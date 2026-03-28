@@ -171,7 +171,6 @@
             <div class="search__no-results">No results found</div>
         {:else}
             {#each results as result, i}
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                     class="search__result dir__row"
                     class:search__result--focused={i === focusedIndex}
