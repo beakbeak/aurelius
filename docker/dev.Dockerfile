@@ -1,17 +1,21 @@
 # This Dockerfile is for development purposes (via Visual Studio Code) only.
 # It is referenced by .devcontainer/devcontainer.json
 
-FROM ubuntu:latest
+FROM ubuntu:rolling
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     ffmpeg \
-    gcc \
+    build-essential \
+    binutils-gold \
     git \
     libavformat-dev \
     pkg-config \
     sudo \
     wget \
-    curl
+    curl \
+    psmisc \
+    # for Chromium via Playwright
+    libnspr4 libnss3
 
 ARG GO_VERSION=1.26.1
 
