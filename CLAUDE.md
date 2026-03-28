@@ -95,6 +95,7 @@ When in planning mode, after the user has finished giving feedback and approved 
 - **DO NOT** include implementation details unless requested. Focus on the behavioral and interface changes.
 - Commit messages **MUST** additionally include a whimsical but poignant closing haiku at the end of the message, capturing the spirit of the change. The haiku must be placed at the end of the commit message, but before any attribution to Claude or Claude Code. **DO NOT** include any non-ASCII characters in the haiku. The first line **MUST** have 5 syllables; the second line **MUST** have 7 syllables; the third line **MUST** have 5 syllables.
 - A commit containing a new SQL migration **MUST** update the combined schema SQL using the `sqlite3` command. After running the Go tests, dump the output of `sqlite3 test/storage/aurelius.db .schema` into `internal/mediadb/schema.sql`.
+- **DO NOT** commit unless explicitly asked to by the user.
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
