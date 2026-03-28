@@ -24,7 +24,7 @@
     "gobuild": "go build -tags sqlite_fts5 ./cmd/aurelius",
     "gotest": "LSAN_OPTIONS=suppressions=${PWD}/test/lsan.supp go test -tags sqlite_fts5 -asan ./...",
     "build": "vite build",
-    "build-debug": "vite build --mode development",
+    "build-debug": "vite build --mode development --minify false",
     "mocha": "mocha --require mocha-suppress-logs",
     "test": "killall aurelius; go run ./cmd/aurelius -log error -media test/media -storage test/storage & npm run mocha; killall aurelius",
     "coverage": "nyc --reporter=lcov --reporter=text mocha"
