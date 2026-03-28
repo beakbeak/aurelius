@@ -4,19 +4,10 @@ import { dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "../../core/
 import { ReplayGainMode, fetchTrackInfo } from "../../core/track";
 import { RemotePlaylist } from "../../core/playlist";
 
+export type DirState = ReturnType<typeof createDirState>;
+
 export function createDirState(player: Player) {
     let dirInfo = $state<DirInfo | undefined>(undefined);
-
-    function setDocumentTitleFromPath(path: string): void {
-        const cleanedPath = path.replace(/\/$/g, "");
-        if (cleanedPath === "") {
-            document.title = "aurelius";
-            return;
-        }
-        const urlTokens = cleanedPath.split("/");
-        const leafDir = urlTokens[urlTokens.length - 1];
-        document.title = `${leafDir} | aurelius`;
-    }
 
     async function loadDir(url: string, addHistory = true): Promise<DirInfo> {
         const info = await fetchDirInfo(url);
@@ -126,4 +117,15 @@ export function createDirState(player: Player) {
         playFavorites,
         reloadCurrentDir,
     };
+}
+
+function setDocumentTitleFromPath(path: string): void {
+    const cleanedPath = path.replace(/\/$/g, "");
+    if (cleanedPath === "") {
+        document.title = "aurelius";
+        return;
+    }
+    const urlTokens = cleanedPath.split("/");
+    const leafDir = urlTokens[urlTokens.length - 1];
+    document.title = `${leafDir} | aurelius`;
 }

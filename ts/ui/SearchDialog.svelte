@@ -3,12 +3,13 @@
     import { searchMedia } from "../core/search";
     import { onMount } from "svelte";
     import "./dir.css";
+    import type { DirState } from "./state/dirState.svelte";
 
     let {
         dirState,
         onClose,
     }: {
-        dirState: ReturnType<typeof import("./state/dirState.svelte").createDirState>;
+        dirState: DirState;
         onClose: () => void;
     } = $props();
 

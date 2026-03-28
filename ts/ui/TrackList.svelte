@@ -2,6 +2,7 @@
     import type { TrackInfo } from "../core/track";
     import type { PlayerState } from "./state/playerState.svelte";
     import { formatTrackTitle, formatTrackArtist, formatTrackMeta, formatDuration } from "./format";
+    import type { DirState } from "./state/dirState.svelte";
 
     let {
         tracks,
@@ -10,7 +11,7 @@
     }: {
         tracks: TrackInfo[];
         playerState: PlayerState;
-        dirState: ReturnType<typeof import("./state/dirState.svelte").createDirState>;
+        dirState: DirState;
     } = $props();
 
     interface DiscGroup {

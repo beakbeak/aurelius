@@ -1,22 +1,9 @@
 import type { Player } from "../../core/player";
 import type { Track } from "../../core/track";
-import type { TrackInfo } from "../../core/track";
 
-export interface PlayerState {
-    readonly track: Track | undefined;
-    readonly trackInfo: TrackInfo | undefined;
-    readonly paused: boolean;
-    readonly currentTime: number;
-    readonly duration: number;
-    readonly hasNext: boolean;
-    readonly hasPrevious: boolean;
-    readonly favorite: boolean;
-    readonly ended: boolean;
-    readonly autoNextFired: boolean;
-    readonly updateCounter: number;
-}
+export type PlayerState = ReturnType<typeof createPlayerState>;
 
-export function createPlayerState(player: Player): PlayerState {
+export function createPlayerState(player: Player) {
     let track = $state<Track | undefined>(player.track);
     let paused = $state(true);
     let currentTime = $state(0);

@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Player } from "../core/player";
     import type { PlayerState } from "./state/playerState.svelte";
+    import type { DirState } from "./state/dirState.svelte";
     import { onMount } from "svelte";
     import TrackList from "./TrackList.svelte";
     import DirList from "./DirList.svelte";
@@ -13,7 +14,7 @@
     }: {
         player: Player;
         playerState: PlayerState;
-        dirState: ReturnType<typeof import("./state/dirState.svelte").createDirState>;
+        dirState: DirState;
     } = $props();
 
     let info = $derived(dirState.dirInfo);
