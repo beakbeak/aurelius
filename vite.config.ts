@@ -3,10 +3,12 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 
 export default defineConfig({
     plugins: [svelte()],
+    publicDir: "cmd/aurelius/assets/static",
     base: "/static/",
     build: {
         outDir: "cmd/aurelius/assets/static",
         emptyOutDir: false,
+        copyPublicDir: false,
         rollupOptions: {
             input: {
                 main: "ts/apps/main/main.ts",

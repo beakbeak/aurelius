@@ -278,7 +278,7 @@
                         rgba(0, 0, 0, 0.25) calc(100% - 150px),
                         rgba(0, 0, 0, 0.35) 100%
                     ),
-                fixed url("/static/img/bg.svgz"),
+                fixed url("/img/bg.svgz"),
                 fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
         }
     }
@@ -300,7 +300,7 @@
                         rgba(0, 0, 0, 0.25) calc(100% - 150px),
                         rgba(0, 0, 0, 0.35) 100%
                     ),
-                fixed url("/static/img/bg.svgz"),
+                fixed url("/img/bg.svgz"),
                 fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
         }
 

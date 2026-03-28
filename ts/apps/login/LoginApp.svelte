@@ -48,7 +48,7 @@
     }
     .login__content::before {
         content: "";
-        background: center center / contain url("/static/img/aurelius.svgz") no-repeat;
+        background: center center / contain url("/img/aurelius.svgz") no-repeat;
         display: block;
         width: 12rem;
         height: 12rem;

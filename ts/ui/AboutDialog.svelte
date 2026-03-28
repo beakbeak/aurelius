@@ -51,7 +51,7 @@
     .about-dialog-content::before {
         content: "";
         background:
-            center center / contain url("/static/img/aurelius.svgz") no-repeat,
+            center center / contain url("/img/aurelius.svgz") no-repeat,
             linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
         border-radius: 0.5rem;
         box-shadow: inset 0 0 1rem 0rem rgba(0, 0, 0, 0.5);

@@ -11,7 +11,7 @@ Run `go build -tags sqlite_fts5` from within `cmd/aurelius`.
 ## Frontend (TypeScript/JavaScript)
 
 - `npm install` - Install dependencies
-- `npm run build` - Build production assets (compiled to `cmd/aurelius/assets/static/js/`)
+- `npm run build` - Build production assets (JS to `cmd/aurelius/assets/static/js/`, CSS to `cmd/aurelius/assets/static/css/`)
 - `npm run build-debug` - Build debug assets without minification
 - `npm run test` - Run TypeScript tests
 - `npm run coverage` - Generate test coverage report in `coverage/lcov-report/index.html`. This requires first running the `debug` backend described in `.vscode/launch.json`. ALWAYS make sure that the backend is actually running before generating the report.
@@ -51,19 +51,21 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - **File serving**: Custom file server that rejects directory requests
 - **Favorites**: M3U playlist storage in configured storage directory
 
-## Frontend (TypeScript)
+## Frontend (Svelte 5 / TypeScript)
 
-- **Entry points**: `ts/main.ts` (main app), `ts/login.ts` (login page)
+- **Entry points**: `ts/apps/main/main.ts` (main app), `ts/apps/login/login.ts` (login page)
 - **Player core**: `ts/core/player.ts` - Main audio player with playlist management
-- **UI components**: `ts/ui/` - Player controls, directory browsing, settings
-- **Build system**: Rollup with TypeScript plugin, outputs to `cmd/aurelius/assets/static/js/`
+- **UI components**: `ts/ui/` - Svelte 5 components using runes (`$state`, `$derived`, `$effect`, `$props`, `$bindable`)
+- **Reactive state**: `ts/ui/state/` - Svelte reactive wrappers (`playerState.svelte.ts`, `dirState.svelte.ts`) bridging the imperative Player API to Svelte's reactivity system
+- **Build system**: Vite with `@sveltejs/vite-plugin-svelte`, outputs JS to `cmd/aurelius/assets/static/js/` and CSS to `cmd/aurelius/assets/static/css/`
+- **CSS organization**: Component-specific styles in `<style>` blocks (scoped by Svelte). Shared styles in `ts/ui/ui.css` (dialog/form design system) and `ts/ui/dir.css` (directory listings). Page-level globals in `ts/apps/global.css`. Main-app layout in `App.svelte`'s `<style>` block using `:global()` for `body`/`html` rules. Use `.parent :global(.child-class)` to scope cross-component styles under a local parent selector.
 
 ### Key Frontend Components
 
 - **Player**: Event-driven audio player with ReplayGain, random play, history tracking
 - **Directory browser**: File system navigation with playlist support
 - **Settings**: Stream configuration (codec, bitrate, ReplayGain mode)
-- **Modal dialogs**: Settings and other overlays
+- **Modal dialogs**: Reusable `Modal.svelte` with `dialogClass` prop for consumer-specific styling
 
 ## Configuration
 

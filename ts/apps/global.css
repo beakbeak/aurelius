@@ -5,7 +5,7 @@ html {
 
 body {
 	background:
-		fixed url("/static/img/bg.svgz"),
+		fixed url("/img/bg.svgz"),
 		fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
 	color: white;
 	font-family:
