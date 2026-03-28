@@ -8,18 +8,21 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     gcc \
     git \
     libavformat-dev \
-    npm \
     pkg-config \
     sudo \
-    wget
+    wget \
+    curl
 
-ARG GO_VERSION=1.24.1
+ARG GO_VERSION=1.26.1
 
 RUN arch=$(arch | sed -e s/aarch64/arm64/ -e s/x86_64/amd64/) \
     && wget https://golang.org/dl/go${GO_VERSION}.linux-${arch}.tar.gz \
     && rm -rf /usr/local/go \
     && tar -C /usr/local -xzf go${GO_VERSION}.linux-${arch}.tar.gz \
     && rm -f go${GO_VERSION}.linux-${arch}.tar.gz
+
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && sudo apt-get install -y nodejs
 
 RUN userdel -r ubuntu \
     && groupadd -g 1000 code \
