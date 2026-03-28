@@ -221,3 +221,109 @@
 <Modal bind:open={showAbout}>
     <AboutDialog />
 </Modal>
+
+<style>
+    :global(.main__controls) {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 1200px;
+        box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.75);
+    }
+
+    .main__dir {
+        max-width: 960px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 10rem;
+    }
+
+    :global(body) {
+        background: hsl(39, 0%, 11.8%);
+    }
+
+    .top-right__menu {
+        position: fixed;
+        z-index: 1;
+        right: 0;
+        top: 0;
+        margin: 0.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .menu__button {
+        cursor: pointer;
+        font-size: 3rem;
+        color: black;
+        text-shadow: 0 0 2px white;
+    }
+
+    @media (min-width: 960px) {
+        :global(body) {
+            background:
+                calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
+                    linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
+                left top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+                    linear-gradient(
+                        to right,
+                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
+                        rgba(0, 0, 0, 0.35) 100%
+                    ),
+                right top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+                    linear-gradient(
+                        to left,
+                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
+                        rgba(0, 0, 0, 0.35) 100%
+                    ),
+                fixed url("/static/img/bg.svgz"),
+                fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
+        }
+    }
+
+    @media (min-width: 1200px) {
+        :global(body) {
+            background:
+                calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
+                    linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
+                left top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+                    linear-gradient(
+                        to right,
+                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
+                        rgba(0, 0, 0, 0.35) 100%
+                    ),
+                right top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+                    linear-gradient(
+                        to left,
+                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
+                        rgba(0, 0, 0, 0.35) 100%
+                    ),
+                fixed url("/static/img/bg.svgz"),
+                fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
+        }
+
+        :global(html) {
+            margin-left: calc(100vw - 100%);
+            margin-right: 0;
+        }
+
+        :global(.main__controls) {
+            left: calc(50% + (100vw - 100%) / 2);
+            bottom: inherit;
+            top: 0;
+        }
+
+        .main__dir {
+            margin-bottom: inherit;
+            margin-top: 8rem;
+        }
+
+        .top-right__menu {
+            top: inherit;
+            bottom: 0;
+            flex-direction: column-reverse;
+        }
+    }
+</style>

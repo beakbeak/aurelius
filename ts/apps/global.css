@@ -1,0 +1,27 @@
+html {
+	min-height: 100%;
+	scrollbar-color: hsl(0, 0%, 30%) hsl(0, 0%, 20%);
+}
+
+body {
+	background:
+		fixed url("/static/img/bg.svgz"),
+		fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
+	color: white;
+	font-family:
+		segoe ui,
+		roboto,
+		sans-serif;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.material-icons {
+	-moz-user-select: -moz-none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}

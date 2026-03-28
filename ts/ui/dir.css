@@ -1,0 +1,41 @@
+.dir__list {
+	list-style: none;
+	padding: 0;
+}
+
+.dir__row > * {
+	vertical-align: middle;
+}
+
+.dir__link {
+	text-decoration: none;
+	color: hsl(0, 0%, 66.3%);
+}
+.dir__link:hover {
+	text-decoration: underline;
+}
+
+.dir__icon {
+	color: hsl(198.3, 56.5%, 72.9%);
+	font-size: 24px;
+	margin-right: 0.25em;
+}
+.dir__icon--playing {
+	display: none;
+	color: white;
+}
+
+.dir__link--aux {
+	margin-left: 0.5em;
+	font-style: italic;
+}
+
+.dir__row--playing .dir__link {
+	color: white;
+}
+.dir__row--playing .dir__icon {
+	display: none;
+}
+.dir__row--playing .dir__icon--playing {
+	display: inline-block;
+}

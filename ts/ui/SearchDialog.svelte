@@ -2,6 +2,7 @@
     import type { SearchResult } from "../core/search";
     import { searchMedia } from "../core/search";
     import { onMount } from "svelte";
+    import "./dir.css";
 
     let {
         dirState,
@@ -18,6 +19,7 @@
     let searchTimeout: ReturnType<typeof setTimeout> | undefined;
     let searchSequence = 0;
     let searchInput: HTMLInputElement | undefined = $state(undefined);
+    let resultsContainer: HTMLElement | undefined = $state(undefined);
 
     function clearSearch(): void {
         query = "";
@@ -138,10 +140,8 @@
 
     // Focus and scroll focused result into view
     $effect(() => {
-        if (focusedIndex >= 0) {
-            const el = document.querySelector(
-                `.search__results .search__result:nth-child(${focusedIndex + 1})`,
-            );
+        if (focusedIndex >= 0 && resultsContainer) {
+            const el = resultsContainer.children[focusedIndex];
             if (el instanceof HTMLElement) {
                 el.focus();
                 el.scrollIntoView({ block: "nearest" });
@@ -164,7 +164,7 @@
     />
 </div>
 <div class="ui__section-body ui__section-body--scroll">
-    <div class="search__results dir__list">
+    <div bind:this={resultsContainer} class="search__results dir__list">
         {#if errorMessage}
             <div class="search__error">{errorMessage}</div>
         {:else if query.trim() !== "" && results.length === 0}
@@ -196,3 +196,22 @@
         {/if}
     </div>
 </div>
+
+<style>
+    .search__result {
+        cursor: pointer;
+    }
+
+    .search__result :global(.dir__link) {
+        color: inherit;
+    }
+
+    .search__result-detail {
+        font-style: italic;
+        opacity: 0.7;
+    }
+
+    :global(.search-dialog) .ui__section-body--scroll {
+        max-height: 30em;
+    }
+</style>

@@ -5,6 +5,7 @@
     import { onMount } from "svelte";
     import TrackList from "./TrackList.svelte";
     import DirList from "./DirList.svelte";
+    import "./dir.css";
 
     let {
         player,

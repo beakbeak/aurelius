@@ -86,3 +86,24 @@
 >
     {text}
 </a>
+
+<style>
+    .controls__link {
+        cursor: pointer;
+        font-style: italic;
+        text-decoration: none;
+        color: inherit;
+    }
+    .controls__link:hover {
+        text-decoration: underline;
+    }
+
+    .controls__marquee {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        white-space: nowrap;
+        text-align: center;
+        font-size: 1.1em;
+    }
+</style>

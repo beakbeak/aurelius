@@ -14,8 +14,8 @@
     });
 </script>
 
-<main class="login__content modal">
-    <form id="login-form" class="login__form ui dialog" action="/login" method="POST">
+<main class="login__content">
+    <form id="login-form" class="login__form ui" action="/login" method="POST">
         <div class="ui__entry-group">
             <label class="ui__entry-label">
                 <i class="material-icons">lock</i>
@@ -36,3 +36,35 @@
         <button class="ui__button" type="submit">Login</button>
     </form>
 </main>
+
+<style>
+    .login__content {
+        display: block;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -80%);
+        z-index: 100;
+    }
+    .login__content::before {
+        content: "";
+        background: center center / contain url("/static/img/aurelius.svgz") no-repeat;
+        display: block;
+        width: 12rem;
+        height: 12rem;
+        margin: 1rem auto;
+    }
+
+    .login__form {
+        padding: 0.75rem;
+        min-width: 15rem;
+        box-shadow: 0px 0px 1.5rem rgba(0, 0, 0, 0.5);
+        border-radius: 0.25rem;
+    }
+    .login__form::before {
+        content: "aurelius";
+        display: block;
+        text-align: center;
+        font-style: italic;
+    }
+</style>

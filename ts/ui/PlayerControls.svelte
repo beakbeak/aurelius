@@ -263,7 +263,114 @@
 </nav>
 
 <style>
+    .controls {
+        background-color: hsl(0, 0%, 33%);
+        color: white;
+        display: flex;
+        align-items: center;
+    }
+
+    .controls__track-image-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .controls__track-image {
+        height: 6rem;
+        width: 6rem;
+        margin: 0.5rem;
+        object-fit: contain;
+    }
+
+    /* Controls to the right of the track image */
+    .controls__everything-else {
+        flex: 1;
+        position: relative;
+    }
+
+    .controls__button {
+        cursor: pointer;
+        color: hsl(0, 0%, 10%);
+        font-size: 4rem;
+    }
+    .controls__button--medium {
+        font-size: 3rem;
+    }
+    .controls__button--disabled {
+        cursor: default;
+        color: rgba(0, 0, 0, 0.3);
+    }
+
+    .controls__marquee-spacer {
+        position: relative;
+        height: 1.1em;
+        margin: 0 0.5rem 0 0.5rem;
+    }
+    .controls__marquee-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 200%;
+        overflow: hidden;
+    }
+
+    /* Positioning */
+    .controls__group,
+    .controls :global(.controls__group) {
+        display: flex;
+        height: 3rem;
+        align-items: center;
+        justify-content: center;
+    }
+    .controls__group--shift-up {
+        position: relative;
+        bottom: 0.5em;
+    }
+
+    .controls__link {
+        cursor: pointer;
+        font-style: italic;
+        text-decoration: none;
+        color: inherit;
+    }
+    .controls__link:hover {
+        text-decoration: underline;
+    }
+
+    /* Text below controls */
+    .controls__bottom-left {
+        position: absolute;
+        bottom: 0.5rem;
+        left: 0.5rem;
+    }
+    .controls__bottom-right {
+        position: absolute;
+        bottom: 0.5rem;
+        right: 0.5rem;
+    }
+
     .unfavorite-button {
         color: hsl(0, 70%, 72.9%);
+    }
+
+    /* Prevent text from overlapping buttons */
+    @media (max-width: 530px) {
+        .controls__bottom {
+            display: flex;
+        }
+        .controls__bottom-left {
+            position: relative;
+        }
+        .controls__bottom-right {
+            position: relative;
+        }
+        .controls__bottom-center {
+            flex: 1;
+        }
+        .controls__track-image {
+            width: 7rem;
+            height: 7rem;
+        }
     }
 </style>

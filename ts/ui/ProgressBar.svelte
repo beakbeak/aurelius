@@ -121,3 +121,46 @@
         </span>
     </div>
 </div>
+
+<style>
+    .controls__progress-trough {
+        cursor: pointer;
+        flex: 1;
+        position: relative;
+        height: 0.5rem;
+        box-shadow: inset 0 0 3px black;
+        margin: 0 0.5rem;
+    }
+    .controls--disabled .controls__progress-trough {
+        cursor: default;
+    }
+
+    .controls__progress-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.27);
+    }
+
+    .controls__slider-range {
+        position: absolute;
+        left: 0;
+        width: calc(100% - 3rem);
+        height: 100%;
+    }
+    .controls__slider {
+        cursor: pointer;
+        position: absolute;
+        width: 3rem;
+        height: 200%;
+        top: -50%;
+        background-color: hsl(0, 0%, 10%);
+        border-radius: 0.25em;
+    }
+    .controls--disabled .controls__slider {
+        cursor: default;
+        background-color: hsl(0, 0%, 24%);
+    }
+</style>
