@@ -183,7 +183,7 @@
     });
 </script>
 
-<nav class="controls main__controls">
+<nav class="controls">
     <button
         class="controls__track-image-container"
         type="button"

@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { Player } from "../core/player";
     import type { PlayerState } from "./state/playerState.svelte";
-    import type { DirInfo } from "../core/dir";
     import { onMount } from "svelte";
     import TrackList from "./TrackList.svelte";
     import DirList from "./DirList.svelte";
@@ -90,8 +89,8 @@
     });
 </script>
 
-<main class="dir main__dir">
-    <!-- Special list (Favorites) -->
+<div class="dir">
+    <!-- Favorites -->
     <ul class="dir__list">
         <li class="dir__row">
             <i class="dir__icon material-icons">favorite_border</i>
@@ -101,17 +100,17 @@
         </li>
     </ul>
 
-    <!-- Navigation list -->
+    <!-- Navigation -->
     {#if info}
         <DirList items={navigationItems} onNavigate={handleNavigate} />
     {/if}
 
-    <!-- Directories list -->
+    <!-- Directories -->
     {#if info && info.dirs.length > 0}
         <DirList items={dirItems} onNavigate={handleNavigate} />
     {/if}
 
-    <!-- Playlists list -->
+    <!-- Playlists -->
     {#if info && info.playlists.length > 0}
         <ul class="dir__list">
             {#each info.playlists as playlist (playlist.url)}
@@ -136,13 +135,8 @@
         </ul>
     {/if}
 
-    <!-- Track list -->
+    <!-- Tracks -->
     {#if info && info.tracks.length > 0}
-        <TrackList
-            tracks={info.tracks}
-            {player}
-            {playerState}
-            {dirState}
-        />
+        <TrackList tracks={info.tracks} {player} {playerState} {dirState} />
     {/if}
-</main>
+</div>

@@ -3,11 +3,9 @@
 
     let {
         open = $bindable(false),
-        dialogClass = "",
         children,
     }: {
         open: boolean;
-        dialogClass?: string;
         children: Snippet;
     } = $props();
 
@@ -33,7 +31,7 @@
 
 {#if open}
     <div class="modal-overlay" onclick={handleOverlayClick} aria-hidden="true"></div>
-    <div class="ui modal dialog {dialogClass}">
+    <div class="ui modal dialog">
         {@render children()}
     </div>
 {/if}

@@ -176,14 +176,16 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<PlayerControls
-    {player}
-    {playerState}
-    onAbout={() => (showAbout = true)}
-    onNavigateToDir={(url) => dirState.loadDir(url)}
-/>
+<div class="controls">
+    <PlayerControls
+        {player}
+        {playerState}
+        onAbout={() => (showAbout = true)}
+        onNavigateToDir={(url) => dirState.loadDir(url)}
+    />
+</div>
 
-<main class="dir main__dir">
+<main class="dir-browser">
     <DirectoryBrowser {player} {playerState} {dirState} />
 </main>
 
@@ -219,7 +221,7 @@
     />
 </Modal>
 
-<Modal bind:open={showSearch} dialogClass="search-dialog">
+<Modal bind:open={showSearch}>
     <SearchDialog {dirState} onClose={() => (showSearch = false)} />
 </Modal>
 
@@ -232,7 +234,7 @@
 </Modal>
 
 <style>
-    :global(.main__controls) {
+    .controls {
         position: fixed;
         bottom: 0;
         left: 50%;
@@ -242,7 +244,7 @@
         box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.75);
     }
 
-    .main__dir {
+    .dir-browser {
         max-width: 960px;
         margin-left: auto;
         margin-right: auto;
@@ -318,13 +320,13 @@
             margin-right: 0;
         }
 
-        :global(.main__controls) {
+        .controls {
             left: calc(50% + (100vw - 100%) / 2);
             bottom: inherit;
             top: 0;
         }
 
-        .main__dir {
+        .dir-browser {
             margin-bottom: inherit;
             margin-top: 8rem;
         }

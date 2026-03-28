@@ -212,7 +212,7 @@
         opacity: 0.7;
     }
 
-    :global(.search-dialog) .ui__section-body--scroll {
+    .ui__section-body {
         max-height: 30em;
     }
 </style>

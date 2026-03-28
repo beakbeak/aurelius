@@ -65,7 +65,7 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - **Player**: Event-driven audio player with ReplayGain, random play, history tracking
 - **Directory browser**: File system navigation with playlist support
 - **Settings**: Stream configuration (codec, bitrate, ReplayGain mode)
-- **Modal dialogs**: Reusable `Modal.svelte` with `dialogClass` prop for consumer-specific styling
+- **Modal dialogs**: Reusable `Modal.svelte`
 
 ## Configuration
 
