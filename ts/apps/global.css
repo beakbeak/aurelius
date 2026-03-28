@@ -18,6 +18,16 @@ body {
 	display: none !important;
 }
 
+button {
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	cursor: pointer;
+	color: inherit;
+}
+
 .material-icons {
 	-moz-user-select: -moz-none;
 	-khtml-user-select: none;

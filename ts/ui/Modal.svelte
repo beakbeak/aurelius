@@ -32,7 +32,7 @@
 </script>
 
 {#if open}
-    <div class="modal-overlay" onclick={handleOverlayClick}></div>
+    <div class="modal-overlay" onclick={handleOverlayClick} aria-hidden="true"></div>
     <div class="ui modal dialog {dialogClass}">
         {@render children()}
     </div>

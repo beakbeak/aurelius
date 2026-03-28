@@ -38,6 +38,13 @@
     let showShortcuts = $state(false);
     let showAbout = $state(false);
 
+    function handleMenuKeydown(e: KeyboardEvent, action: () => void): void {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            action();
+        }
+    }
+
     function isTypingInInput(target: EventTarget | null): boolean {
         if (!target || !(target instanceof HTMLElement)) {
             return false;
@@ -187,6 +194,7 @@
         role="button"
         tabindex="0"
         onclick={() => (showSettings = true)}
+        onkeydown={(e) => handleMenuKeydown(e, () => (showSettings = true))}
     >
         settings
     </i>
@@ -196,6 +204,7 @@
         role="button"
         tabindex="0"
         onclick={() => (showSearch = true)}
+        onkeydown={(e) => handleMenuKeydown(e, () => (showSearch = true))}
     >
         search
     </i>

@@ -16,6 +16,28 @@
 
     let hasTrack = $derived(playerState.track !== undefined);
 
+    let ariaValueNow = $derived.by(() => {
+        const track = playerState.track;
+        if (!track || playerState.duration <= 0) return 0;
+        const currentTime =
+            seekSliderPosition !== undefined
+                ? seekSliderPosition * playerState.duration
+                : playerState.currentTime;
+        return Math.round((currentTime / playerState.duration) * 100);
+    });
+
+    function handleKeyDown(e: KeyboardEvent): void {
+        if (!playerState.track) return;
+        const step = 5;
+        if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            player.seekTo(Math.max(0, playerState.currentTime - step));
+        } else if (e.key === "ArrowRight") {
+            e.preventDefault();
+            player.seekTo(Math.min(playerState.duration, playerState.currentTime + step));
+        }
+    }
+
     let seekLeft = $derived.by(() => {
         const track = playerState.track;
         if (!track) return "0";
@@ -111,8 +133,15 @@
     <div
         bind:this={progressBarEmpty}
         class="controls__progress-trough"
+        role="slider"
+        aria-label="Seek"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={ariaValueNow}
+        tabindex="0"
         onmousedown={handleMouseDown}
         ontouchstart={handleTouchStart}
+        onkeydown={handleKeyDown}
     >
         <span class="controls__progress-fill" style:left={bufferLeft} style:width={bufferWidth}
         ></span>

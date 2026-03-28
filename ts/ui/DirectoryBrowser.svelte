@@ -63,9 +63,7 @@
         dirState.loadDir(url);
     }
 
-    function handleFavoritesClick(e: MouseEvent): void {
-        if (e.metaKey || e.ctrlKey) return;
-        e.preventDefault();
+    function handleFavoritesClick(): void {
         dirState.playFavorites(favoritesPrefix);
     }
 
@@ -97,13 +95,9 @@
     <ul class="dir__list">
         <li class="dir__row">
             <i class="dir__icon material-icons">favorite_border</i>
-            <a
-                class="dir__link"
-                href="#"
-                onclick={handleFavoritesClick}
-            >
+            <button class="dir__link" type="button" onclick={handleFavoritesClick}>
                 {favoritesText}
-            </a>
+            </button>
         </li>
     </ul>
 
@@ -120,29 +114,23 @@
     <!-- Playlists list -->
     {#if info && info.playlists.length > 0}
         <ul class="dir__list">
-            {#each info.playlists as playlist}
+            {#each info.playlists as playlist (playlist.url)}
                 <li class="dir__row">
                     <i class="dir__icon material-icons">playlist_play</i>
-                    <a
+                    <button
                         class="dir__link"
-                        href="#"
-                        onclick={(e: MouseEvent) => {
-                            e.preventDefault();
-                            handlePlaylistClick(playlist.url);
-                        }}
+                        type="button"
+                        onclick={() => handlePlaylistClick(playlist.url)}
                     >
                         {playlist.name}
-                    </a>
-                    <a
+                    </button>
+                    <button
                         class="dir__link dir__link--aux"
-                        href="#"
-                        onclick={(e: MouseEvent) => {
-                            e.preventDefault();
-                            handlePlaylistRandomClick(playlist.url);
-                        }}
+                        type="button"
+                        onclick={() => handlePlaylistRandomClick(playlist.url)}
                     >
                         random
-                    </a>
+                    </button>
                 </li>
             {/each}
         </ul>

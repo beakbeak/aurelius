@@ -59,11 +59,11 @@
 </script>
 
 <ul class="dir__list dir__track-list">
-    {#each discGroups as group}
+    {#each discGroups as group (group.startIndex)}
         {#if group.disc}
             <li class="dir__disc-header">Disc {group.disc}</li>
         {/if}
-        {#each group.tracks as { track, index }}
+        {#each group.tracks as { track, index } (track.url)}
             <li class="dir__row" class:dir__row--playing={isPlaying(track.url)}>
                 <i class="dir__icon material-icons">
                     {track.favorite ? "favorite_border" : "music_note"}

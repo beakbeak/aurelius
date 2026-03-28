@@ -164,16 +164,18 @@
     />
 </div>
 <div class="ui__section-body ui__section-body--scroll">
-    <div bind:this={resultsContainer} class="search__results dir__list">
+    <div bind:this={resultsContainer} class="search__results dir__list" role="listbox">
         {#if errorMessage}
             <div class="search__error">{errorMessage}</div>
         {:else if query.trim() !== "" && results.length === 0}
             <div class="search__no-results">No results found</div>
         {:else}
-            {#each results as result, i}
+            {#each results as result, i (result.url)}
                 <div
                     class="search__result dir__row"
                     class:search__result--focused={i === focusedIndex}
+                    role="option"
+                    aria-selected={i === focusedIndex}
                     tabindex="0"
                     onclick={() => handleResultClick(i)}
                     onkeydown={handleKeydown}

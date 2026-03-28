@@ -114,7 +114,7 @@
                 <td>Codec</td>
                 <td>
                     <select bind:value={codec}>
-                        {#each Object.values(StreamCodec) as c}
+                        {#each Object.values(StreamCodec) as c (c)}
                             <option value={c}>{c}</option>
                         {/each}
                     </select>
@@ -163,7 +163,7 @@
                 <td>
                     <select bind:value={replayGainMode}>
                         <option value="auto">auto</option>
-                        {#each Object.values(ReplayGainMode) as mode}
+                        {#each Object.values(ReplayGainMode) as mode (mode)}
                             <option value={mode}>{mode}</option>
                         {/each}
                     </select>

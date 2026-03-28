@@ -15,7 +15,7 @@
 </script>
 
 <ul class="dir__list">
-    {#each items as item}
+    {#each items as item (item.name)}
         <li class="dir__row">
             <i class="dir__icon material-icons">{item.icon}</i>
             <a

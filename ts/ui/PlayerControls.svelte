@@ -184,15 +184,19 @@
 </script>
 
 <nav class="controls main__controls">
-    <div class="controls__track-image-container">
+    <button
+        class="controls__track-image-container"
+        type="button"
+        style:cursor={trackImageCursor}
+        aria-label="Open track image"
+        onclick={openTrackImageInNewTab}
+    >
         <img
             class="controls__track-image"
             src={trackImageUrl}
-            alt=""
-            style:cursor={trackImageCursor}
-            onclick={openTrackImageInNewTab}
+            alt="cover art"
         />
-    </div>
+    </button>
     <div class="controls__everything-else">
         <div class="controls__marquee-spacer">
             <div class="controls__marquee-container">
@@ -201,61 +205,67 @@
         </div>
         <ProgressBar {player} {playerState} />
         <div class="controls__group controls__group--shift-up">
-            <i
+            <button
                 class="controls__button material-icons"
                 class:controls__button--disabled={!playerState.hasPrevious}
+                type="button"
                 title="Previous track"
                 onclick={() => player.previous()}
             >
                 skip_previous
-            </i>
+            </button>
             {#if !hasTrack || isPaused}
-                <i
+                <button
                     class="controls__button material-icons"
                     class:controls__button--disabled={!hasTrack}
+                    type="button"
                     title="Play"
                     onclick={() => player.unpause()}
                 >
                     play_arrow
-                </i>
+                </button>
             {:else}
-                <i
+                <button
                     class="controls__button material-icons"
+                    type="button"
                     title="Pause"
                     onclick={() => player.pause()}
                 >
                     pause
-                </i>
+                </button>
             {/if}
-            <i
+            <button
                 class="controls__button material-icons"
                 class:controls__button--disabled={!playerState.hasNext}
+                type="button"
                 title="Next track"
                 onclick={() => player.next()}
             >
                 skip_next
-            </i>
+            </button>
             {#if !isFavorite}
-                <i
+                <button
                     class="controls__button controls__button--medium material-icons"
                     class:controls__button--disabled={!hasTrack}
+                    type="button"
                     title="Add to favorites"
                     onclick={() => player.favorite()}
                 >
                     favorite_border
-                </i>
+                </button>
             {:else}
-                <i
+                <button
                     class="controls__button controls__button--medium material-icons unfavorite-button"
+                    type="button"
                     title="Remove from favorites"
                     onclick={() => player.unfavorite()}
                 >
                     favorite
-                </i>
+                </button>
             {/if}
         </div>
         <div class="controls__bottom">
-            <span class="controls__link controls__bottom-left" onclick={onAbout}> aurelius </span>
+            <button class="controls__link controls__bottom-left" type="button" onclick={onAbout}> aurelius </button>
             <span class="controls__bottom-center"></span>
             <span class="controls__bottom-right">{durationText}</span>
         </div>
@@ -273,6 +283,7 @@
     .controls__track-image-container {
         display: flex;
         align-items: center;
+        cursor: inherit;
     }
 
     .controls__track-image {
