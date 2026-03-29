@@ -26,7 +26,6 @@ body {
 	user-select: none;
 }
 
-/* Modal dialog ***************************************************************/
 .modal-overlay {
 	display: block;
 	position: fixed;
@@ -54,7 +53,6 @@ body {
 	border-radius: 0.25rem;
 }
 
-/* UI elements ****************************************************************/
 .ui {
 	background-color: hsl(0, 0%, 33%);
 	color: white;
@@ -134,7 +132,6 @@ body {
 	color: white;
 }
 
-/* Playback controls **********************************************************/
 .controls {
 	background-color: hsl(0, 0%, 33%);
 	color: white;
@@ -154,13 +151,11 @@ body {
 	object-fit: contain;
 }
 
-/* Controls to the right of the track image */
 .controls__everything-else {
 	flex: 1;
 	position: relative;
 }
 
-/* Button */
 .controls__button {
 	cursor: pointer;
 	color: hsl(0, 0%, 10%);
@@ -175,7 +170,6 @@ body {
 	color: rgba(0, 0, 0, 0.3);
 }
 
-/* Progress/seek bar */
 .controls__progress-trough {
 	cursor: pointer;
 	flex: 1;
@@ -217,7 +211,6 @@ body {
 	background-color: hsl(0, 0%, 24%);
 }
 
-/* Link */
 .controls__link {
 	cursor: pointer;
 	font-style: italic;
@@ -228,7 +221,6 @@ body {
 	text-decoration: underline;
 }
 
-/* Marquee */
 .controls__marquee-spacer {
 	position: relative;
 	height: 1.1em;
@@ -251,7 +243,6 @@ body {
 	font-size: 1.1em;
 }
 
-/* Positioning */
 .controls__group {
 	display: flex;
 	height: 3rem;
@@ -263,7 +254,6 @@ body {
 	bottom: 0.5em;
 }
 
-/* Text below controls */
 .controls__bottom-left {
 	position: absolute;
 	bottom: 0.5rem;
@@ -275,7 +265,6 @@ body {
 	right: 0.5rem;
 }
 
-/* Prevent text from overlapping buttons */
 @media (max-width: 530px) {
 	.controls__bottom {
 		display: flex;
@@ -295,10 +284,6 @@ body {
 	}
 }
 
-/* Directory listing **********************************************************/
-
-/* .dir {} */
-
 .dir__list {
 	list-style: none;
 	padding: 0;
@@ -312,7 +297,6 @@ body {
 	text-decoration: none;
 	color: hsl(0, 0%, 66.3%);
 }
-/* Dot leaders: subtle dots connecting track titles to right-aligned metadata */
 .dir__track-list .dir__link {
 	display: flex;
 	overflow: hidden;
@@ -323,7 +307,7 @@ body {
 	margin-left: 1em;
 	margin-bottom: 0.15em;
 	background-image: radial-gradient(circle, hsla(0, 0%, 100%, 0.07) 1px, transparent 1px);
-	background-size: 10px 3px; /* horizontal spacing, vertical size */
+	background-size: 10px 3px;
 	background-position: bottom;
 	background-repeat: repeat-x;
 }
@@ -427,8 +411,6 @@ body {
 	}
 }
 
-/* Side menu ******************************************************************/
-
 .top-right__menu {
 	position: fixed;
 	z-index: 1;
@@ -439,16 +421,12 @@ body {
 	flex-direction: column;
 }
 
-/* .menu {} */
-
 .menu__button {
 	cursor: pointer;
 	font-size: 3rem;
 	color: black;
 	text-shadow: 0 0 2px white;
 }
-
-/* Search dialog **************************************************************/
 
 .search__result {
 	cursor: pointer;
@@ -463,6 +441,129 @@ body {
 	opacity: 0.7;
 }
 
-#search-dialog .ui__section-body--scroll {
+.main__controls {
+	position: fixed;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 100%;
+	max-width: 1200px;
+	box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.75);
+}
+
+.main__dir {
+	max-width: 960px;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 10rem;
+}
+
+.controls__button--unfavorite {
+	color: hsl(0, 70%, 72.9%);
+}
+
+.about-dialog__image {
+	background:
+		center center / contain url("/static/img/aurelius.svgz") no-repeat,
+		linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
+	border-radius: 0.5rem;
+	box-shadow: inset 0 0 1rem 0rem rgba(0, 0, 0, 0.5);
+	display: block;
+	min-width: 10rem;
+	max-width: 16rem;
+	height: 12rem;
+	margin: 1rem auto;
+}
+
+body {
+	background: hsl(39, 0%, 11.8%);
+}
+
+@media (min-width: 960px) {
+	body {
+		background:
+			calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
+				linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
+			left top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+				linear-gradient(
+					to right,
+					rgba(0, 0, 0, 0.25) calc(100% - 150px),
+					rgba(0, 0, 0, 0.35) 100%
+				),
+			right top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+				linear-gradient(
+					to left,
+					rgba(0, 0, 0, 0.25) calc(100% - 150px),
+					rgba(0, 0, 0, 0.35) 100%
+				),
+			fixed url("/static/img/bg.svgz"),
+			fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
+	}
+}
+
+@media (min-width: 1200px) {
+	body {
+		background:
+			calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
+				linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
+			left top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+				linear-gradient(
+					to right,
+					rgba(0, 0, 0, 0.25) calc(100% - 150px),
+					rgba(0, 0, 0, 0.35) 100%
+				),
+			right top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
+				linear-gradient(
+					to left,
+					rgba(0, 0, 0, 0.25) calc(100% - 150px),
+					rgba(0, 0, 0, 0.35) 100%
+				),
+			fixed url("/static/img/bg.svgz"),
+			fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
+	}
+
+	html {
+		margin-left: calc(100vw - 100%);
+		margin-right: 0;
+	}
+
+	.main__controls {
+		left: calc(50% + (100vw - 100%) / 2);
+		bottom: inherit;
+		top: 0;
+	}
+
+	.main__dir {
+		margin-bottom: inherit;
+		margin-top: 8rem;
+	}
+
+	.top-right__menu {
+		top: inherit;
+		bottom: 0;
+		flex-direction: column-reverse;
+	}
+}
+
+.search-dialog .ui__section-body--scroll {
 	max-height: 30em;
+}
+
+.login__content {
+	transform: translate(-50%, -80%);
+}
+.login__content::before {
+	content: "";
+	background: center center / contain url("/static/img/aurelius.svgz") no-repeat;
+	display: block;
+	width: 12rem;
+	height: 12rem;
+	margin: 1rem auto;
+}
+
+.login__form::before {
+	content: "aurelius";
+	display: block;
+	text-align: center;
+	font-style: italic;
 }

@@ -1,4 +1,4 @@
-import { TrackInfo } from "../core/track";
+import type { TrackInfo } from "../core/track";
 
 function fileExtension(name: string): string {
     const dot = name.lastIndexOf(".");

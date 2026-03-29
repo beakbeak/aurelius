@@ -1,6 +1,8 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
         "strict": true,
         "noEmitOnError": true,
         "noFallthroughCasesInSwitch": true,
@@ -8,9 +10,11 @@
         "noImplicitThis": true,
         "noUnusedLocals": true,
         "rootDir": "ts",
-        "outDir": "cmd/aurelius/assets/static/js"
+        "outDir": "cmd/aurelius/assets/static/js",
+        "skipLibCheck": true
     },
     "include": [
-        "ts/**/*.ts"
+        "ts/**/*.ts",
+        "ts/**/*.svelte"
     ]
 }

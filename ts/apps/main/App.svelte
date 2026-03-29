@@ -1,21 +1,19 @@
-import { Player } from "./core/player";
-import { setupPlayerUi, openTrackImageInNewTab } from "./ui/player";
-import {
-    setupDirUi,
-    playTrackByIndex,
-    navigateToParent,
-    navigateToTopLevel,
-    playFavorites,
-    loadDir,
-} from "./ui/dir";
-import { getSettings } from "./ui/settings";
-import { showSettingsDialog } from "./ui/settings-dialog";
-import { showModalDialog } from "./ui/modal";
-import { showSearchDialog } from "./ui/search-dialog";
-import { LogLevel, serverLog } from "./core/log";
+<script lang="ts">
+    import { Player } from "../../core/player";
+    import { getSettings } from "../../ui/settings";
+    import { LogLevel, serverLog } from "../../core/log";
+    import { createPlayerState } from "../../ui/state/playerState.svelte";
+    import { createDirState } from "../../ui/state/dirState.svelte";
+    import PlayerControls from "../../ui/PlayerControls.svelte";
+    import DirectoryBrowser from "../../ui/DirectoryBrowser.svelte";
+    import Modal from "../../ui/Modal.svelte";
+    import SettingsDialog from "../../ui/SettingsDialog.svelte";
+    import SearchDialog from "../../ui/SearchDialog.svelte";
+    import KeyboardShortcutsDialog from "../../ui/KeyboardShortcutsDialog.svelte";
+    import AboutDialog from "../../ui/AboutDialog.svelte";
 
-window.onload = () => {
-    const player = new Player({ streamConfig: getSettings().streamConfig });
+    const settings = getSettings();
+    const player = new Player({ streamConfig: settings.streamConfig });
 
     const eventNames = [
         "play",
@@ -32,19 +30,23 @@ window.onload = () => {
         );
     });
 
-    setupDirUi(player);
-    setupPlayerUi(player);
+    const playerState = createPlayerState(player);
+    const dirState = createDirState(player);
 
-    const showAndApplySettings = () => {
-        showSettingsDialog((settings) => {
-            player.streamConfig = settings.streamConfig;
-        });
-    };
+    let showSettings = $state(false);
+    let showSearch = $state(false);
+    let showShortcuts = $state(false);
+    let showAbout = $state(false);
 
-    document.getElementById("search-button")!.onclick = showSearchDialog;
-    document.getElementById("settings-button")!.onclick = showAndApplySettings;
+    function isTypingInInput(target: EventTarget | null): boolean {
+        if (!target || !(target instanceof HTMLElement)) {
+            return false;
+        }
+        const tagName = target.tagName.toLowerCase();
+        return tagName === "input" || tagName === "textarea" || target.isContentEditable;
+    }
 
-    document.addEventListener("keydown", (e) => {
+    function handleKeydown(e: KeyboardEvent) {
         if (isTypingInInput(e.target) || e.metaKey || e.ctrlKey || e.altKey) {
             return;
         }
@@ -52,7 +54,7 @@ window.onload = () => {
         switch (e.key) {
             case "/":
                 e.preventDefault();
-                showSearchDialog();
+                showSearch = true;
                 break;
             case " ":
                 e.preventDefault();
@@ -74,7 +76,7 @@ window.onload = () => {
                 break;
             case "Backspace":
                 e.preventDefault();
-                navigateToTopLevel();
+                dirState.navigateToTopLevel();
                 break;
             case "<":
                 e.preventDefault();
@@ -86,7 +88,7 @@ window.onload = () => {
                 break;
             case "\\":
                 e.preventDefault();
-                navigateToParent();
+                dirState.navigateToParent();
                 break;
             case "1":
             case "2":
@@ -99,7 +101,7 @@ window.onload = () => {
             case "9":
             case "0":
                 e.preventDefault();
-                playTrackByIndex(e.key === "0" ? 9 : parseInt(e.key) - 1);
+                dirState.playTrackByIndex(e.key === "0" ? 9 : parseInt(e.key) - 1);
                 break;
             case "f":
                 e.preventDefault();
@@ -113,11 +115,11 @@ window.onload = () => {
                 break;
             case "?":
                 e.preventDefault();
-                showModalDialog(document.getElementById("keyboard-shortcuts-dialog")!);
+                showShortcuts = true;
                 break;
             case "t":
                 e.preventDefault();
-                showAndApplySettings();
+                showSettings = true;
                 break;
             case "'":
             case '"':
@@ -147,26 +149,75 @@ window.onload = () => {
             case "=":
             case "`":
                 e.preventDefault();
-                playFavorites();
+                dirState.playFavorites();
                 break;
             case "c":
                 e.preventDefault();
-                openTrackImageInNewTab();
+                if (playerState.track?.info.attachedImages?.length) {
+                    window.open(playerState.track.info.attachedImages[0].url, "_blank");
+                }
                 break;
             case "g":
                 e.preventDefault();
                 if (player.track) {
-                    loadDir(player.track.info.dir);
+                    dirState.loadDir(player.track.info.dir);
                 }
                 break;
         }
-    });
-};
-
-function isTypingInInput(target: EventTarget | null): boolean {
-    if (!target || !(target instanceof HTMLElement)) {
-        return false;
     }
-    const tagName = target.tagName.toLowerCase();
-    return tagName === "input" || tagName === "textarea" || target.isContentEditable;
-}
+</script>
+
+<svelte:window onkeydown={handleKeydown} />
+
+<PlayerControls
+    {player}
+    {playerState}
+    onAbout={() => (showAbout = true)}
+    onNavigateToDir={(url) => dirState.loadDir(url)}
+/>
+
+<main class="dir main__dir">
+    <DirectoryBrowser {player} {playerState} {dirState} />
+</main>
+
+<aside class="menu top-right__menu">
+    <i
+        class="menu__button material-icons"
+        title="Settings"
+        role="button"
+        tabindex="0"
+        onclick={() => (showSettings = true)}
+    >
+        settings
+    </i>
+    <i
+        class="menu__button material-icons"
+        title="Search"
+        role="button"
+        tabindex="0"
+        onclick={() => (showSearch = true)}
+    >
+        search
+    </i>
+</aside>
+
+<Modal bind:open={showSettings}>
+    <SettingsDialog
+        onSave={(newSettings) => {
+            player.streamConfig = newSettings.streamConfig;
+            showSettings = false;
+        }}
+    />
+</Modal>
+
+<Modal bind:open={showSearch} dialogClass="search-dialog">
+    <SearchDialog {dirState} onClose={() => (showSearch = false)} />
+</Modal>
+
+<Modal bind:open={showShortcuts}>
+    <KeyboardShortcutsDialog />
+</Modal>
+
+<Modal bind:open={showAbout}>
+    <AboutDialog />
+</Modal>

@@ -1,4 +1,4 @@
-import { PlaylistTrack } from "./playlist";
+import type { PlaylistTrack } from "./playlist";
 
 export class PlayHistory {
     private static readonly _maxLength = 1024;

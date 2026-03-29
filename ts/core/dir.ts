@@ -1,5 +1,5 @@
 import { fetchJson } from "./json";
-import { TrackInfo } from "./track";
+import type { TrackInfo } from "./track";
 
 export interface DirEntry {
     readonly name: string;

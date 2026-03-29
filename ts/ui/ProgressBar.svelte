@@ -1,0 +1,123 @@
+<script lang="ts">
+    import type { Player } from "../core/player";
+    import type { PlayerState } from "./state/playerState.svelte";
+    import { onDrag } from "./dom";
+
+    let {
+        player,
+        playerState,
+    }: {
+        player: Player;
+        playerState: PlayerState;
+    } = $props();
+
+    let seekSliderPosition = $state<number | undefined>(undefined);
+    let progressBarEmpty: HTMLElement | undefined = $state(undefined);
+
+    let hasTrack = $derived(playerState.track !== undefined);
+
+    let seekLeft = $derived.by(() => {
+        const track = playerState.track;
+        if (!track) return "0";
+        const duration = playerState.duration;
+        const currentTime =
+            seekSliderPosition !== undefined
+                ? seekSliderPosition * duration
+                : playerState.currentTime;
+        if (duration > 0) {
+            return `${(currentTime / duration) * 100}%`;
+        }
+        return "0";
+    });
+
+    let bufferLeft = $derived.by(() => {
+        void playerState.updateCounter;
+        const track = playerState.track;
+        if (!track) return "0";
+        const ranges = track.buffered();
+        if (ranges.length > 0 && track.info.duration > 0) {
+            const startTime = track.startTime + ranges.start(0);
+            const left = startTime / track.info.duration;
+            return `${Math.max(0, Math.min(100, left * 100))}%`;
+        }
+        return "0";
+    });
+
+    let bufferWidth = $derived.by(() => {
+        void playerState.updateCounter;
+        const track = playerState.track;
+        if (!track) return "0";
+        const ranges = track.buffered();
+        if (ranges.length > 0 && track.info.duration > 0) {
+            const startTime = track.startTime + ranges.start(0);
+            const endTime = track.startTime + ranges.end(ranges.length - 1);
+            const left = startTime / track.info.duration;
+            const width = (endTime - startTime) / track.info.duration;
+            const leftPercent = Math.max(0, Math.min(100, left * 100));
+            const widthPercent = Math.max(0, Math.min(100 - leftPercent, width * 100));
+            return `${widthPercent}%`;
+        }
+        return "0";
+    });
+
+    function startSeekSliderDrag(
+        anchorClientX: number,
+        anchorScreenX: number,
+        touchId?: number,
+    ): void {
+        if (!playerState.track || !progressBarEmpty) return;
+
+        const rect = progressBarEmpty.getBoundingClientRect();
+        const anchorClientXOffset = anchorClientX - rect.left;
+
+        const getPosition = (screenX: number): number => {
+            let clientXOffset = anchorClientXOffset + (screenX - anchorScreenX);
+            if (clientXOffset < 0) clientXOffset = 0;
+            else if (clientXOffset > rect.width) clientXOffset = rect.width;
+            return clientXOffset / rect.width;
+        };
+
+        seekSliderPosition = getPosition(anchorScreenX);
+
+        onDrag(
+            (screenX) => {
+                seekSliderPosition = getPosition(screenX);
+            },
+            (screenX) => {
+                seekSliderPosition = undefined;
+                if (playerState.track !== undefined) {
+                    player.seekTo(getPosition(screenX) * playerState.track.info.duration);
+                }
+            },
+            touchId,
+        );
+    }
+
+    function handleMouseDown(event: MouseEvent): void {
+        event.preventDefault();
+        startSeekSliderDrag(event.clientX, event.screenX);
+    }
+
+    function handleTouchStart(event: TouchEvent): void {
+        event.preventDefault();
+        if (event.changedTouches.length > 0) {
+            const touch = event.changedTouches[0];
+            startSeekSliderDrag(touch.clientX, touch.screenX, touch.identifier);
+        }
+    }
+</script>
+
+<div class="controls__group" class:controls--disabled={!hasTrack}>
+    <div
+        bind:this={progressBarEmpty}
+        class="controls__progress-trough"
+        onmousedown={handleMouseDown}
+        ontouchstart={handleTouchStart}
+    >
+        <span class="controls__progress-fill" style:left={bufferLeft} style:width={bufferWidth}
+        ></span>
+        <span class="controls__slider-range">
+            <span class="controls__slider" style:left={seekLeft}></span>
+        </span>
+    </div>
+</div>

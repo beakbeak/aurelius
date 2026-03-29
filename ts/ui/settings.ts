@@ -1,6 +1,6 @@
 import { StreamCodec } from "../core/track";
 import { copyJson } from "../core/json";
-import { PlayerStreamConfig } from "../core/player";
+import type { PlayerStreamConfig } from "../core/player";
 
 const SettingsStorageKey = "settings";
 

@@ -1,17 +1,15 @@
-import { searchMedia } from "./search";
-import * as jsonModule from "./json";
+import { searchMedia, deps } from "./search";
 import { strictEqual, deepStrictEqual } from "assert";
 
 describe("search", () => {
-    let originalFetchJson: typeof jsonModule.fetchJson;
+    let originalFetchJson: typeof deps.fetchJson;
 
     beforeEach(() => {
-        originalFetchJson = jsonModule.fetchJson;
+        originalFetchJson = deps.fetchJson;
     });
 
     afterEach(() => {
-        // Restore original function
-        (jsonModule as any).fetchJson = originalFetchJson;
+        deps.fetchJson = originalFetchJson;
     });
 
     describe("searchMedia", () => {
@@ -21,11 +19,11 @@ describe("search", () => {
                     { path: "test.mp3", type: "track" as const, url: "/media/tracks/test.mp3" }
                 ],
             };
-            
+
             let calledUrl = "";
-            (jsonModule as any).fetchJson = async (url: string) => {
+            deps.fetchJson = async (url: string) => {
                 calledUrl = url;
-                return mockResponse;
+                return mockResponse as any;
             };
 
             const result = await searchMedia("test");
@@ -36,11 +34,11 @@ describe("search", () => {
 
         it("URL encodes query parameters", async () => {
             const mockResponse = { results: [] };
-            
+
             let calledUrl = "";
-            (jsonModule as any).fetchJson = async (url: string) => {
+            deps.fetchJson = async (url: string) => {
                 calledUrl = url;
-                return mockResponse;
+                return mockResponse as any;
             };
 
             await searchMedia("test with spaces & special chars");
@@ -50,11 +48,11 @@ describe("search", () => {
 
         it("handles empty query", async () => {
             const mockResponse = { results: [] };
-            
+
             let calledUrl = "";
-            (jsonModule as any).fetchJson = async (url: string) => {
+            deps.fetchJson = async (url: string) => {
                 calledUrl = url;
-                return mockResponse;
+                return mockResponse as any;
             };
 
             const result = await searchMedia("");
@@ -70,8 +68,8 @@ describe("search", () => {
                     { path: "bar.mp3", type: "track" as const, url: "/media/tracks/bar.mp3" }
                 ],
             };
-            
-            (jsonModule as any).fetchJson = async () => mockResponse;
+
+            deps.fetchJson = async () => mockResponse as any;
 
             const result = await searchMedia("query");
 
@@ -82,8 +80,8 @@ describe("search", () => {
 
         it("propagates errors from fetchJson", async () => {
             const error = new Error("Network error");
-            
-            (jsonModule as any).fetchJson = async () => {
+
+            deps.fetchJson = async () => {
                 throw error;
             };
 

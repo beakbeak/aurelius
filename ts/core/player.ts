@@ -1,5 +1,7 @@
-import { Track, StreamConfig, ReplayGainMode } from "./track";
-import { Playlist, PlaylistTrack, LocalPlaylist, RemotePlaylist } from "./playlist";
+import { Track, ReplayGainMode } from "./track";
+import type { StreamConfig } from "./track";
+import { LocalPlaylist, RemotePlaylist } from "./playlist";
+import type { Playlist, PlaylistTrack } from "./playlist";
 import { PlayHistory } from "./history";
 import EventDispatcher from "./eventdispatcher";
 import { copyJson } from "./json";
