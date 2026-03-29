@@ -59,31 +59,28 @@
         }));
     });
 
-    function handleNavigate(url: string): void {
+    function onNavigate(url: string): void {
         dirState.loadDir(url);
     }
 
-    function handleFavoritesClick(): void {
+    function onFavoritesClick(): void {
         dirState.playFavorites(favoritesPrefix);
     }
 
-    function handlePlaylistClick(url: string): void {
+    function onPlaylistClick(url: string): void {
         player.playList(url);
     }
 
-    function handlePlaylistRandomClick(url: string): void {
+    function onPlaylistRandomClick(url: string): void {
         player.playList(url, { random: true });
     }
 
     onMount(() => {
         dirState.loadDirFromPageUrl();
-    });
 
-    // Listen for favorite/unfavorite to reload
-    $effect(() => {
-        const reloadOnFav = () => dirState.reloadCurrentDir();
-        player.addEventListener("favorite", reloadOnFav);
-        player.addEventListener("unfavorite", reloadOnFav);
+        const reloadOnFavorite = () => dirState.reloadCurrentDir();
+        player.addEventListener("favorite", reloadOnFavorite);
+        player.addEventListener("unfavorite", reloadOnFavorite);
         return () => {
             // Note: Player doesn't have removeEventListener, so these persist
         };
@@ -95,7 +92,7 @@
     <ul class="dir__list">
         <li class="dir__row">
             <i class="dir__icon material-icons">favorite_border</i>
-            <button class="dir__link" type="button" onclick={handleFavoritesClick}>
+            <button class="dir__link" type="button" onclick={onFavoritesClick}>
                 {favoritesText}
             </button>
         </li>
@@ -103,12 +100,12 @@
 
     <!-- Navigation -->
     {#if info}
-        <DirList items={navigationItems} onNavigate={handleNavigate} />
+        <DirList items={navigationItems} {onNavigate} />
     {/if}
 
     <!-- Directories -->
     {#if info && info.dirs.length > 0}
-        <DirList items={dirItems} onNavigate={handleNavigate} />
+        <DirList items={dirItems} {onNavigate} />
     {/if}
 
     <!-- Playlists -->
@@ -120,14 +117,14 @@
                     <button
                         class="dir__link"
                         type="button"
-                        onclick={() => handlePlaylistClick(playlist.url)}
+                        onclick={() => onPlaylistClick(playlist.url)}
                     >
                         {playlist.name}
                     </button>
                     <button
                         class="dir__link dir__link--aux"
                         type="button"
-                        onclick={() => handlePlaylistRandomClick(playlist.url)}
+                        onclick={() => onPlaylistRandomClick(playlist.url)}
                     >
                         random
                     </button>
