@@ -82,7 +82,8 @@
         player.addEventListener("favorite", reloadOnFavorite);
         player.addEventListener("unfavorite", reloadOnFavorite);
         return () => {
-            // Note: Player doesn't have removeEventListener, so these persist
+            player.removeEventListener("favorite", reloadOnFavorite);
+            player.removeEventListener("unfavorite", reloadOnFavorite);
         };
     });
 </script>
