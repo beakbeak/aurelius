@@ -1,40 +1,45 @@
 <script lang="ts">
-    import type { Player } from "../core/player";
     import type { PlayerState } from "./state/playerState.svelte";
     import Marquee from "./Marquee.svelte";
     import ProgressBar from "./ProgressBar.svelte";
     import { formatDuration } from "./format";
     import { getSettings } from "./settings";
+    import { onMount } from "svelte";
 
     const defaultTrackImageUrl = "/static/img/aurelius.svgz";
 
     let {
-        player,
         playerState,
         onAbout,
         onNavigateToDir,
     }: {
-        player: Player;
         playerState: PlayerState;
         onAbout: () => void;
         onNavigateToDir: (url: string) => void;
     } = $props();
 
-    let notificationData = $state<{ title: string; body: string; icon?: string } | undefined>(
-        undefined,
-    );
+    const player = $derived(playerState.player);
 
     let trackImageUrl = $derived.by(() => {
-        const info = playerState.trackInfo;
-        if (!info) return defaultTrackImageUrl;
+        const info = playerState.track?.info;
+        if (!info) {
+            return defaultTrackImageUrl;
+        }
         return info.attachedImages.length > 0 ? info.attachedImages[0].url : defaultTrackImageUrl;
     });
-
     let trackImageCursor = $derived(trackImageUrl !== defaultTrackImageUrl ? "pointer" : "default");
 
+    function openTrackImageInNewTab(): void {
+        if (trackImageUrl !== defaultTrackImageUrl) {
+            window.open(trackImageUrl, "_blank");
+        }
+    }
+
     let marqueeText = $derived.by(() => {
-        const info = playerState.trackInfo;
-        if (!info) return "";
+        const info = playerState.track?.info;
+        if (!info) {
+            return "";
+        }
         const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
         const title = info.tags["title"] ?? info.name;
         let album = "";
@@ -47,29 +52,20 @@
         }
         return `${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`;
     });
-
-    let marqueeUrl = $derived(playerState.trackInfo?.dir ?? "");
+    let marqueeUrl = $derived(playerState.track?.info.dir ?? "");
 
     let seekTime = $state<number | undefined>();
-
     let durationText = $derived.by(() => {
         const track = playerState.track;
-        if (!track) return "";
+        if (!track) {
+            return "";
+        }
         const currentTimeStr = formatDuration(seekTime ?? playerState.currentTime);
         const durationStr = formatDuration(playerState.duration);
         return `${currentTimeStr} / ${durationStr}`;
     });
 
-    let hasTrack = $derived(playerState.track !== undefined);
-    let isPaused = $derived(playerState.paused);
-    let isFavorite = $derived(playerState.favorite);
-
-    function openTrackImageInNewTab(): void {
-        if (trackImageUrl !== defaultTrackImageUrl) {
-            window.open(trackImageUrl, "_blank");
-        }
-    }
-
+    let notificationData: { title: string; body: string; icon?: string } | undefined;
     function showDesktopNotification(data?: { title: string; body: string; icon?: string }): void {
         const d = data ?? notificationData;
         if (
@@ -83,32 +79,28 @@
         ) {
             return;
         }
-
         const notification = new Notification(d.title, {
             body: d.body,
             icon: d.icon,
             silent: true,
         });
-
         notification.onclick = () => {
             window.focus();
             notification.close();
         };
     }
 
-    // Update MediaSession and notification data when track info changes
+    // Update MediaSession and notification data when track info changes.
     $effect(() => {
-        const info = playerState.trackInfo;
         const track = playerState.track;
-
-        if (!info || !track) {
+        if (!track) {
             notificationData = undefined;
             return;
         }
-
+        const info = track.info;
         const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
         const title = info.tags["title"] ?? info.name;
-        const favoriteIcon = info.favorite ? "\u2665\uFE0E" : "\u2661";
+        const favoriteIcon = playerState.favorite ? "\u2665\uFE0E" : "\u2661";
 
         let album = "";
         if (info.tags["album"] !== undefined) {
@@ -134,7 +126,6 @@
                     sizes: "",
                 });
             });
-
             navigator.mediaSession.metadata = new MediaMetadata({
                 artist,
                 title: `${favoriteIcon} ${title}`,
@@ -150,15 +141,17 @@
         }
     });
 
-    // Handle autoNext notifications
-    $effect(() => {
-        if (playerState.autoNextFired) {
-            showDesktopNotification();
+    // Show notification when track advances automatically.
+    onMount(() => {
+        const handler = () => { showDesktopNotification(); };
+        player.addEventListener("autoNext", handler);
+        return () => {
+            player.removeEventListener("autoNext", handler);
         }
     });
 
-    // Set up MediaSession action handlers once
-    $effect(() => {
+    // Set up MediaSession actions.
+    onMount(() => {
         navigator.mediaSession?.setActionHandler("previoustrack", async () => {
             await player.previous();
             if (getSettings().mediaSessionNotifications) {
@@ -205,7 +198,7 @@
                 <Marquee text={marqueeText} url={marqueeUrl} onNavigate={onNavigateToDir} />
             </div>
         </div>
-        <ProgressBar {player} {playerState} bind:seekTime />
+        <ProgressBar {playerState} bind:seekTime />
         <div class="controls__group controls__group--shift-up">
             <button
                 class="controls__button material-icons"
@@ -216,10 +209,10 @@
             >
                 skip_previous
             </button>
-            {#if !hasTrack || isPaused}
+            {#if !playerState.track || playerState.paused}
                 <button
                     class="controls__button material-icons"
-                    class:controls__button--disabled={!hasTrack}
+                    class:controls__button--disabled={!playerState.track}
                     type="button"
                     title="Play"
                     onclick={() => player.unpause()}
@@ -245,10 +238,10 @@
             >
                 skip_next
             </button>
-            {#if !isFavorite}
+            {#if !playerState.favorite}
                 <button
                     class="controls__button controls__button--medium material-icons"
-                    class:controls__button--disabled={!hasTrack}
+                    class:controls__button--disabled={!playerState.track}
                     type="button"
                     title="Add to favorites"
                     onclick={() => player.favorite()}

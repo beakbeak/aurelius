@@ -15,7 +15,9 @@
     let href = $derived(url ? `/media/tree/?path=${encodeURIComponent(url)}` : "#");
 
     function updateAnimation(): void {
-        if (!element) return;
+        if (!element) {
+            return;
+        }
 
         // Remove previous dynamic style
         if (styleElement) {

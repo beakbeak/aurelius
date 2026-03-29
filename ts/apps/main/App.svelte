@@ -2,8 +2,8 @@
     import { Player } from "../../core/player";
     import { getSettings } from "../../ui/settings";
     import { LogLevel, serverLog } from "../../core/log";
-    import { createPlayerState } from "../../ui/state/playerState.svelte";
-    import { createDirState } from "../../ui/state/dirState.svelte";
+    import { makePlayerState } from "../../ui/state/playerState.svelte";
+    import { DirState } from "../../ui/state/dirState.svelte";
     import PlayerControls from "../../ui/PlayerControls.svelte";
     import DirectoryBrowser from "../../ui/DirectoryBrowser.svelte";
     import Modal from "../../ui/Modal.svelte";
@@ -30,8 +30,8 @@
         );
     });
 
-    const playerState = createPlayerState(player);
-    const dirState = createDirState(player);
+    const playerState = makePlayerState(player);
+    const dirState = new DirState(player);
 
     let showSettings = $state(false);
     let showSearch = $state(false);
@@ -171,7 +171,6 @@
 
 <div class="controls">
     <PlayerControls
-        {player}
         {playerState}
         onAbout={() => (showAbout = true)}
         onNavigateToDir={(url) => dirState.loadDir(url)}
@@ -179,7 +178,7 @@
 </div>
 
 <main class="dir-browser">
-    <DirectoryBrowser {player} {playerState} {dirState} />
+    <DirectoryBrowser {playerState} {dirState} />
 </main>
 
 <aside class="menu top-right__menu">

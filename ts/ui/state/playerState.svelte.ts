@@ -1,93 +1,78 @@
 import type { Player } from "../../core/player";
 import type { Track } from "../../core/track";
+import { createSubscriber } from "svelte/reactivity";
 
-export type PlayerState = ReturnType<typeof createPlayerState>;
+export type PlayerState = ReturnType<typeof makePlayerState>;
 
-export function createPlayerState(player: Player) {
-    let track = $state<Track | undefined>(player.track);
-    let paused = $state(true);
-    let currentTime = $state(0);
-    let duration = $state(0);
-    let hasNext = $state(player.hasNext());
-    let hasPrevious = $state(player.hasPrevious());
-    let favorite = $state(false);
-    let ended = $state(false);
-    let autoNextFired = $state(false);
-    let updateCounter = $state(0);
+export function makePlayerState(player: Player) {
+    const updateOnBufferProgress = createSubscriber((update) => {
+        player.addEventListener("progress", update);
+        player.addEventListener("timeupdate", update);
+        return () => {
+            player.removeEventListener("progress", update);
+            player.removeEventListener("timeupdate", update);
+        };
+    });
 
-    function refresh(t: Track): void {
-        track = t;
-        paused = t.isPaused();
-        currentTime = t.currentTime();
-        duration = t.info.duration;
-        hasNext = player.hasNext();
-        hasPrevious = player.hasPrevious();
-        favorite = t.info.favorite;
-        ended = false;
-        updateCounter++;
-    }
+    const updateOnPauseUnpause = createSubscriber((update) => {
+        player.addEventListener("pause", update);
+        player.addEventListener("unpause", update);
+        return () => {
+            player.removeEventListener("pause", update);
+            player.removeEventListener("unpause", update);
+        };
+    });
+
+    const updateOnTimeUpdate = createSubscriber((update) => {
+        player.addEventListener("timeupdate", update);
+        return () => {
+            player.removeEventListener("timeupdate", update);
+        };
+    });
+
+    const updateOnFavoriteUnfavorite = createSubscriber((update) => {
+        player.addEventListener("favorite", update);
+        player.addEventListener("unfavorite", update);
+        return () => {
+            player.removeEventListener("favorite", update);
+            player.removeEventListener("unfavorite", update);
+        };
+    });
+
+    let track = $state(player.track);
+    let paused = $derived.by(() => {
+        updateOnPauseUnpause();
+        return track?.isPaused() ?? false;
+    });
+    let currentTime = $derived.by(() => {
+        updateOnTimeUpdate();
+        return track?.currentTime() ?? 0;
+    });
+    let duration = $derived(track?.info.duration ?? 0);
+    let favorite = $derived.by(() => {
+        updateOnFavoriteUnfavorite();
+        return track?.info.favorite ?? false;
+    });
+    let hasNext = $derived.by(() => {
+        track; // Update when track updates.
+        return player.hasNext();
+    });
+    let hasPrevious = $derived.by(() => {
+        track; // Update when track updates.
+        return player.hasPrevious();
+    });
 
     player.addEventListener("play", (t: Track) => {
-        autoNextFired = false;
-        refresh(t);
-    });
-
-    player.addEventListener("pause", (t: Track) => {
-        paused = true;
         track = t;
-        updateCounter++;
     });
-
-    player.addEventListener("unpause", (t: Track) => {
-        paused = false;
-        track = t;
-        updateCounter++;
-    });
-
-    player.addEventListener("timeupdate", (t: Track) => {
-        currentTime = t.currentTime();
-        track = t;
-        updateCounter++;
-    });
-
-    player.addEventListener("progress", (t: Track) => {
-        track = t;
-        updateCounter++;
-    });
-
     player.addEventListener("ended", () => {
         track = undefined;
-        paused = true;
-        currentTime = 0;
-        duration = 0;
-        hasNext = player.hasNext();
-        hasPrevious = player.hasPrevious();
-        favorite = false;
-        ended = true;
-    });
-
-    player.addEventListener("favorite", (t: Track) => {
-        favorite = true;
-        track = t;
-        updateCounter++;
-    });
-
-    player.addEventListener("unfavorite", (t: Track) => {
-        favorite = false;
-        track = t;
-        updateCounter++;
-    });
-
-    player.addEventListener("autoNext", () => {
-        autoNextFired = true;
     });
 
     return {
+        player,
         get track() {
             return track;
-        },
-        get trackInfo() {
-            return track?.info;
         },
         get paused() {
             return paused;
@@ -98,23 +83,18 @@ export function createPlayerState(player: Player) {
         get duration() {
             return duration;
         },
+        get favorite() {
+            return favorite;
+        },
         get hasNext() {
             return hasNext;
         },
         get hasPrevious() {
             return hasPrevious;
         },
-        get favorite() {
-            return favorite;
-        },
-        get ended() {
-            return ended;
-        },
-        get autoNextFired() {
-            return autoNextFired;
-        },
-        get updateCounter() {
-            return updateCounter;
-        },
+        updateOnBufferProgress,
+        updateOnPauseUnpause,
+        updateOnTimeUpdate,
+        updateOnFavoriteUnfavorite,
     };
 }

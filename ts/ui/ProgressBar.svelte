@@ -1,18 +1,16 @@
 <script lang="ts">
-    import type { Player } from "../core/player";
     import type { PlayerState } from "./state/playerState.svelte";
     import { onDrag } from "./dom";
 
     let {
-        player,
         playerState,
         seekTime = $bindable(undefined),
     }: {
-        player: Player;
         playerState: PlayerState;
         seekTime?: number;
     } = $props();
 
+    const player = $derived(playerState.player);
     let seekSliderPosition = $state<number | undefined>(undefined);
     let progressBarEmpty: HTMLElement | undefined = $state(undefined);
 
@@ -55,7 +53,7 @@
     });
 
     let bufferLeft = $derived.by(() => {
-        void playerState.updateCounter;
+        playerState.updateOnBufferProgress();
         const track = playerState.track;
         if (!track) return "0";
         const ranges = track.buffered();
@@ -68,7 +66,7 @@
     });
 
     let bufferWidth = $derived.by(() => {
-        void playerState.updateCounter;
+        playerState.updateOnBufferProgress();
         const track = playerState.track;
         if (!track) return "0";
         const ranges = track.buffered();

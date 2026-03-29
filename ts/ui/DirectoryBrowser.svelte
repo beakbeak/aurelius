@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { Player } from "../core/player";
     import type { PlayerState } from "./state/playerState.svelte";
     import type { DirState } from "./state/dirState.svelte";
     import { onMount } from "svelte";
@@ -8,15 +7,14 @@
     import "./dir.css";
 
     let {
-        player,
         playerState,
         dirState,
     }: {
-        player: Player;
         playerState: PlayerState;
         dirState: DirState;
     } = $props();
 
+    const player = $derived(playerState.player);
     let info = $derived(dirState.dirInfo);
 
     let favoritesText = $derived.by(() => {
