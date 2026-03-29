@@ -1,5 +1,5 @@
-import type { Player } from "../../core/player";
-import type { Track } from "../../core/track";
+import type { Player } from "../core/player";
+import type { Track } from "../core/track";
 import { createSubscriber } from "svelte/reactivity";
 
 export type PlayerState = ReturnType<typeof makePlayerState>;

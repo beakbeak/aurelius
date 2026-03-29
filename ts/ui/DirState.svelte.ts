@@ -1,8 +1,8 @@
-import type { Player } from "../../core/player";
-import type { DirInfo } from "../../core/dir";
-import { dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "../../core/dir";
-import { ReplayGainMode, fetchTrackInfo } from "../../core/track";
-import { RemotePlaylist } from "../../core/playlist";
+import type { Player } from "../core/player";
+import type { DirInfo } from "../core/dir";
+import { dirUrlFromTreeUrl, fetchDirInfo, treeUrlFromDirInfo } from "../core/dir";
+import { ReplayGainMode, fetchTrackInfo } from "../core/track";
+import { RemotePlaylist } from "../core/playlist";
 
 export class DirState {
     dirInfo = $state<DirInfo | undefined>(undefined);

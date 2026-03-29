@@ -2,8 +2,8 @@
     import { Player } from "../../core/player";
     import { getSettings } from "../../ui/settings";
     import { LogLevel, serverLog } from "../../core/log";
-    import { makePlayerState } from "../../ui/state/playerState.svelte";
-    import { DirState } from "../../ui/state/dirState.svelte";
+    import { makePlayerState } from "../../ui/PlayerState.svelte";
+    import { DirState } from "../../ui/DirState.svelte";
     import PlayerControls from "../../ui/PlayerControls.svelte";
     import DirectoryBrowser from "../../ui/DirectoryBrowser.svelte";
     import Modal from "../../ui/Modal.svelte";

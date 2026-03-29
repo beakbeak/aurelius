@@ -1,8 +1,8 @@
 <script lang="ts">
     import type { TrackInfo } from "../core/track";
-    import type { PlayerState } from "./state/playerState.svelte";
+    import type { PlayerState } from "./PlayerState.svelte";
     import { formatTrackTitle, formatTrackArtist, formatTrackMeta, formatDuration } from "./format";
-    import type { DirState } from "./state/dirState.svelte";
+    import type { DirState } from "./DirState.svelte";
 
     let {
         tracks,

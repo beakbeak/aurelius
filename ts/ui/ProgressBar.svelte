@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { PlayerState } from "./state/playerState.svelte";
+    import type { PlayerState } from "./PlayerState.svelte";
     import { onDrag } from "./dom";
 
     let {

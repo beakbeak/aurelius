@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { PlayerState } from "./state/playerState.svelte";
+    import type { PlayerState } from "./PlayerState.svelte";
     import Marquee from "./Marquee.svelte";
     import ProgressBar from "./ProgressBar.svelte";
     import { formatDuration } from "./format";

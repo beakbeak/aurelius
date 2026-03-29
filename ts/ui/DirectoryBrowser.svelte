@@ -1,6 +1,6 @@
 <script lang="ts">
-    import type { PlayerState } from "./state/playerState.svelte";
-    import type { DirState } from "./state/dirState.svelte";
+    import type { PlayerState } from "./PlayerState.svelte";
+    import type { DirState } from "./DirState.svelte";
     import { onMount } from "svelte";
     import TrackList from "./TrackList.svelte";
     import DirList from "./DirList.svelte";

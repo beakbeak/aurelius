@@ -3,7 +3,7 @@
     import { searchMedia } from "../core/search";
     import { onMount } from "svelte";
     import "./dir.css";
-    import type { DirState } from "./state/dirState.svelte";
+    import type { DirState } from "./DirState.svelte";
 
     let {
         dirState,
