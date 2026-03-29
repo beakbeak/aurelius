@@ -27,6 +27,18 @@ export default class EventDispatcher<
         listeners.push(value);
     }
 
+    /** Remove a previously added listener for a particular event. */
+    public removeEventListener<K extends keyof EventMap>(eventName: K, value: EventMap[K]): void {
+        const listeners = this._listeners[eventName as string];
+        if (listeners === undefined) {
+            return;
+        }
+        const index = listeners.indexOf(value);
+        if (index !== -1) {
+            listeners.splice(index, 1);
+        }
+    }
+
     /** Call each listener of a given event with the supplied arguments. */
     protected dispatchEvent<K extends keyof EventMap>(
         eventName: K,

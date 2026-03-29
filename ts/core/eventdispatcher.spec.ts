@@ -50,6 +50,20 @@ describe("EventDispatcher", function () {
         ed.dispatchEvent("test", 1);
     });
 
+    it("removes a specific listener", function () {
+        const ed = new TestEventDispatcher();
+
+        let callCount = 0;
+        const listener = () => {
+            callCount++;
+        };
+        ed.addEventListener("test", listener);
+        ed.removeEventListener("test", listener);
+
+        ed.dispatchEvent("test", 1);
+        strictEqual(callCount, 0);
+    });
+
     it("loops over and clears listeners", function () {
         const ed = new TestEventDispatcher();
 
