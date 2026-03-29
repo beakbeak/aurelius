@@ -50,10 +50,12 @@
 
     let marqueeUrl = $derived(playerState.trackInfo?.dir ?? "");
 
+    let seekTime = $state<number | undefined>();
+
     let durationText = $derived.by(() => {
         const track = playerState.track;
         if (!track) return "";
-        const currentTimeStr = formatDuration(playerState.currentTime);
+        const currentTimeStr = formatDuration(seekTime ?? playerState.currentTime);
         const durationStr = formatDuration(playerState.duration);
         return `${currentTimeStr} / ${durationStr}`;
     });
@@ -203,7 +205,7 @@
                 <Marquee text={marqueeText} url={marqueeUrl} onNavigate={onNavigateToDir} />
             </div>
         </div>
-        <ProgressBar {player} {playerState} />
+        <ProgressBar {player} {playerState} bind:seekTime />
         <div class="controls__group controls__group--shift-up">
             <button
                 class="controls__button material-icons"

@@ -6,9 +6,11 @@
     let {
         player,
         playerState,
+        seekTime = $bindable(undefined),
     }: {
         player: Player;
         playerState: PlayerState;
+        seekTime?: number;
     } = $props();
 
     let seekSliderPosition = $state<number | undefined>(undefined);
@@ -100,13 +102,16 @@
         };
 
         seekSliderPosition = getPosition(anchorScreenX);
+        seekTime = seekSliderPosition * playerState.duration;
 
         onDrag(
             (screenX) => {
                 seekSliderPosition = getPosition(screenX);
+                seekTime = seekSliderPosition * playerState.duration;
             },
             (screenX) => {
                 seekSliderPosition = undefined;
+                seekTime = undefined;
                 if (playerState.track !== undefined) {
                     player.seekTo(getPosition(screenX) * playerState.track.info.duration);
                 }
