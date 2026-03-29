@@ -215,6 +215,9 @@ export class Player extends EventDispatcher<PlayerEventMap> {
 
         track.addEventListener("ended", async () => {
             serverLog(LogLevel.Info, "track: ended", { track: track.info.name });
+            if (this.track !== track) {
+                return;
+            }
             this._stopStallDetection();
             const advanced = await this.next();
             if (advanced) {
