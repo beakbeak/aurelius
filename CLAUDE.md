@@ -20,15 +20,14 @@ Run `go build -tags sqlite_fts5` from within `cmd/aurelius`.
 
 ```bash
 npm install
+npm run gobuild
 npm run build
-cd cmd/aurelius
-go build -tags sqlite_fts5
 ```
 
 ## Testing
 
 - Go lint: `golangci-lint run`
-- Go tests: `go test -tags sqlite_fts5 -asan ./...`
+- Go tests: `npm run gotest`
 - Update baselines for Go tests (**ONLY IF** baselines are expected to change): `UPDATE_BASELINES=1 go test -tags sqlite_fts5 -asan ./...`
 - TypeScript tests: `npm run test`
 

@@ -1,0 +1,3 @@
+# Known memory leak in libvorbisenc: vorbis_encode_setup_init allocates internal
+# state that is not freed even when avcodec_free_context is called.
+leak:vorbis_encode_setup_init

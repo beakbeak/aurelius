@@ -19,6 +19,8 @@
     "ts-node": "^10.9.2"
   },
   "scripts": {
+    "gobuild": "go build -tags sqlite_fts5 ./cmd/aurelius",
+    "gotest": "LSAN_OPTIONS=suppressions=${PWD}/test/lsan.supp go test -tags sqlite_fts5 -asan ./...",
     "build": "rollup --config",
     "build-debug": "rollup --config --configDebug",
     "mocha": "mocha --require mocha-suppress-logs",
