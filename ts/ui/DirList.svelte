@@ -7,7 +7,7 @@
         onNavigate: (url: string) => void;
     } = $props();
 
-    function handleClick(e: MouseEvent, url: string): void {
+    function onDirClick(e: MouseEvent, url: string): void {
         if (e.metaKey || e.ctrlKey) return;
         e.preventDefault();
         onNavigate(url);
@@ -22,7 +22,7 @@
                 class="dir__link"
                 href={item.href ?? "#"}
                 data-url={item.url}
-                onclick={(e: MouseEvent) => handleClick(e, item.url)}
+                onclick={(e: MouseEvent) => onDirClick(e, item.url)}
             >
                 {item.name}
             </a>
