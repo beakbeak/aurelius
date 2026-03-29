@@ -2,10 +2,11 @@
     import { onMount } from "svelte";
 
     let passwordError = $state(false);
+    let form: HTMLFormElement | undefined = $state(undefined);
 
     onMount(() => {
+        if (!form) return;
         const query = window.location.search;
-        const form = document.getElementById("login-form") as HTMLFormElement;
         form.action += query;
 
         if (query.match(/^\?failed/)) {
@@ -15,7 +16,7 @@
 </script>
 
 <main class="login__content">
-    <form id="login-form" class="login__form ui" action="/login" method="POST">
+    <form bind:this={form} class="login__form ui" action="/login" method="POST">
         <div class="ui__entry-group">
             <label class="ui__entry-label">
                 <i class="material-icons">lock</i>

@@ -19,16 +19,9 @@
         }
     }
 
-    $effect(() => {
-        if (open) {
-            document.addEventListener("keydown", handleKeydown);
-            return () => {
-                document.removeEventListener("keydown", handleKeydown);
-            };
-        }
-        return undefined;
-    });
 </script>
+
+<svelte:document onkeydown={handleKeydown} />
 
 {#if open}
     <div class="modal-overlay" onclick={handleOverlayClick} aria-hidden="true"></div>

@@ -38,13 +38,6 @@
     let showShortcuts = $state(false);
     let showAbout = $state(false);
 
-    function handleMenuKeydown(e: KeyboardEvent, action: () => void): void {
-        if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            action();
-        }
-    }
-
     function isTypingInInput(target: EventTarget | null): boolean {
         if (!target || !(target instanceof HTMLElement)) {
             return false;
@@ -190,26 +183,22 @@
 </main>
 
 <aside class="menu top-right__menu">
-    <i
+    <button
         class="menu__button material-icons"
         title="Settings"
-        role="button"
-        tabindex="0"
+        type="button"
         onclick={() => (showSettings = true)}
-        onkeydown={(e) => handleMenuKeydown(e, () => (showSettings = true))}
     >
         settings
-    </i>
-    <i
+    </button>
+    <button
         class="menu__button material-icons"
         title="Search"
-        role="button"
-        tabindex="0"
+        type="button"
         onclick={() => (showSearch = true)}
-        onkeydown={(e) => handleMenuKeydown(e, () => (showSearch = true))}
     >
         search
-    </i>
+    </button>
 </aside>
 
 <Modal bind:open={showSettings}>
@@ -251,10 +240,6 @@
         margin-bottom: 10rem;
     }
 
-    :global(body) {
-        background: hsl(39, 0%, 11.8%);
-    }
-
     .top-right__menu {
         position: fixed;
         z-index: 1;
@@ -266,10 +251,13 @@
     }
 
     .menu__button {
-        cursor: pointer;
         font-size: 3rem;
         color: black;
         text-shadow: 0 0 2px white;
+    }
+
+    :global(body) {
+        background: hsl(39, 0%, 11.8%);
     }
 
     @media (min-width: 960px) {

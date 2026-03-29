@@ -10,7 +10,7 @@
     } = $props();
 
     let element: HTMLAnchorElement | undefined = $state(undefined);
-    let styleElement: HTMLStyleElement | undefined = $state(undefined);
+    let styleElement: HTMLStyleElement | undefined;
 
     let href = $derived(url ? `/media/tree/?path=${encodeURIComponent(url)}` : "#");
 
@@ -47,7 +47,7 @@
                 transform: translateX(0px);
             }
         }`;
-        element.appendChild(style);
+        document.head.appendChild(style);
         styleElement = style;
         element.style.animation = `marquee ${totalTime}s infinite linear`;
     }
@@ -66,16 +66,17 @@
         queueMicrotask(() => {
             updateAnimation();
         });
-    });
-
-    $effect(() => {
-        const onResize = () => updateAnimation();
-        window.addEventListener("resize", onResize);
         return () => {
-            window.removeEventListener("resize", onResize);
+            if (styleElement) {
+                styleElement.remove();
+                styleElement = undefined;
+                element?.style.setProperty("animation", "");
+            }
         };
     });
 </script>
+
+<svelte:window onresize={updateAnimation} />
 
 <a
     bind:this={element}
