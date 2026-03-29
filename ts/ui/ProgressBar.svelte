@@ -14,11 +14,11 @@
     let seekSliderPosition = $state<number | undefined>(undefined);
     let progressBarEmpty: HTMLElement | undefined = $state(undefined);
 
-    let hasTrack = $derived(playerState.track !== undefined);
-
-    let ariaValueNow = $derived.by(() => {
+    const ariaValueNow = $derived.by(() => {
         const track = playerState.track;
-        if (!track || playerState.duration <= 0) return 0;
+        if (!track || playerState.duration <= 0) {
+            return 0;
+        }
         const currentTime =
             seekSliderPosition !== undefined
                 ? seekSliderPosition * playerState.duration
@@ -27,7 +27,9 @@
     });
 
     function handleKeyDown(e: KeyboardEvent): void {
-        if (!playerState.track) return;
+        if (!playerState.track) {
+            return;
+        }
         const step = 5;
         if (e.key === "ArrowLeft") {
             e.preventDefault();
@@ -38,9 +40,11 @@
         }
     }
 
-    let seekLeft = $derived.by(() => {
+    const seekLeft = $derived.by(() => {
         const track = playerState.track;
-        if (!track) return "0";
+        if (!track) {
+            return "0";
+        }
         const duration = playerState.duration;
         const currentTime =
             seekSliderPosition !== undefined
@@ -52,10 +56,12 @@
         return "0";
     });
 
-    let bufferLeft = $derived.by(() => {
+    const bufferLeft = $derived.by(() => {
         playerState.updateOnBufferProgress();
         const track = playerState.track;
-        if (!track) return "0";
+        if (!track) {
+            return "0";
+        }
         const ranges = track.buffered();
         if (ranges.length > 0 && track.info.duration > 0) {
             const startTime = track.startTime + ranges.start(0);
@@ -65,10 +71,12 @@
         return "0";
     });
 
-    let bufferWidth = $derived.by(() => {
+    const bufferWidth = $derived.by(() => {
         playerState.updateOnBufferProgress();
         const track = playerState.track;
-        if (!track) return "0";
+        if (!track) {
+            return "0";
+        }
         const ranges = track.buffered();
         if (ranges.length > 0 && track.info.duration > 0) {
             const startTime = track.startTime + ranges.start(0);
@@ -87,8 +95,9 @@
         anchorScreenX: number,
         touchId?: number,
     ): void {
-        if (!playerState.track || !progressBarEmpty) return;
-
+        if (!playerState.track || !progressBarEmpty) {
+            return;
+        }
         const rect = progressBarEmpty.getBoundingClientRect();
         const anchorClientXOffset = anchorClientX - rect.left;
 
@@ -132,7 +141,7 @@
     }
 </script>
 
-<div class="controls__group" class:controls--disabled={!hasTrack}>
+<div class="controls__group" class:controls--disabled={!playerState.track}>
     <div
         bind:this={progressBarEmpty}
         class="controls__progress-trough"

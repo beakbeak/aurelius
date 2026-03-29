@@ -5,7 +5,7 @@
     import "./dir.css";
     import type { DirState } from "./DirState.svelte";
 
-    let {
+    const {
         dirState,
         onClose,
     }: {
@@ -37,12 +37,16 @@
         const seq = ++searchSequence;
         try {
             const response = await searchMedia(q);
-            if (seq !== searchSequence) return;
+            if (seq !== searchSequence) {
+                return;
+            }
             results = response.results;
             errorMessage = "";
             focusedIndex = -1;
         } catch (error) {
-            if (seq !== searchSequence) return;
+            if (seq !== searchSequence) {
+                return;
+            }
             console.error("Search failed:", error);
             results = [];
             errorMessage = "Search failed. Please try again.";
@@ -102,8 +106,12 @@
     }
 
     function getResultIcon(result: SearchResult): string {
-        if (result.type === "dir") return "folder_open";
-        if (result.track?.favorite) return "favorite_border";
+        if (result.type === "dir") {
+            return "folder_open";
+        }
+        if (result.track?.favorite) {
+            return "favorite_border";
+        }
         return "music_note";
     }
 
@@ -128,7 +136,9 @@
     }
 
     function hasDetailText(result: SearchResult): boolean {
-        if (!result.track) return false;
+        if (!result.track) {
+            return false;
+        }
         const title = result.track.tags["title"];
         const artist = result.track.tags["artist"];
         return !!(title && artist);

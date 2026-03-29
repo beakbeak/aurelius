@@ -5,7 +5,9 @@
     let form: HTMLFormElement | undefined = $state(undefined);
 
     onMount(() => {
-        if (!form) return;
+        if (!form) {
+            return;
+        }
         const query = window.location.search;
         form.action += query;
 

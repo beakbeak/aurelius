@@ -1,5 +1,5 @@
 <script lang="ts">
-    let {
+    const {
         text,
         url,
         onNavigate,
@@ -12,7 +12,7 @@
     let element: HTMLAnchorElement | undefined = $state(undefined);
     let styleElement: HTMLStyleElement | undefined;
 
-    let href = $derived(url ? `/media/tree/?path=${encodeURIComponent(url)}` : "#");
+    const href = $derived(url ? `/media/tree/?path=${encodeURIComponent(url)}` : "#");
 
     function updateAnimation(): void {
         if (!element) {

@@ -1,5 +1,5 @@
 <script lang="ts">
-    let {
+    const {
         items,
         onNavigate,
     }: {
@@ -8,7 +8,9 @@
     } = $props();
 
     function onDirClick(e: MouseEvent, url: string): void {
-        if (e.metaKey || e.ctrlKey) return;
+        if (e.metaKey || e.ctrlKey) {
+            return;
+        }
         e.preventDefault();
         onNavigate(url);
     }

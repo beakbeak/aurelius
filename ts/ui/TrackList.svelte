@@ -4,7 +4,7 @@
     import { formatTrackTitle, formatTrackArtist, formatTrackMeta, formatDuration } from "./format";
     import type { DirState } from "./DirState.svelte";
 
-    let {
+    const {
         tracks,
         playerState,
         dirState,
@@ -20,7 +20,7 @@
         tracks: { track: TrackInfo; index: number }[];
     }
 
-    let discGroups = $derived.by(() => {
+    const discGroups = $derived.by(() => {
         const groups: DiscGroup[] = [];
         let currentDisc: string | undefined = undefined;
         let currentGroup: DiscGroup | undefined = undefined;
@@ -45,12 +45,13 @@
     });
 
     function isPlaying(trackUrl: string): boolean {
-        if (!playerState.track) return false;
-        return playerState.track.url.endsWith(trackUrl);
+        return playerState.track?.url.endsWith(trackUrl) ?? false;
     }
 
     function handleTrackClick(e: MouseEvent, index: number): void {
-        if (e.metaKey || e.ctrlKey) return;
+        if (e.metaKey || e.ctrlKey) {
+            return;
+        }
         e.preventDefault();
         dirState.playTrackByIndex(index);
     }

@@ -2,8 +2,9 @@
     import type { Settings } from "./settings";
     import { StreamCodec, ReplayGainMode } from "../core/track";
     import { getSettings, saveSettings, newSettings } from "./settings";
+    import { onMount } from "svelte";
 
-    let {
+    const {
         onSave,
     }: {
         onSave: (settings: Settings) => void;
@@ -17,11 +18,11 @@
     let desktopNotifications = $state(false);
     let mediaSessionNotifications = $state(false);
 
-    let showTargetMetric = $derived(codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3);
-    let showPreventClipping = $derived(replayGainMode !== ReplayGainMode.Off);
-    let mediaSessionDisabled = $derived(!desktopNotifications);
+    const showTargetMetric = $derived(codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3);
+    const showPreventClipping = $derived(replayGainMode !== ReplayGainMode.Off);
+    const mediaSessionDisabled = $derived(!desktopNotifications);
 
-    let targetMetricMin = $derived.by(() => {
+    const targetMetricMin = $derived.by(() => {
         if (targetMetricType === "quality") {
             if (codec === StreamCodec.Vorbis) return -1;
             if (codec === StreamCodec.Mp3) return 0;
@@ -31,7 +32,7 @@
         return undefined;
     });
 
-    let targetMetricMax = $derived.by(() => {
+    const targetMetricMax = $derived.by(() => {
         if (targetMetricType === "quality") {
             if (codec === StreamCodec.Vorbis) return 10;
             if (codec === StreamCodec.Mp3) return 9.999;
@@ -41,12 +42,12 @@
         return undefined;
     });
 
-    let showVorbisQualityHelp = $derived(
+    const showVorbisQualityHelp = $derived(
         codec === StreamCodec.Vorbis && targetMetricType === "quality",
     );
-    let showMp3QualityHelp = $derived(codec === StreamCodec.Mp3 && targetMetricType === "quality");
+    const showMp3QualityHelp = $derived(codec === StreamCodec.Mp3 && targetMetricType === "quality");
 
-    export function loadFromSettings(): void {
+    function loadFromSettings(): void {
         const settings = getSettings();
         codec = settings.streamConfig.codec ?? StreamCodec.Vorbis;
 
@@ -102,8 +103,9 @@
         onSave(settings);
     }
 
-    // Load settings when component is first rendered
-    loadFromSettings();
+    onMount(() => {
+        loadFromSettings();
+    });
 </script>
 
 <div class="ui__section-header">Stream Encoding</div>

@@ -6,7 +6,7 @@
     import DirList from "./DirList.svelte";
     import "./dir.css";
 
-    let {
+    const {
         playerState,
         dirState,
     }: {
@@ -15,21 +15,23 @@
     } = $props();
 
     const player = $derived(playerState.player);
-    let info = $derived(dirState.dirInfo);
+    const info = $derived(dirState.dirInfo);
 
-    let favoritesText = $derived.by(() => {
-        if (!info || info.path === "/") return "Favorites";
+    const favoritesText = $derived.by(() => {
+        if (!info || info.path === "/") {
+            return "Favorites";
+        }
         const pathParts = info.path.replace(/\/$/, "").split("/");
         const dirName = pathParts[pathParts.length - 1];
         return `Favorites in ${dirName}/`;
     });
 
-    let favoritesPrefix = $derived.by(() => {
+    const favoritesPrefix = $derived.by(() => {
         if (!info || info.path === "/") return undefined;
         return info.path;
     });
 
-    let navigationItems = $derived.by(() => {
+    const navigationItems = $derived.by(() => {
         if (!info) return [];
         return [
             {
@@ -47,7 +49,7 @@
         ];
     });
 
-    let dirItems = $derived.by(() => {
+    const dirItems = $derived.by(() => {
         if (!info) return [];
         return info.dirs.map((dir) => ({
             name: `${dir.name}/`,
@@ -75,19 +77,21 @@
 
     onMount(() => {
         dirState.loadDirFromPageUrl();
+    });
 
-        const reloadOnFavorite = () => dirState.reloadCurrentDir();
-        player.addEventListener("favorite", reloadOnFavorite);
-        player.addEventListener("unfavorite", reloadOnFavorite);
+    // Ensure dir listing reflects favorite changes.
+    onMount(() => {
+        const handler = () => dirState.reloadCurrentDir();
+        player.addEventListener("favorite", handler);
+        player.addEventListener("unfavorite", handler);
         return () => {
-            player.removeEventListener("favorite", reloadOnFavorite);
-            player.removeEventListener("unfavorite", reloadOnFavorite);
+            player.removeEventListener("favorite", handler);
+            player.removeEventListener("unfavorite", handler);
         };
     });
 </script>
 
 <div class="dir">
-    <!-- Favorites -->
     <ul class="dir__list">
         <li class="dir__row">
             <i class="dir__icon material-icons">favorite_border</i>
@@ -97,17 +101,14 @@
         </li>
     </ul>
 
-    <!-- Navigation -->
     {#if info}
         <DirList items={navigationItems} {onNavigate} />
     {/if}
 
-    <!-- Directories -->
     {#if info && info.dirs.length > 0}
         <DirList items={dirItems} {onNavigate} />
     {/if}
 
-    <!-- Playlists -->
     {#if info && info.playlists.length > 0}
         <ul class="dir__list">
             {#each info.playlists as playlist (playlist.url)}
@@ -132,7 +133,6 @@
         </ul>
     {/if}
 
-    <!-- Tracks -->
     {#if info && info.tracks.length > 0}
         <TrackList tracks={info.tracks} {playerState} {dirState} />
     {/if}
