@@ -1,7 +1,6 @@
 package media
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"path"
@@ -26,10 +25,11 @@ type Dir struct {
 }
 
 func (ml *Library) handleDir(
-	ctx context.Context,
+	req *http.Request,
 	dirLibraryPath string,
 	w http.ResponseWriter,
 ) {
+	ctx := req.Context()
 	dirLibraryPath = cleanLibraryPath(dirLibraryPath)
 
 	subdirs, err := ml.db.GetSubdirs(dirLibraryPath)
@@ -102,5 +102,5 @@ func (ml *Library) handleDir(
 		result.Tracks = append(result.Tracks, ml.makeTrack(&t, favorites[t.ID]))
 	}
 
-	writeJson(ctx, w, result)
+	writeJson(req, w, result)
 }

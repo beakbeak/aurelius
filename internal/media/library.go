@@ -3,7 +3,8 @@
 package media
 
 import (
-	"context"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -186,7 +187,7 @@ func parseAt(s string) (string, bool) {
 
 func handleGetDirWrapper(ml *Library, w http.ResponseWriter, r *http.Request) {
 	if path, ok := parseAt(r.PathValue("dir")); ok {
-		ml.handleDir(r.Context(), path, w)
+		ml.handleDir(r, path, w)
 	} else {
 		http.NotFound(w, r)
 	}
@@ -211,7 +212,7 @@ func handleGetPlaylistTrackWrapper(ml *Library, w http.ResponseWriter, r *http.R
 	pos, err := strconv.Atoi(posStr)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to parse playlist position", "position", posStr, "error", err)
-		writeJson(r.Context(), w, nil)
+		writeJson(r, w, nil)
 		return
 	}
 
@@ -279,10 +280,12 @@ func handleUnsetTrackFavoriteWrapper(ml *Library, w http.ResponseWriter, r *http
 }
 
 func writeJson(
-	ctx context.Context,
+	req *http.Request,
 	w http.ResponseWriter,
 	data interface{},
 ) {
+	ctx := req.Context()
+
 	dataJson, err := json.Marshal(data)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to marshal JSON", "error", err)
@@ -292,6 +295,17 @@ func writeJson(
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-cache, no-store")
+
+	if strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") {
+		var buf bytes.Buffer
+		gz := gzip.NewWriter(&buf)
+		if _, err := gz.Write(dataJson); err == nil {
+			if err := gz.Close(); err == nil {
+				w.Header().Set("Content-Encoding", "gzip")
+				dataJson = buf.Bytes()
+			}
+		}
+	}
 
 	if _, err := w.Write(dataJson); err != nil {
 		slog.ErrorContext(ctx, "failed to write response", "error", err)

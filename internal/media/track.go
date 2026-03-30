@@ -56,7 +56,7 @@ func (ml *Library) handleSetTrackFavorite(
 		slog.ErrorContext(ctx, "SetFavorite failed", "value", favorite, "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		writeJson(ctx, w, nil)
+		writeJson(req, w, nil)
 	}
 }
 
@@ -117,7 +117,7 @@ func (ml *Library) handleGetTrack(
 		slog.ErrorContext(ctx, "IsFavorite failed", "error", err)
 	}
 
-	writeJson(ctx, w, ml.makeTrack(track, favorite))
+	writeJson(req, w, ml.makeTrack(track, favorite))
 }
 
 func (ml *Library) handleGetImage(

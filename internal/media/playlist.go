@@ -28,7 +28,7 @@ func (ml *Library) handleGetM3UPlaylist(
 		return
 	}
 
-	writeJson(req.Context(), w, Playlist{Length: count})
+	writeJson(req, w, Playlist{Length: count})
 }
 
 func (ml *Library) handleGetM3UPlaylistTrack(
@@ -46,11 +46,11 @@ func (ml *Library) handleGetM3UPlaylistTrack(
 		return
 	}
 	if trackPath == "" {
-		writeJson(ctx, w, nil)
+		writeJson(req, w, nil)
 		return
 	}
 
-	writeJson(ctx, w, PlaylistTrack{
+	writeJson(req, w, PlaylistTrack{
 		Pos:  pos,
 		Path: ml.libraryToUrlPath("tracks", trackPath),
 	})
@@ -68,7 +68,7 @@ func (ml *Library) handleGetFavorites(
 		return
 	}
 
-	writeJson(req.Context(), w, Playlist{Length: count})
+	writeJson(req, w, Playlist{Length: count})
 }
 
 func (ml *Library) handleGetFavoritesTrack(
@@ -86,11 +86,11 @@ func (ml *Library) handleGetFavoritesTrack(
 		return
 	}
 	if libraryPath == "" {
-		writeJson(ctx, w, nil)
+		writeJson(req, w, nil)
 		return
 	}
 
-	writeJson(ctx, w, PlaylistTrack{
+	writeJson(req, w, PlaylistTrack{
 		Pos:  pos,
 		Path: ml.libraryToUrlPath("tracks", libraryPath),
 	})

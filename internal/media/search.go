@@ -24,7 +24,7 @@ func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		writeJson(ctx, w, &SearchResponse{Results: []SearchResult{}})
+		writeJson(r, w, &SearchResponse{Results: []SearchResult{}})
 		return
 	}
 
@@ -63,5 +63,5 @@ func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 		jsonResults[i] = jr
 	}
 
-	writeJson(ctx, w, &SearchResponse{Results: jsonResults})
+	writeJson(r, w, &SearchResponse{Results: jsonResults})
 }
