@@ -36,19 +36,29 @@ func init() {
 	_ = png.Decode
 }
 
-// processImage returns the image data (possibly resized/re-encoded), its MIME
-// type, and its SHA-256 hash. Images <= 100 KiB are returned as-is. Larger
+// processImage returns the image data (possibly resized/re-encoded) with
+// dimensions and SHA-256 hash. Images <= 100 KiB are returned as-is. Larger
 // images are decoded, resized to fit 1024x1024, and re-encoded as JPEG with
 // iteratively decreasing quality until the result is <= 100 KiB.
-func processImage(data []byte, mimeType string) ([]byte, string, [32]byte, error) {
+func processImage(data []byte, mimeType string) (*processedImage, error) {
 	if len(data) <= maxImageDataSize {
+		cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
 		hash := sha256.Sum256(data)
-		return data, mimeType, hash, nil
+		return &processedImage{
+			hash:     hash,
+			mimeType: mimeType,
+			data:     data,
+			width:    cfg.Width,
+			height:   cfg.Height,
+		}, nil
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, "", [32]byte{}, err
+		return nil, err
 	}
 
 	bounds := img.Bounds()
@@ -78,7 +88,7 @@ func processImage(data []byte, mimeType string) ([]byte, string, [32]byte, error
 	for quality := 85; quality >= 15; quality -= 10 {
 		var buf bytes.Buffer
 		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
-			return nil, "", [32]byte{}, err
+			return nil, err
 		}
 		last = buf.Bytes()
 		if len(last) <= maxImageDataSize {
@@ -86,7 +96,13 @@ func processImage(data []byte, mimeType string) ([]byte, string, [32]byte, error
 		}
 	}
 	hash := sha256.Sum256(last)
-	return last, "image/jpeg", hash, nil
+	return &processedImage{
+		hash:     hash,
+		mimeType: "image/jpeg",
+		data:     last,
+		width:    w,
+		height:   h,
+	}, nil
 }
 
 // directoryImageRef is a reference to an image file in a track's directory.
@@ -243,6 +259,8 @@ type processedImage struct {
 	origHash [32]byte
 	mimeType string
 	data     []byte // nil if image already exists in DB
+	width    int
+	height   int
 }
 
 // imageHashCache provides thread-safe deduplication of image processing.
@@ -280,7 +298,7 @@ func collectAndProcessTrackImages(
 		cache.mu.Unlock()
 
 		// Process the image (resize/re-encode if needed).
-		processed, processedMime, hash, err := processImage(data, mimeType)
+		result, err := processImage(data, mimeType)
 		if err != nil {
 			slog.Warn("image processing failed", "context", "processImage", "path", context, "error", err)
 			return
@@ -288,21 +306,17 @@ func collectAndProcessTrackImages(
 
 		// Update cache.
 		cache.mu.Lock()
-		cache.originalHashToProcessed[origHash] = hash
+		cache.originalHashToProcessed[origHash] = result.hash
 		cache.mu.Unlock()
 
-		if seenHashes[hash] {
+		if seenHashes[result.hash] {
 			return
 		}
-		seenHashes[hash] = true
+		seenHashes[result.hash] = true
 
-		imageCh <- processedImage{
-			hash:     hash,
-			origHash: origHash,
-			mimeType: processedMime,
-			data:     processed,
-		}
-		hashes = append(hashes, hash)
+		result.origHash = origHash
+		imageCh <- *result
+		hashes = append(hashes, result.hash)
 	}
 
 	// Attached images from the audio file. The path is already resolved to

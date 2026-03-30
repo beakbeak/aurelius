@@ -27,9 +27,11 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/png",
               "size": 7494,
-              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+              "width": 64
             }
           ],
           "bitRate": 127912,
@@ -88,19 +90,25 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/png",
               "size": 7494,
-              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+              "width": 64
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 80000,
@@ -133,29 +141,39 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/png",
               "size": 7494,
-              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+              "width": 64
             },
             {
+              "height": 64,
               "mimeType": "image/jpeg",
               "size": 6737,
-              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+              "width": 64
             },
             {
+              "height": 64,
               "mimeType": "image/gif",
               "size": 3604,
-              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+              "width": 64
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 0,
@@ -189,29 +207,39 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/png",
               "size": 7494,
-              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+              "width": 64
             },
             {
+              "height": 64,
               "mimeType": "image/jpeg",
               "size": 6737,
-              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+              "width": 64
             },
             {
+              "height": 64,
               "mimeType": "image/gif",
               "size": 3604,
-              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+              "width": 64
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 0,
@@ -245,29 +273,39 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/png",
               "size": 7494,
-              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+              "width": 64
             },
             {
+              "height": 64,
               "mimeType": "image/jpeg",
               "size": 6737,
-              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+              "width": 64
             },
             {
+              "height": 64,
               "mimeType": "image/gif",
               "size": 3604,
-              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+              "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+              "width": 64
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 0,
@@ -301,19 +339,25 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/png",
               "size": 7494,
-              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+              "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+              "width": 64
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 0,
@@ -343,19 +387,25 @@
         {
           "attachedImages": [
             {
+              "height": 64,
               "mimeType": "image/jpeg",
               "size": 6737,
-              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+              "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+              "width": 64
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 49330,
@@ -384,19 +434,25 @@
         {
           "attachedImages": [
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 91955,
-              "url": "/prefix/images/hash:d5f3cdca6b609ef0cb706e1481fb926beddf4b4e4fcc825fdf981dac646c33c2"
+              "url": "/prefix/images/hash:d5f3cdca6b609ef0cb706e1481fb926beddf4b4e4fcc825fdf981dac646c33c2",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 80000,
@@ -429,14 +485,18 @@
         {
           "attachedImages": [
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 99238,
-              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+              "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+              "width": 1024
             },
             {
+              "height": 1024,
               "mimeType": "image/jpeg",
               "size": 87371,
-              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+              "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+              "width": 1024
             }
           ],
           "bitRate": 1411200,
@@ -471,9 +531,11 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/png",
           "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "width": 64
         }
       ],
       "bitRate": 127912,
@@ -525,29 +587,39 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/png",
           "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/jpeg",
           "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/gif",
           "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "width": 64
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 0,
@@ -690,29 +762,39 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/png",
           "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/jpeg",
           "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/gif",
           "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "width": 64
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 0,
@@ -751,29 +833,39 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/png",
           "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/jpeg",
           "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/gif",
           "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "width": 64
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 0,
@@ -812,29 +904,39 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/png",
           "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/jpeg",
           "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "width": 64
         },
         {
+          "height": 64,
           "mimeType": "image/gif",
           "size": 3604,
-          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d"
+          "url": "/prefix/images/hash:e0526bd39cc4e651644904c54594ebd473596328c37be4ff67d612f3c934936d",
+          "width": 64
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 0,
@@ -873,19 +975,25 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/png",
           "size": 7494,
-          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13"
+          "url": "/prefix/images/hash:22ccb67c15ae4fe0b6acef6498d9b9ad1d7b3168bed93ed1129bfb0e9abaaa13",
+          "width": 64
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 0,
@@ -920,19 +1028,25 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 64,
           "mimeType": "image/jpeg",
           "size": 6737,
-          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe"
+          "url": "/prefix/images/hash:a879183a567868eee83589947d861af4e2058a369a18b67a4f6620a61a9ed8fe",
+          "width": 64
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 49330,
@@ -966,19 +1080,25 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 91955,
-          "url": "/prefix/images/hash:d5f3cdca6b609ef0cb706e1481fb926beddf4b4e4fcc825fdf981dac646c33c2"
+          "url": "/prefix/images/hash:d5f3cdca6b609ef0cb706e1481fb926beddf4b4e4fcc825fdf981dac646c33c2",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 80000,
@@ -1016,14 +1136,18 @@
     "Info": {
       "attachedImages": [
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 99238,
-          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7"
+          "url": "/prefix/images/hash:1fbbc4b335dab3fb2c3122c0879b3971cb1412bf6488e24aa506153ce3b08ae7",
+          "width": 1024
         },
         {
+          "height": 1024,
           "mimeType": "image/jpeg",
           "size": 87371,
-          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b"
+          "url": "/prefix/images/hash:932dcf3126ce16b80908d67479bbdbc946533ee3db021b16d3774732fae92c6b",
+          "width": 1024
         }
       ],
       "bitRate": 1411200,

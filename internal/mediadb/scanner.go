@@ -835,7 +835,7 @@ func (s *Scanner) processAndInsertTrackImages(wr *WalkResult, tx *sql.Tx, tracks
 	}
 
 	insertImageStmt, err := tx.Prepare(
-		`INSERT OR IGNORE INTO images (hash, original_hash, mime_type, data) VALUES (?, ?, ?, ?)`,
+		`INSERT OR IGNORE INTO images (hash, original_hash, mime_type, data, width, height) VALUES (?, ?, ?, ?, ?, ?)`,
 	)
 	if err != nil {
 		return err
@@ -965,7 +965,7 @@ func (s *Scanner) processAndInsertTrackImages(wr *WalkResult, tx *sql.Tx, tracks
 
 	// Phase 1: Insert all image data.
 	for img := range imageCh {
-		if _, err := insertImageStmt.Exec(img.hash[:], img.origHash[:], img.mimeType, img.data); err != nil {
+		if _, err := insertImageStmt.Exec(img.hash[:], img.origHash[:], img.mimeType, img.data, img.width, img.height); err != nil {
 			logImageProcessingError("insertImage", "image", err)
 		}
 	}

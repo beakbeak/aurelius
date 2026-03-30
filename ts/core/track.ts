@@ -3,6 +3,8 @@ import { fetchJson, postJson, copyJson } from "./json";
 export interface ImageInfo {
     readonly mimeType: string;
     readonly size: number;
+    readonly width: number;
+    readonly height: number;
     readonly url: string;
 }
 

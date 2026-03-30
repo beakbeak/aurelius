@@ -58,6 +58,8 @@ type Image struct {
 	Hash     []byte
 	MimeType string
 	Size     int
+	Width    int
+	Height   int
 }
 
 // Track represents a row in the tracks table.

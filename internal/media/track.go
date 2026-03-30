@@ -14,6 +14,8 @@ import (
 type Image struct {
 	MimeType string `json:"mimeType"`
 	Size     int    `json:"size"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
 	Url      string `json:"url"`
 }
 
@@ -66,6 +68,8 @@ func (ml *Library) makeTrack(track *mediadb.Track, favorite bool) Track {
 		images = append(images, Image{
 			MimeType: img.MimeType,
 			Size:     img.Size,
+			Width:    img.Width,
+			Height:   img.Height,
 			Url:      ml.makeImageUrl(img.Hash),
 		})
 	}

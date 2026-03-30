@@ -40,7 +40,7 @@ CREATE TABLE images (
     original_hash BLOB NOT NULL,
     mime_type     TEXT NOT NULL,
     data          BLOB NOT NULL
-);
+, width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX idx_images_original_hash ON images(original_hash);
 CREATE TABLE track_images (
     track_id   INTEGER NOT NULL REFERENCES tracks_with_deletes(id) ON DELETE CASCADE,
