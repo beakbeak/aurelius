@@ -3,15 +3,9 @@
 package mediadb
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-	"log/slog"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -31,11 +25,6 @@ func Open(path string) (*DB, error) {
 	if err := migrate(sqlDB); err != nil {
 		sqlDB.Close()
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
-	}
-
-	if err := backfillImageDimensions(sqlDB); err != nil {
-		sqlDB.Close()
-		return nil, fmt.Errorf("failed to backfill image dimensions: %w", err)
 	}
 
 	// Clean up images no longer referenced by any track.
@@ -62,54 +51,6 @@ func migrate(db *sql.DB) error {
 
 	if _, err := db.Exec(fmt.Sprintf("PRAGMA user_version = %d", len(migrations))); err != nil {
 		return fmt.Errorf("failed to update user_version: %w", err)
-	}
-	return nil
-}
-
-// backfillImageDimensions populates width and height for any images that have
-// zero dimensions (e.g. after the migration that added the columns).
-func backfillImageDimensions(db *sql.DB) error {
-	rows, err := db.Query("SELECT hash, data FROM images WHERE width = 0 AND height = 0")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	type update struct {
-		hash          []byte
-		width, height int
-	}
-	var updates []update
-	for rows.Next() {
-		var hash, data []byte
-		if err := rows.Scan(&hash, &data); err != nil {
-			return err
-		}
-		cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
-		if err != nil {
-			slog.Warn("failed to decode image for dimension backfill", "error", err)
-			continue
-		}
-		updates = append(updates, update{hash: hash, width: cfg.Width, height: cfg.Height})
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	if len(updates) == 0 {
-		return nil
-	}
-
-	slog.Info("backfilling image dimensions", "count", len(updates))
-	stmt, err := db.Prepare("UPDATE images SET width = ?, height = ? WHERE hash = ?")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, u := range updates {
-		if _, err := stmt.Exec(u.width, u.height, u.hash); err != nil {
-			return err
-		}
 	}
 	return nil
 }
