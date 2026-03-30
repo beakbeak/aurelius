@@ -116,11 +116,16 @@
                 seekSliderPosition = getPosition(screenX);
                 seekTime = seekSliderPosition * playerState.duration;
             },
-            (screenX) => {
-                seekSliderPosition = undefined;
-                seekTime = undefined;
+            async (screenX) => {
                 if (playerState.track !== undefined) {
-                    player.seekTo(getPosition(screenX) * playerState.track.info.duration);
+                    // Wait for seek to complete before clearing slider/timestamp overrides.
+                    // This prevents jumping back and forth between the seek time and current time.
+                    try {
+                        await player.seekTo(getPosition(screenX) * playerState.track.info.duration);
+                    } finally {
+                        seekSliderPosition = undefined;
+                        seekTime = undefined;
+                    }
                 }
             },
             touchId,
