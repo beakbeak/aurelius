@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -158,7 +159,7 @@ so use of HTTPS is recommended.`)
 			redirectLogin(w, req)
 			return
 		}
-		http.ServeFile(w, req, htmlPath("login.html"))
+		serveStaticFile(w, req, htmlPath("login.html"))
 	})
 
 	loginPostHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -193,7 +194,7 @@ so use of HTTPS is recommended.`)
 	})
 
 	mainPageHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		http.ServeFile(w, req, htmlPath("main.html"))
+		serveStaticFile(w, req, htmlPath("main.html"))
 	})
 
 	mediaHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -373,12 +374,33 @@ func (srv fileOnlyServer) ServeHTTP(
 	w http.ResponseWriter,
 	req *http.Request,
 ) {
-	path := filepath.Join(srv.root, req.URL.Path)
+	serveStaticFile(w, req, filepath.Join(srv.root, req.URL.Path))
+}
 
+// serveStaticFile serves a file with ETag-based caching. Directory requests
+// are rejected. If a pre-compressed .gz variant exists and the client accepts
+// gzip, it is served instead.
+func serveStaticFile(w http.ResponseWriter, req *http.Request, path string) {
 	info, err := os.Stat(path)
 	if err != nil || info.IsDir() {
 		http.NotFound(w, req)
 		return
+	}
+
+	servePath := path
+
+	if strings.ToLower(filepath.Ext(path)) == ".svgz" {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Content-Encoding", "gzip")
+	} else if strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") {
+		gzPath := path + ".gz"
+		if gzInfo, err := os.Stat(gzPath); err == nil && !gzInfo.IsDir() {
+			servePath = gzPath
+			info = gzInfo
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(path)))
+			w.Header().Set("Vary", "Accept-Encoding")
+		}
 	}
 
 	etag := fmt.Sprintf("\"%x-%x\"", info.ModTime().Unix(), info.Size())
@@ -391,10 +413,5 @@ func (srv fileOnlyServer) ServeHTTP(
 	}
 	w.Header().Set("Cache-Control", "no-cache")
 
-	if strings.ToLower(filepath.Ext(path)) == ".svgz" {
-		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Content-Encoding", "gzip")
-	}
-
-	http.ServeFile(w, req, path)
+	http.ServeFile(w, req, servePath)
 }
