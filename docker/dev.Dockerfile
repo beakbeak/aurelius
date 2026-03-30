@@ -14,6 +14,7 @@ RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     wget \
     curl \
     psmisc \
+    sqlite3 \
     # for Chromium via Playwright
     libnspr4 libnss3
 
