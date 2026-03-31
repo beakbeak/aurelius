@@ -23,6 +23,7 @@ const (
 
 type searchModifiers struct {
 	dirsOnly      bool
+	tracksOnly    bool
 	favoritesOnly bool
 }
 
@@ -30,7 +31,7 @@ type searchModifiers struct {
 // tracks and directories.
 func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 	ftsQuery, mods := parseSearchQuery(query)
-	if ftsQuery == "" || (mods.dirsOnly && mods.favoritesOnly) {
+	if ftsQuery == "" || (mods.dirsOnly && mods.favoritesOnly) || (mods.dirsOnly && mods.tracksOnly) {
 		return &SearchResponse{Results: []SearchResult{}}, nil
 	}
 
@@ -53,6 +54,9 @@ func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 
 	if mods.dirsOnly {
 		where.WriteString(` AND si.type = 'dir'`)
+	}
+	if mods.tracksOnly {
+		where.WriteString(` AND si.type = 'track'`)
 	}
 	if mods.favoritesOnly {
 		where.WriteString(`
@@ -106,8 +110,9 @@ func (db *DB) Search(query string, limit int) (*SearchResponse, error) {
 }
 
 // parseSearchQuery extracts search modifiers and constructs an FTS5 trigram
-// query from the user's search input. The modifiers ".d" (directories only)
-// and ".f" (favorites only) are recognized and stripped from the query. Remaining
+// query from the user's search input. The modifiers ".d" (directories only),
+// ".t" (tracks only), and ".f" (favorites only) are recognized and stripped
+// from the query. Remaining
 // terms are combined with AND. Trailing '*' is stripped since trigram matching
 // is inherently substring-based.
 func parseSearchQuery(query string) (string, searchModifiers) {
@@ -121,6 +126,10 @@ func parseSearchQuery(query string) (string, searchModifiers) {
 	for _, term := range terms {
 		if term == ".d" {
 			mods.dirsOnly = true
+			continue
+		}
+		if term == ".t" {
+			mods.tracksOnly = true
 			continue
 		}
 		if term == ".f" {

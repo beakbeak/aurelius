@@ -1239,6 +1239,25 @@ func TestSearch(t *testing.T) {
 		}
 	})
 
+	t.Run("TracksOnlyModifier", func(t *testing.T) {
+		results := doSearch(".t foo")
+		if len(results) == 0 {
+			t.Fatal("expected results for '.t foo'")
+		}
+		for _, result := range results {
+			if result.Type != "track" {
+				t.Errorf("expected only track results with .t modifier, got type %q for %q", result.Type, result.Path)
+			}
+		}
+	})
+
+	t.Run("DirAndTrackModifiersEmpty", func(t *testing.T) {
+		results := doSearch(".d .t foo")
+		if len(results) != 0 {
+			t.Errorf("expected 0 results with both .d and .t modifiers, got %d", len(results))
+		}
+	})
+
 	t.Run("FavoritesOnlyModifier", func(t *testing.T) {
 		// Favorite a track first.
 		favPath := testFiles[1]
