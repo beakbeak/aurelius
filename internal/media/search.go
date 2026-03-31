@@ -63,5 +63,18 @@ func handleSearch(ml *Library, w http.ResponseWriter, r *http.Request) {
 		jsonResults[i] = jr
 	}
 
+	var dirs, favTracks, otherTracks []SearchResult
+	for _, jr := range jsonResults {
+		switch {
+		case jr.Type == mediadb.DocTypeDirectory:
+			dirs = append(dirs, jr)
+		case jr.Track != nil && jr.Track.Favorite:
+			favTracks = append(favTracks, jr)
+		default:
+			otherTracks = append(otherTracks, jr)
+		}
+	}
+	jsonResults = append(append(dirs, favTracks...), otherTracks...)
+
 	writeJson(r, w, &SearchResponse{Results: jsonResults})
 }
