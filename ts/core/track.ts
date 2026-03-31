@@ -86,12 +86,15 @@ export class Track {
         private readonly _playablePromise: Promise<void>,
     ) {}
 
-    public destroy(): void {
+    public deactivate(): void {
         for (const listener of this._listeners) {
             this._audio.removeEventListener(listener.name, listener.func);
         }
         this._listeners.length = 0;
+    }
 
+    public destroy(): void {
+        this.deactivate();
         this._audio.pause();
         this._audio.src = "";
     }
@@ -100,10 +103,11 @@ export class Track {
         url: string,
         streamConfig: StreamConfig,
         startTime = 0,
+        recycledTrack?: Track,
     ): Promise<Track> {
         streamConfig = copyJson(streamConfig);
         const info = await fetchTrackInfo(url);
-        const audio = new Audio();
+        const audio = recycledTrack?._audio ?? new Audio();
         let gain = 1;
         switch (streamConfig.replayGain) {
             case ReplayGainMode.Track:
@@ -144,10 +148,7 @@ export class Track {
     }
 
     public async play(): Promise<void> {
-        if (!this.isPlayable()) {
-            await this.waitUntilPlayable();
-        }
-        this._audio.play();
+        return this._audio.play();
     }
 
     public pause(): void {

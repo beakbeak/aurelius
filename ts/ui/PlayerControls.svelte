@@ -5,6 +5,7 @@
     import { formatDuration } from "./format";
     import { getSettings } from "./settings";
     import { onMount } from "svelte";
+    import { Track } from "../core/track";
 
     const defaultTrackImageUrl = "/static/img/aurelius.svgz";
 
@@ -91,63 +92,68 @@
     }
 
     // Update MediaSession and notification data when track info changes.
-    $effect(() => {
-        const track = playerState.track;
-        if (!track) {
-            notificationData = undefined;
-            return;
-        }
-        const info = track.info;
-        const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
-        const title = info.tags["title"] ?? info.name;
-        const favoriteIcon = playerState.favorite ? "\u2665\uFE0E" : "\u2661";
+    // Subscribe to event directly so that MediaSession is updated synchronously after previous
+    // track ends and current track starts playing.
+    onMount(() => {
+        const playHandler = (track: Track) => {
+            const info = track.info;
+            const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
+            const title = info.tags["title"] ?? info.name;
+            const favoriteIcon = playerState.favorite ? "\u2665\uFE0E" : "\u2661";
 
-        let album = "";
-        if (info.tags["album"] !== undefined) {
-            let trackName = "";
-            if (info.tags["track"] !== undefined) {
-                trackName = ` #${info.tags["track"]}`;
+            let album = "";
+            if (info.tags["album"] !== undefined) {
+                let trackName = "";
+                if (info.tags["track"] !== undefined) {
+                    trackName = ` #${info.tags["track"]}`;
+                }
+                album = `${info.tags["album"]}${trackName}`;
             }
-            album = `${info.tags["album"]}${trackName}`;
-        }
 
-        notificationData = {
-            title: `${favoriteIcon} ${title}`,
-            body: `${artist}${album ? ` / ${album}` : ""}`,
-            icon: info.attachedImages.length > 0 ? info.attachedImages[0].url : undefined,
-        };
-
-        if (navigator.mediaSession !== undefined) {
-            const artwork: MediaImage[] = [];
-            info.attachedImages.forEach((imageInfo) => {
-                artwork.push({
-                    src: imageInfo.url,
-                    type: imageInfo.mimeType,
-                    sizes: "",
-                });
-            });
-            navigator.mediaSession.metadata = new MediaMetadata({
-                artist,
+            notificationData = {
                 title: `${favoriteIcon} ${title}`,
-                album,
-                artwork,
-            });
-            if (navigator.mediaSession.setPositionState !== undefined) {
-                navigator.mediaSession.setPositionState({
-                    duration: info.duration,
-                    position: Math.min(track.currentTime(), info.duration),
+                body: `${artist}${album ? ` / ${album}` : ""}`,
+                icon: info.attachedImages.length > 0 ? info.attachedImages[0].url : undefined,
+            };
+
+            if (navigator.mediaSession !== undefined) {
+                const artwork: MediaImage[] = [];
+                info.attachedImages.forEach((imageInfo) => {
+                    artwork.push({
+                        src: imageInfo.url,
+                        type: imageInfo.mimeType,
+                        sizes: "",
+                    });
                 });
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    artist,
+                    title: `${favoriteIcon} ${title}`,
+                    album,
+                    artwork,
+                });
+                if (navigator.mediaSession.setPositionState !== undefined) {
+                    navigator.mediaSession.setPositionState({
+                        duration: info.duration,
+                        position: Math.min(track.currentTime(), info.duration),
+                    });
+                }
             }
-        }
+        };
+        player.addEventListener("play", playHandler);
+        return () => {
+            player.removeEventListener("play", playHandler);
+        };
     });
 
     // Show notification when track advances automatically.
     onMount(() => {
-        const handler = () => { showDesktopNotification(); };
+        const handler = () => {
+            showDesktopNotification();
+        };
         player.addEventListener("autoNext", handler);
         return () => {
             player.removeEventListener("autoNext", handler);
-        }
+        };
     });
 
     // Set up MediaSession actions.
@@ -186,11 +192,7 @@
         aria-label="Open track image"
         onclick={openTrackImageInNewTab}
     >
-        <img
-            class="controls__track-image"
-            src={trackImageUrl}
-            alt="cover art"
-        />
+        <img class="controls__track-image" src={trackImageUrl} alt="cover art" />
     </button>
     <div class="controls__everything-else">
         <div class="controls__marquee-spacer">
@@ -260,7 +262,9 @@
             {/if}
         </div>
         <div class="controls__bottom">
-            <button class="controls__link controls__bottom-left" type="button" onclick={onAbout}> aurelius </button>
+            <button class="controls__link controls__bottom-left" type="button" onclick={onAbout}>
+                aurelius
+            </button>
             <span class="controls__bottom-center"></span>
             <span class="controls__bottom-right">{durationText}</span>
         </div>

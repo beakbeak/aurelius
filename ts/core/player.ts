@@ -46,6 +46,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     private _isRestarting = false;
     private _stallDetectionEnabled = true;
 
+    private _discardedTracks: Track[] = [];
     private _preload?: { track?: Track; item: PlaylistTrack };
     private _streamConfig: PlayerStreamConfig;
 
@@ -70,6 +71,7 @@ export class Player extends EventDispatcher<PlayerEventMap> {
     private _discardPreload(): void {
         if (this._preload?.track) {
             this._preload.track.destroy();
+            this._discardedTracks.push(this._preload.track);
         }
         this._preload = undefined;
     }
@@ -104,11 +106,17 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             this._preload = preload;
 
             const streamConfig = this._resolveStreamConfig();
-            const track = await Track.fetch(nextItem.path, streamConfig, 0);
+            const track = await Track.fetch(
+                nextItem.path,
+                streamConfig,
+                0,
+                this._discardedTracks.pop(),
+            );
 
             // Check that this preload wasn't invalidated while we were fetching.
             if (this._preload !== preload) {
                 track.destroy();
+                this._discardedTracks.push(track);
                 return;
             }
             preload.track = track;
@@ -227,7 +235,8 @@ export class Player extends EventDispatcher<PlayerEventMap> {
             } else {
                 if (this.track !== undefined) {
                     this.track.destroy();
-                    delete this.track;
+                    this._discardedTracks.push(this.track);
+                    this.track = undefined;
                 }
                 this.dispatchEvent("ended", track);
             }
@@ -254,19 +263,28 @@ export class Player extends EventDispatcher<PlayerEventMap> {
         } else {
             this._discardPreload();
             const streamConfig = this._resolveStreamConfig();
-            track = await Track.fetch(url, streamConfig, startTime);
+            track = await Track.fetch(url, streamConfig, startTime, this._discardedTracks.pop());
         }
 
         if (this.track) {
-            this.track.destroy();
+            if (this.track.isPaused()) {
+                // We're likely automatically playing the next track in a playlist.
+                // Avoid doing anything that might signal to the browser that we're done playing
+                // audio.
+                this.track.deactivate();
+            } else {
+                this.track.destroy();
+            }
+            this._discardedTracks.push(this.track);
         }
         this.track = track;
         console.debug("Track info:", track.info);
 
         this._attachTrackListeners(track);
-        await track.play();
+        const playPromise = track.play();
         this._startStallDetection();
         this.dispatchEvent("play", track);
+        return playPromise;
     }
 
     public seekTo(seconds: number): Promise<void> {
