@@ -36,6 +36,126 @@ func setupScannerTest(t *testing.T) (*Scanner, *DB, string) {
 	return scanner, db, tmpDir
 }
 
+func TestPruneEmptyDirs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	srcData, err := os.ReadFile(filepath.Join(testMediaPath(), "test.ogg"))
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+
+	// Create structure:
+	//   occupied/track.ogg        (has a track)
+	//   occupied/child/            (empty, but parent has a track)
+	//   playlist-only/list.m3u    (has a playlist but no tracks)
+	//   empty/                     (no tracks or playlists anywhere)
+	//   empty/nested/              (no tracks or playlists anywhere)
+	for _, dir := range []string{"occupied", "occupied/child", "playlist-only", "empty", "empty/nested"} {
+		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0o755); err != nil {
+			t.Fatalf("failed to create dir: %v", err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "occupied", "track.ogg"), srcData, 0o644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "playlist-only", "list.m3u"), []byte("../occupied/track.ogg\n"), 0o644); err != nil {
+		t.Fatalf("failed to write playlist: %v", err)
+	}
+
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open DB: %v", err)
+	}
+	defer db.Close()
+
+	scanner := NewScanner(db, tmpDir)
+	if err := scanner.FullScan(); err != nil {
+		t.Fatalf("full scan failed: %v", err)
+	}
+
+	allDirs, err := db.AllDirs()
+	if err != nil {
+		t.Fatalf("AllDirs error: %v", err)
+	}
+
+	// "occupied" should exist (has a track).
+	if _, ok := allDirs["occupied"]; !ok {
+		t.Error("expected 'occupied' dir in DB")
+	}
+	// "occupied/child" should be pruned (no tracks or playlists).
+	if _, ok := allDirs["occupied/child"]; ok {
+		t.Error("expected 'occupied/child' to be pruned")
+	}
+	// "playlist-only" should exist (has a playlist).
+	if _, ok := allDirs["playlist-only"]; !ok {
+		t.Error("expected 'playlist-only' dir in DB")
+	}
+	// "empty" and "empty/nested" should be pruned.
+	if _, ok := allDirs["empty"]; ok {
+		t.Error("expected 'empty' dir to be pruned")
+	}
+	if _, ok := allDirs["empty/nested"]; ok {
+		t.Error("expected 'empty/nested' dir to be pruned")
+	}
+}
+
+func TestPruneEmptyDirsAfterTrackRemoval(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	srcData, err := os.ReadFile(filepath.Join(testMediaPath(), "test.ogg"))
+	if err != nil {
+		t.Fatalf("failed to read test file: %v", err)
+	}
+
+	// Create a subdirectory with one track.
+	subDir := filepath.Join(tmpDir, "sub")
+	if err := os.Mkdir(subDir, 0o755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(subDir, "track.ogg"), srcData, 0o644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	dbPath := filepath.Join(tmpDir, "test.db")
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("failed to open DB: %v", err)
+	}
+	defer db.Close()
+
+	scanner := NewScanner(db, tmpDir)
+	if err := scanner.FullScan(); err != nil {
+		t.Fatalf("first scan failed: %v", err)
+	}
+
+	// "sub" should exist after initial scan.
+	allDirs, err := db.AllDirs()
+	if err != nil {
+		t.Fatalf("AllDirs error: %v", err)
+	}
+	if _, ok := allDirs["sub"]; !ok {
+		t.Fatal("expected 'sub' dir in DB after first scan")
+	}
+
+	// Remove the track and rescan.
+	if err := os.Remove(filepath.Join(subDir, "track.ogg")); err != nil {
+		t.Fatalf("failed to remove track: %v", err)
+	}
+	if err := scanner.FullScan(); err != nil {
+		t.Fatalf("second scan failed: %v", err)
+	}
+
+	// "sub" should be pruned now.
+	allDirs, err = db.AllDirs()
+	if err != nil {
+		t.Fatalf("AllDirs error: %v", err)
+	}
+	if _, ok := allDirs["sub"]; ok {
+		t.Error("expected 'sub' dir to be pruned after track removal")
+	}
+}
+
 func TestDetectRevivals(t *testing.T) {
 	scanner, db, tmpDir := setupScannerTest(t)
 

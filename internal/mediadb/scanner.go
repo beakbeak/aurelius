@@ -1287,6 +1287,19 @@ func (s *Scanner) Apply(wr *WalkResult, result *ScanResult) error {
 		}
 	}
 
+	// Prune directories that contain no tracks or playlists (recursively).
+	if _, err := tx.Exec(`
+		WITH RECURSIVE occupied AS (
+			SELECT DISTINCT dir AS path FROM tracks
+			UNION ALL
+			SELECT DISTINCT dir AS path FROM m3u_playlists
+			UNION
+			SELECT d.parent FROM dirs d JOIN occupied o ON d.path = o.path WHERE d.parent != ''
+		)
+		DELETE FROM dirs WHERE path NOT IN (SELECT path FROM occupied)`); err != nil {
+		return fmt.Errorf("failed to prune empty directories: %w", err)
+	}
+
 	err = tx.Commit()
 	if err == nil {
 		committed = true
