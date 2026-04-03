@@ -2,11 +2,13 @@
     import type { Settings } from "./settings";
     import { StreamCodec, ReplayGainMode } from "../core/track";
     import { getSettings, saveSettings, newSettings } from "./settings";
-    import { onMount } from "svelte";
+    import Modal from "./Modal.svelte";
 
-    const {
+    let {
+        open = $bindable(false),
         onSave,
     }: {
+        open: boolean;
         onSave: (settings: Settings) => void;
     } = $props();
 
@@ -19,8 +21,6 @@
     let mediaSessionNotifications = $state(false);
 
     const showTargetMetric = $derived(codec === StreamCodec.Vorbis || codec === StreamCodec.Mp3);
-    const showPreventClipping = $derived(replayGainMode !== ReplayGainMode.Off);
-    const mediaSessionDisabled = $derived(!desktopNotifications);
 
     const targetMetricMin = $derived.by(() => {
         if (targetMetricType === "quality") {
@@ -41,11 +41,6 @@
         }
         return undefined;
     });
-
-    const showVorbisQualityHelp = $derived(
-        codec === StreamCodec.Vorbis && targetMetricType === "quality",
-    );
-    const showMp3QualityHelp = $derived(codec === StreamCodec.Mp3 && targetMetricType === "quality");
 
     function loadFromSettings(): void {
         const settings = getSettings();
@@ -103,117 +98,130 @@
         onSave(settings);
     }
 
-    onMount(() => {
-        loadFromSettings();
+    $effect(() => {
+        if (open) {
+            loadFromSettings();
+        }
     });
 </script>
 
-<div class="ui__section-header">Stream Encoding</div>
-<div class="ui__section-body">
-    <table class="ui__table">
-        <tbody>
-            <tr>
-                <td>Codec</td>
-                <td>
-                    <select bind:value={codec}>
-                        {#each Object.values(StreamCodec) as c (c)}
-                            <option value={c}>{c}</option>
-                        {/each}
-                    </select>
-                </td>
-            </tr>
-            {#if showTargetMetric}
-                <tr>
-                    <td>
-                        <select bind:value={targetMetricType}>
-                            <option value="quality">Quality</option>
-                            <option value="bit-rate">Bit rate (kb/s)</option>
-                        </select>
-                    </td>
-                    <td>
-                        <div>
-                            <input
-                                type="number"
-                                bind:value={targetMetricValue}
-                                min={targetMetricMin}
-                                max={targetMetricMax}
-                            />
-                        </div>
-                        {#if showMp3QualityHelp}
-                            <div class="settings-target-metric-help">
-                                Range: 0 (best) to 9.999 (worst).
-                            </div>
-                        {/if}
-                        {#if showVorbisQualityHelp}
-                            <div class="settings-target-metric-help">
-                                Range: -1 (worst) to 10 (best).
-                            </div>
-                        {/if}
-                    </td>
-                </tr>
-            {/if}
-        </tbody>
-    </table>
-</div>
+<Modal bind:open>
+    <div class="modal-box bg-base-200">
+        <h2 class="text-lg font-bold">Settings</h2>
 
-<div class="ui__section-header">ReplayGain</div>
-<div class="ui__section-body">
-    <table class="ui__table">
-        <tbody>
-            <tr>
-                <td>Mode</td>
-                <td>
-                    <select bind:value={replayGainMode}>
-                        <option value="auto">auto</option>
-                        {#each Object.values(ReplayGainMode) as mode (mode)}
-                            <option value={mode}>{mode}</option>
-                        {/each}
-                    </select>
-                </td>
-            </tr>
-            {#if showPreventClipping}
-                <tr>
-                    <td>Prevent clipping</td>
-                    <td>
-                        <label>
-                            <input type="checkbox" bind:checked={preventClipping} />
-                            Enabled
-                        </label>
-                    </td>
-                </tr>
-            {/if}
-        </tbody>
-    </table>
-</div>
+        <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-2">
+            <legend class="fieldset-legend text-base">Stream Encoding</legend>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td>Codec</td>
+                        <td>
+                            <select class="select" bind:value={codec}>
+                                {#each Object.values(StreamCodec) as c (c)}
+                                    <option value={c}>{c}</option>
+                                {/each}
+                            </select>
+                        </td>
+                    </tr>
+                    {#if showTargetMetric}
+                        <tr>
+                            <td>
+                                <select class="select" bind:value={targetMetricType}>
+                                    <option value="quality">Quality</option>
+                                    <option value="bit-rate">Bit rate (kb/s)</option>
+                                </select>
+                            </td>
+                            <td>
+                                <fieldset class="fieldset">
+                                    <input
+                                        class="input"
+                                        type="number"
+                                        bind:value={targetMetricValue}
+                                        min={targetMetricMin}
+                                        max={targetMetricMax}
+                                    />
+                                    {#if targetMetricType === "quality" && codec === StreamCodec.Vorbis}
+                                        <p class="label">Range: 0 (best) to 9.999 (worst).</p>
+                                    {/if}
+                                    {#if targetMetricType === "quality" && codec === StreamCodec.Mp3}
+                                        <p class="label">Range: -1 (worst) to 10 (best).</p>
+                                    {/if}
+                                </fieldset>
+                            </td>
+                        </tr>
+                    {/if}
+                </tbody>
+            </table>
+        </fieldset>
 
-<div class="ui__section-header">Notifications</div>
-<div class="ui__section-body">
-    <table class="ui__table">
-        <tbody>
-            <tr>
-                <td>When next track plays</td>
-                <td>
-                    <label>
-                        <input type="checkbox" bind:checked={desktopNotifications} />
-                        Enabled
-                    </label>
-                </td>
-            </tr>
-            <tr>
-                <td style="padding-left: 1.5em">When changing track via media controls</td>
-                <td>
-                    <label>
-                        <input
-                            type="checkbox"
-                            bind:checked={mediaSessionNotifications}
-                            disabled={mediaSessionDisabled}
-                        />
-                        Enabled
-                    </label>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+        <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-2">
+            <legend class="fieldset-legend text-base">ReplayGain</legend>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td>Mode</td>
+                        <td>
+                            <select class="select" bind:value={replayGainMode}>
+                                <option value="auto">auto</option>
+                                {#each Object.values(ReplayGainMode) as mode (mode)}
+                                    <option value={mode}>{mode}</option>
+                                {/each}
+                            </select>
+                        </td>
+                    </tr>
+                    {#if replayGainMode !== ReplayGainMode.Off}
+                        <tr>
+                            <td colspan="2">
+                                <label class="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        class="toggle toggle-primary"
+                                        bind:checked={preventClipping}
+                                    />
+                                    Prevent clipping
+                                </label>
+                            </td>
+                        </tr>
+                    {/if}
+                </tbody>
+            </table>
+        </fieldset>
 
-<button class="ui__button" type="button" onclick={handleSave}>Save</button>
+        <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-2">
+            <legend class="fieldset-legend text-base">Notifications</legend>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td colspan="2">
+                            <label class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    class="toggle toggle-primary"
+                                    bind:checked={desktopNotifications}
+                                />
+                                When next track plays
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <label class="flex items-center gap-2 pl-6">
+                                <input
+                                    type="checkbox"
+                                    class="toggle toggle-primary"
+                                    bind:checked={mediaSessionNotifications}
+                                    disabled={!desktopNotifications}
+                                />
+                                When changing track via media controls
+                            </label>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </fieldset>
+
+        <button class="btn btn-soft btn-primary btn-block mt-5" type="button" onclick={handleSave}
+            >Save</button
+        >
+    </div>
+</Modal>

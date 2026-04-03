@@ -1,16 +1,16 @@
 <script lang="ts">
     import type { SearchResult } from "../core/search";
     import { searchMedia } from "../core/search";
-    import { onMount } from "svelte";
     import "./dir.css";
     import type { DirState } from "./DirState.svelte";
+    import Modal from "./Modal.svelte";
 
-    const {
+    let {
+        open = $bindable(false),
         dirState,
-        onClose,
     }: {
+        open: boolean;
         dirState: DirState;
-        onClose: () => void;
     } = $props();
 
     let query = $state("");
@@ -97,7 +97,7 @@
     }
 
     async function activateResult(result: SearchResult): Promise<void> {
-        onClose();
+        open = false;
         if (result.type === "dir") {
             await dirState.loadDir(result.url);
         } else if (result.type === "track") {
@@ -144,9 +144,11 @@
         return !!(title && artist);
     }
 
-    onMount(() => {
-        clearSearch();
-        searchInput?.focus();
+    $effect(() => {
+        if (open) {
+            clearSearch();
+            searchInput?.focus();
+        }
     });
 
     // Focus and scroll focused result into view
@@ -161,69 +163,69 @@
     });
 </script>
 
-<div class="ui__section-header">Search</div>
-<div class="ui__section-body">
-    <input
-        bind:this={searchInput}
-        bind:value={query}
-        class="search__input ui__entry-input"
-        type="text"
-        placeholder="Type to search..."
-        autocomplete="off"
-        oninput={handleInput}
-        onkeydown={handleKeydown}
-    />
-</div>
-<div class="ui__section-body ui__section-body--scroll">
-    <div bind:this={resultsContainer} class="search__results dir__list" role="listbox">
-        {#if errorMessage}
-            <div class="search__error">{errorMessage}</div>
-        {:else if query.trim() !== "" && results.length === 0}
-            <div class="search__no-results">No results found</div>
-        {:else}
-            {#each results as result, i (result.url)}
-                <div
-                    class="search__result dir__row"
-                    class:search__result--focused={i === focusedIndex}
-                    role="option"
-                    aria-selected={i === focusedIndex}
-                    tabindex="0"
-                    onclick={() => handleResultClick(i)}
-                    onkeydown={handleKeydown}
-                >
-                    <i class="dir__icon material-icons">
-                        {getResultIcon(result)}
-                    </i>
-                    <span class="dir__link">
-                        {#if hasDetailText(result)}
-                            {getResultTitle(result)}<span class="search__result-detail"
-                                >{getResultDetail(result)}</span
-                            >
-                        {:else}
-                            {result.path}
-                        {/if}
-                    </span>
-                </div>
-            {/each}
-        {/if}
+<Modal bind:open>
+    <div class="modal-box">
+        <h2 class="text-lg font-bold">Search</h2>
+
+        <input
+            bind:this={searchInput}
+            bind:value={query}
+            class="input w-full my-2"
+            type="text"
+            placeholder="Type to search..."
+            autocomplete="off"
+            oninput={handleInput}
+            onkeydown={handleKeydown}
+        />
+
+        <div class="max-h-[30em] overflow-y-auto">
+            <div bind:this={resultsContainer} class="search-results dir__list" role="listbox">
+                {#if errorMessage}
+                    <div class="text-error text-center">{errorMessage}</div>
+                {:else if query.trim() !== "" && results.length === 0}
+                    <div class="opacity-70 text-center">No results found</div>
+                {:else}
+                    {#each results as result, i (result.url)}
+                        <div
+                            class="search-result dir__row"
+                            class:search-result--focused={i === focusedIndex}
+                            role="option"
+                            aria-selected={i === focusedIndex}
+                            tabindex="0"
+                            onclick={() => handleResultClick(i)}
+                            onkeydown={handleKeydown}
+                        >
+                            <i class="dir__icon material-icons">
+                                {getResultIcon(result)}
+                            </i>
+                            <span class="dir__link">
+                                {#if hasDetailText(result)}
+                                    {getResultTitle(result)}<span class="search-result-detail"
+                                        >{getResultDetail(result)}</span
+                                    >
+                                {:else}
+                                    {result.path}
+                                {/if}
+                            </span>
+                        </div>
+                    {/each}
+                {/if}
+            </div>
+        </div>
     </div>
-</div>
+</Modal>
 
 <style>
-    .search__result {
+    .search-result {
         cursor: pointer;
     }
 
-    .search__result :global(.dir__link) {
+    .search-result :global(.dir__link) {
         color: inherit;
     }
 
-    .search__result-detail {
+    .search-result-detail {
         font-style: italic;
         opacity: 0.7;
-    }
-
-    .ui__section-body {
-        max-height: 30em;
     }
 </style>

@@ -9,52 +9,21 @@
         children: Snippet;
     } = $props();
 
-    function handleOverlayClick(): void {
-        open = false;
-    }
+    let dialogEl: HTMLDialogElement | undefined = $state(undefined);
 
-    function handleKeydown(e: KeyboardEvent): void {
-        if (e.key === "Escape" && open) {
-            open = false;
+    $effect(() => {
+        if (!dialogEl) return;
+        if (open && !dialogEl.open) {
+            dialogEl.showModal();
+        } else if (!open && dialogEl.open) {
+            dialogEl.close();
         }
-    }
-
+    });
 </script>
 
-<svelte:document onkeydown={handleKeydown} />
-
-{#if open}
-    <div class="modal-overlay" onclick={handleOverlayClick} aria-hidden="true"></div>
-    <div class="ui modal dialog">
-        {@render children()}
-    </div>
-{/if}
-
-<style>
-    .modal-overlay {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 99;
-    }
-
-    .modal {
-        display: block;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 100;
-    }
-
-    .dialog {
-        padding: 0.75rem;
-        min-width: 15rem;
-        box-shadow: 0px 0px 1.5rem rgba(0, 0, 0, 0.5);
-        border-radius: 0.25rem;
-    }
-</style>
+<dialog bind:this={dialogEl} class="modal" onclose={() => (open = false)}>
+    {@render children()}
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>

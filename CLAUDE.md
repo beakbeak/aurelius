@@ -58,14 +58,15 @@ Aurelius is a web-based streaming music player with a hybrid Go backend and Type
 - **UI components**: `ts/ui/` - Svelte 5 components using runes (`$state`, `$derived`, `$effect`, `$props`, `$bindable`)
 - **Reactive state**: `ts/ui/state/` - Svelte reactive wrappers (`playerState.svelte.ts`, `dirState.svelte.ts`) bridging the imperative Player API to Svelte's reactivity system
 - **Build system**: Vite with `@sveltejs/vite-plugin-svelte`, outputs JS to `cmd/aurelius/assets/static/js/` and CSS to `cmd/aurelius/assets/static/css/`
-- **CSS organization**: Component-specific styles in `<style>` blocks (scoped by Svelte). Shared styles in `ts/ui/ui.css` (dialog/form design system) and `ts/ui/dir.css` (directory listings). Page-level globals in `ts/apps/global.css`. Main-app layout in `App.svelte`'s `<style>` block using `:global()` for `body`/`html` rules. Use `.parent :global(.child-class)` to scope cross-component styles under a local parent selector.
+- **CSS framework**: daisyUI 5 (Tailwind CSS 4) with a custom dark theme ("aurelius") defined in `ts/apps/tailwind.css`. The Tailwind Vite plugin is configured in `vite.config.ts`.
+- **CSS organization**: Component-specific styles in `<style>` blocks (scoped by Svelte). Shared styles in `ts/ui/dir.css` (directory listings). Page-level globals in `ts/apps/global.css`. Main-app layout in `App.svelte`'s `<style>` block using `:global()` for `html` rules. Use `.parent :global(.child-class)` to scope cross-component styles under a local parent selector.
 
 ### Key Frontend Components
 
 - **Player**: Event-driven audio player with ReplayGain, random play, history tracking
 - **Directory browser**: File system navigation with playlist support
 - **Settings**: Stream configuration (codec, bitrate, ReplayGain mode)
-- **Modal dialogs**: Reusable `Modal.svelte`
+- **Modal dialogs**: Each dialog component uses `Modal.svelte` internally (wraps daisyUI's native `<dialog>` element). Dialogs own their own `<div class="modal-box">` for per-dialog styling.
 
 ## Configuration
 

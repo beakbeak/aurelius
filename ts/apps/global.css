@@ -1,31 +1,17 @@
 html {
 	min-height: 100%;
 	scrollbar-color: hsl(0, 0%, 30%) hsl(0, 0%, 20%);
-}
-
-body {
 	background:
 		fixed url("/img/bg.svgz"),
 		fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
+}
+
+body {
 	color: white;
 	font-family:
 		segoe ui,
 		roboto,
 		sans-serif;
-}
-
-.hidden {
-	display: none !important;
-}
-
-button {
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	font: inherit;
-	cursor: pointer;
-	color: inherit;
 }
 
 .material-icons {

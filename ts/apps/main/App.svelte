@@ -6,7 +6,6 @@
     import { DirState } from "../../ui/DirState.svelte";
     import PlayerControls from "../../ui/PlayerControls.svelte";
     import DirectoryBrowser from "../../ui/DirectoryBrowser.svelte";
-    import Modal from "../../ui/Modal.svelte";
     import SettingsDialog from "../../ui/SettingsDialog.svelte";
     import SearchDialog from "../../ui/SearchDialog.svelte";
     import KeyboardShortcutsDialog from "../../ui/KeyboardShortcutsDialog.svelte";
@@ -200,26 +199,19 @@
     </button>
 </aside>
 
-<Modal bind:open={showSettings}>
-    <SettingsDialog
-        onSave={(newSettings) => {
-            player.streamConfig = newSettings.streamConfig;
-            showSettings = false;
-        }}
-    />
-</Modal>
+<SettingsDialog
+    bind:open={showSettings}
+    onSave={(newSettings) => {
+        player.streamConfig = newSettings.streamConfig;
+        showSettings = false;
+    }}
+/>
 
-<Modal bind:open={showSearch}>
-    <SearchDialog {dirState} onClose={() => (showSearch = false)} />
-</Modal>
+<SearchDialog bind:open={showSearch} {dirState} />
 
-<Modal bind:open={showShortcuts}>
-    <KeyboardShortcutsDialog />
-</Modal>
+<KeyboardShortcutsDialog bind:open={showShortcuts} />
 
-<Modal bind:open={showAbout}>
-    <AboutDialog />
-</Modal>
+<AboutDialog bind:open={showAbout} />
 
 <style>
     .controls {
@@ -237,6 +229,9 @@
         margin-left: auto;
         margin-right: auto;
         margin-bottom: 10rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        line-height: normal;
     }
 
     .top-right__menu {
@@ -253,14 +248,15 @@
         font-size: 3rem;
         color: black;
         text-shadow: 0 0 2px white;
+        cursor: pointer;
     }
 
-    :global(body) {
+    :global(html) {
         background: hsl(39, 0%, 11.8%);
     }
 
     @media (min-width: 960px) {
-        :global(body) {
+        :global(html) {
             background:
                 calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
                     linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
@@ -282,7 +278,7 @@
     }
 
     @media (min-width: 1200px) {
-        :global(body) {
+        :global(html) {
             background:
                 calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
                     linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
@@ -300,9 +296,6 @@
                     ),
                 fixed url("/img/bg.svgz"),
                 fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
-        }
-
-        :global(html) {
             margin-left: calc(100vw - 100%);
             margin-right: 0;
         }
