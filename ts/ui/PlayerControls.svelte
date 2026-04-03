@@ -248,7 +248,19 @@
     <div class="controls__everything-else">
         <div class="controls__marquee-spacer">
             <div class="controls__marquee-container">
-                <Marquee text={marqueeText} url={marqueeUrl} onNavigate={onNavigateToDir} />
+                <Marquee contentKey={marqueeText}>
+                    <a
+                        class="controls__link controls__marquee-text"
+                        href={marqueeUrl ? `/media/tree/?path=${encodeURIComponent(marqueeUrl)}` : "#"}
+                        title="Jump to directory containing this track"
+                        onclick={(e: MouseEvent) => {
+                            e.preventDefault();
+                            if (marqueeUrl) onNavigateToDir(marqueeUrl);
+                        }}
+                    >
+                        {marqueeText}
+                    </a>
+                </Marquee>
             </div>
         </div>
         <SeekSlider
@@ -382,6 +394,9 @@
         width: 100%;
         height: 200%;
         overflow: hidden;
+    }
+    .controls__marquee-text {
+        font-size: 1.1em;
     }
 
     /* Positioning */

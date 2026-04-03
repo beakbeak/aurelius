@@ -1,18 +1,17 @@
 <script lang="ts">
+    import type { Snippet } from "svelte";
+
     const {
-        text,
-        url,
-        onNavigate,
+        children,
+        contentKey,
     }: {
-        text: string;
-        url: string;
-        onNavigate: (url: string) => void;
+        children: Snippet;
+        /** When this value changes, the scroll animation is recalculated. */
+        contentKey?: unknown;
     } = $props();
 
-    let element: HTMLAnchorElement | undefined = $state(undefined);
+    let element: HTMLDivElement | undefined = $state(undefined);
     let styleElement: HTMLStyleElement | undefined;
-
-    const href = $derived(url ? `/media/tree/?path=${encodeURIComponent(url)}` : "#");
 
     function updateAnimation(): void {
         if (!element) {
@@ -54,16 +53,9 @@
         element.style.animation = `marquee ${totalTime}s infinite linear`;
     }
 
-    function handleClick(e: MouseEvent): void {
-        e.preventDefault();
-        if (url) {
-            onNavigate(url);
-        }
-    }
-
     $effect(() => {
-        // Track text changes to trigger re-calculation
-        void text;
+        // Track key changes to trigger re-calculation
+        void contentKey;
         // Use a microtask to ensure DOM has updated
         queueMicrotask(() => {
             updateAnimation();
@@ -80,33 +72,16 @@
 
 <svelte:window onresize={updateAnimation} />
 
-<a
-    bind:this={element}
-    class="controls__marquee controls__link"
-    {href}
-    title="Jump to directory containing this track"
-    onclick={handleClick}
->
-    {text}
-</a>
+<div bind:this={element} class="marquee">
+    {@render children()}
+</div>
 
 <style>
-    .controls__link {
-        cursor: pointer;
-        font-style: italic;
-        text-decoration: none;
-        color: inherit;
-    }
-    .controls__link:hover {
-        text-decoration: underline;
-    }
-
-    .controls__marquee {
+    .marquee {
         display: block;
         max-width: 100%;
         max-height: 100%;
         white-space: nowrap;
         text-align: center;
-        font-size: 1.1em;
     }
 </style>
