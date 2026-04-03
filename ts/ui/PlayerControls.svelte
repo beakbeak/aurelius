@@ -5,7 +5,7 @@
     import { formatDuration } from "./format";
     import { getSettings } from "./settings";
     import { onMount } from "svelte";
-    import { Track } from "../core/track";
+    import type { Track } from "../core/track";
 
     const defaultTrackImageUrl = "/static/img/aurelius.svgz";
 
@@ -55,13 +55,64 @@
     });
     let marqueeUrl = $derived(playerState.track?.info.dir ?? "");
 
-    let seekTime = $state<number | undefined>();
+    const seekDisabled = $derived(!playerState.track);
+
+    const seekPosition = $derived(
+        playerState.duration > 0 ? playerState.currentTime / playerState.duration : 0,
+    );
+
+    const seekBufferLeft = $derived.by(() => {
+        playerState.updateOnBufferProgress();
+        const track = playerState.track;
+        if (!track) {
+            return 0;
+        }
+        const ranges = track.buffered();
+        if (ranges.length > 0 && track.info.duration > 0) {
+            const startTime = track.startTime + ranges.start(0);
+            return Math.max(0, Math.min(1, startTime / track.info.duration));
+        }
+        return 0;
+    });
+
+    const seekBufferWidth = $derived.by(() => {
+        playerState.updateOnBufferProgress();
+        const track = playerState.track;
+        if (!track) {
+            return 0;
+        }
+        const ranges = track.buffered();
+        if (ranges.length > 0 && track.info.duration > 0) {
+            const startTime = track.startTime + ranges.start(0);
+            const endTime = track.startTime + ranges.end(ranges.length - 1);
+            const left = startTime / track.info.duration;
+            const width = (endTime - startTime) / track.info.duration;
+            const leftClamped = Math.max(0, Math.min(1, left));
+            return Math.max(0, Math.min(1 - leftClamped, width));
+        }
+        return 0;
+    });
+
+    const seekKeyboardStep = $derived(playerState.duration > 0 ? 5 / playerState.duration : 0);
+
+    let seekDragValue = $state<number | undefined>();
+
+    async function onseek(position: number): Promise<void> {
+        if (playerState.track !== undefined) {
+            await player.seekTo(position * playerState.track.info.duration);
+        }
+    }
+
     let durationText = $derived.by(() => {
         const track = playerState.track;
         if (!track) {
             return "";
         }
-        const currentTimeStr = formatDuration(seekTime ?? playerState.currentTime);
+        const currentTime =
+            seekDragValue !== undefined
+                ? seekDragValue * playerState.duration
+                : playerState.currentTime;
+        const currentTimeStr = formatDuration(currentTime);
         const durationStr = formatDuration(playerState.duration);
         return `${currentTimeStr} / ${durationStr}`;
     });
@@ -200,7 +251,15 @@
                 <Marquee text={marqueeText} url={marqueeUrl} onNavigate={onNavigateToDir} />
             </div>
         </div>
-        <SeekSlider {playerState} bind:seekTime />
+        <SeekSlider
+            value={seekPosition}
+            disabled={seekDisabled}
+            bufferLeft={seekBufferLeft}
+            bufferWidth={seekBufferWidth}
+            bind:seekValue={seekDragValue}
+            {onseek}
+            keyboardStep={seekKeyboardStep}
+        />
         <div class="controls__group controls__group--shift-up">
             <button
                 class="controls__button material-icons"

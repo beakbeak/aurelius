@@ -1,93 +1,44 @@
 <script lang="ts">
-    import type { PlayerState } from "./PlayerState.svelte";
     import { onDrag } from "./dom";
 
     let {
-        playerState,
-        seekTime = $bindable(undefined),
+        value,
+        disabled = false,
+        bufferLeft = 0,
+        bufferWidth = 0,
+        seekValue = $bindable(undefined),
+        onseek,
+        keyboardStep = 0,
     }: {
-        playerState: PlayerState;
-        seekTime?: number;
+        value: number;
+        disabled?: boolean;
+        bufferLeft?: number;
+        bufferWidth?: number;
+        seekValue?: number;
+        onseek: (position: number) => Promise<void> | void;
+        keyboardStep?: number;
     } = $props();
 
-    const player = $derived(playerState.player);
-    let seekSliderPosition = $state<number | undefined>(undefined);
     let progressBarEmpty: HTMLElement | undefined = $state(undefined);
 
-    const ariaValueNow = $derived.by(() => {
-        const track = playerState.track;
-        if (!track || playerState.duration <= 0) {
-            return 0;
-        }
-        const currentTime =
-            seekSliderPosition !== undefined
-                ? seekSliderPosition * playerState.duration
-                : playerState.currentTime;
-        return Math.round((currentTime / playerState.duration) * 100);
-    });
+    const ariaValueNow = $derived(Math.round((seekValue ?? value) * 100));
 
     function handleKeyDown(e: KeyboardEvent): void {
-        if (!playerState.track) {
+        if (disabled) {
             return;
         }
-        const step = 5;
         if (e.key === "ArrowLeft") {
             e.preventDefault();
-            player.seekTo(Math.max(0, playerState.currentTime - step));
+            onseek(Math.max(0, value - keyboardStep));
         } else if (e.key === "ArrowRight") {
             e.preventDefault();
-            player.seekTo(Math.min(playerState.duration, playerState.currentTime + step));
+            onseek(Math.min(1, value + keyboardStep));
         }
     }
 
     const seekLeft = $derived.by(() => {
-        const track = playerState.track;
-        if (!track) {
-            return "0";
-        }
-        const duration = playerState.duration;
-        const currentTime =
-            seekSliderPosition !== undefined
-                ? seekSliderPosition * duration
-                : playerState.currentTime;
-        if (duration > 0) {
-            return `${(currentTime / duration) * 100}%`;
-        }
-        return "0";
-    });
-
-    const bufferLeft = $derived.by(() => {
-        playerState.updateOnBufferProgress();
-        const track = playerState.track;
-        if (!track) {
-            return "0";
-        }
-        const ranges = track.buffered();
-        if (ranges.length > 0 && track.info.duration > 0) {
-            const startTime = track.startTime + ranges.start(0);
-            const left = startTime / track.info.duration;
-            return `${Math.max(0, Math.min(100, left * 100))}%`;
-        }
-        return "0";
-    });
-
-    const bufferWidth = $derived.by(() => {
-        playerState.updateOnBufferProgress();
-        const track = playerState.track;
-        if (!track) {
-            return "0";
-        }
-        const ranges = track.buffered();
-        if (ranges.length > 0 && track.info.duration > 0) {
-            const startTime = track.startTime + ranges.start(0);
-            const endTime = track.startTime + ranges.end(ranges.length - 1);
-            const left = startTime / track.info.duration;
-            const width = (endTime - startTime) / track.info.duration;
-            const leftPercent = Math.max(0, Math.min(100, left * 100));
-            const widthPercent = Math.max(0, Math.min(100 - leftPercent, width * 100));
-            return `${widthPercent}%`;
-        }
-        return "0";
+        const position = seekValue ?? value;
+        return `${position * 100}%`;
     });
 
     function startSeekSliderDrag(
@@ -95,7 +46,7 @@
         anchorScreenX: number,
         touchId?: number,
     ): void {
-        if (!playerState.track || !progressBarEmpty) {
+        if (disabled || !progressBarEmpty) {
             return;
         }
         const rect = progressBarEmpty.getBoundingClientRect();
@@ -108,24 +59,17 @@
             return clientXOffset / rect.width;
         };
 
-        seekSliderPosition = getPosition(anchorScreenX);
-        seekTime = seekSliderPosition * playerState.duration;
+        seekValue = getPosition(anchorScreenX);
 
         onDrag(
             (screenX) => {
-                seekSliderPosition = getPosition(screenX);
-                seekTime = seekSliderPosition * playerState.duration;
+                seekValue = getPosition(screenX);
             },
             async (screenX) => {
-                if (playerState.track !== undefined) {
-                    // Wait for seek to complete before clearing slider/timestamp overrides.
-                    // This prevents jumping back and forth between the seek time and current time.
-                    try {
-                        await player.seekTo(getPosition(screenX) * playerState.track.info.duration);
-                    } finally {
-                        seekSliderPosition = undefined;
-                        seekTime = undefined;
-                    }
+                try {
+                    await onseek(getPosition(screenX));
+                } finally {
+                    seekValue = undefined;
                 }
             },
             touchId,
@@ -146,7 +90,7 @@
     }
 </script>
 
-<div class="controls__group" class:controls--disabled={!playerState.track}>
+<div class="controls__group" class:controls--disabled={disabled}>
     <div
         bind:this={progressBarEmpty}
         class="controls__progress-trough"
@@ -160,7 +104,10 @@
         ontouchstart={handleTouchStart}
         onkeydown={handleKeyDown}
     >
-        <span class="controls__progress-fill" style:left={bufferLeft} style:width={bufferWidth}
+        <span
+            class="controls__progress-fill"
+            style:left={`${bufferLeft * 100}%`}
+            style:width={`${bufferWidth * 100}%`}
         ></span>
         <span class="controls__slider-range">
             <span class="controls__slider" style:left={seekLeft}></span>
