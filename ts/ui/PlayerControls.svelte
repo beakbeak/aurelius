@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { PlayerState } from "./PlayerState.svelte";
     import Marquee from "./Marquee.svelte";
-    import ProgressBar from "./ProgressBar.svelte";
+    import SeekSlider from "./SeekSlider.svelte";
     import { formatDuration } from "./format";
     import { getSettings } from "./settings";
     import { onMount } from "svelte";
@@ -200,7 +200,7 @@
                 <Marquee text={marqueeText} url={marqueeUrl} onNavigate={onNavigateToDir} />
             </div>
         </div>
-        <ProgressBar {playerState} bind:seekTime />
+        <SeekSlider {playerState} bind:seekTime />
         <div class="controls__group controls__group--shift-up">
             <button
                 class="controls__button material-icons"
