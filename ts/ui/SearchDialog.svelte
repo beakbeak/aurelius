@@ -168,7 +168,7 @@
 </script>
 
 <Modal bind:open>
-    <div class="modal-box max-w-3xl w-auto">
+    <div class="modal-box max-h-3/4 max-w-3xl w-auto">
         <h2 class="text-lg font-bold">Search</h2>
 
         <label class="input w-full my-2">
