@@ -66,8 +66,8 @@
             return;
         }
         loading = true;
-        searchTimeout = setTimeout(() => {
-            performSearch(q);
+        searchTimeout = setTimeout(async () => {
+            await performSearch(q);
             loading = false;
         }, 300);
     }
@@ -184,16 +184,24 @@
             />
         </label>
 
-        <div class="max-h-128 overflow-y-auto">
-            <div bind:this={resultsContainer} class="search-results dir__list" role="listbox">
+        <div
+            class="max-h-128 overflow-y-auto relative"
+            class:search-results-container--loading={loading}
+        >
+            {#if loading}
+                <div class="search-loading-overlay">
+                    <span class="loading loading-spinner loading-md"></span>
+                </div>
+            {/if}
+            <div
+                bind:this={resultsContainer}
+                class="search-results dir__list"
+                class:opacity-50={loading}
+                role="listbox"
+            >
                 {#if errorMessage}
                     <div class="text-error text-center">{errorMessage}</div>
-                {:else if loading}
-                    <div class="text-center">
-                        <span class="loading loading-spinner loading-md place-content-center"
-                        ></span>
-                    </div>
-                {:else if query.trim() !== "" && results.length === 0}
+                {:else if !loading && query.trim() !== "" && results.length === 0}
                     <div class="opacity-70 text-center">No results found</div>
                 {:else}
                     {#each results as result, i (result.url)}
@@ -238,5 +246,19 @@
     .search-result-detail {
         font-style: italic;
         opacity: 0.7;
+    }
+
+    .search-results-container--loading {
+        min-height: 3rem;
+    }
+
+    .search-loading-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: oklch(var(--b1) / 0.5);
+        z-index: 1;
     }
 </style>
