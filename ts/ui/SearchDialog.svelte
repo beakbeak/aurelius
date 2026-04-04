@@ -168,21 +168,23 @@
 </script>
 
 <Modal bind:open>
-    <div class="modal-box">
+    <div class="modal-box max-w-3xl w-auto">
         <h2 class="text-lg font-bold">Search</h2>
 
-        <input
-            bind:this={searchInput}
-            bind:value={query}
-            class="input w-full my-2"
-            type="text"
-            placeholder="Type to search..."
-            autocomplete="off"
-            oninput={handleInput}
-            onkeydown={handleKeydown}
-        />
+        <label class="input w-full my-2">
+            <i class="material-icons">search</i>
+            <input
+                bind:this={searchInput}
+                bind:value={query}
+                type="text"
+                placeholder="Type to search..."
+                autocomplete="off"
+                oninput={handleInput}
+                onkeydown={handleKeydown}
+            />
+        </label>
 
-        <div class="max-h-[30em] overflow-y-auto">
+        <div class="max-h-128 overflow-y-auto">
             <div bind:this={resultsContainer} class="search-results dir__list" role="listbox">
                 {#if errorMessage}
                     <div class="text-error text-center">{errorMessage}</div>
