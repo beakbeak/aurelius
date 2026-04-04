@@ -3,9 +3,11 @@
 
     let {
         open = $bindable(false),
+        hideCloseFocusRing = false,
         children,
     }: {
         open: boolean;
+        hideCloseFocusRing?: boolean;
         children: Snippet;
     } = $props();
 
@@ -24,6 +26,12 @@
 <dialog bind:this={dialogEl} class="modal" onclose={() => (open = false)}>
     {@render children()}
     <form method="dialog" class="modal-backdrop">
-        <button>close</button>
+        <button class:hide-focus-ring={hideCloseFocusRing}>close</button>
     </form>
 </dialog>
+
+<style>
+    .hide-focus-ring {
+        outline: none;
+    }
+</style>

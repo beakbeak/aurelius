@@ -8,7 +8,7 @@
     } = $props();
 </script>
 
-<Modal bind:open>
+<Modal bind:open hideCloseFocusRing>
     <div class="modal-box bg-base-200">
         <h2 class="text-lg font-bold">Keyboard Shortcuts</h2>
 
