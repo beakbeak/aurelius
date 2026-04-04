@@ -40,7 +40,7 @@
             if (seq !== searchSequence) {
                 return;
             }
-            results = response.results;
+            results = response.results ?? [];
             errorMessage = "";
             focusedIndex = -1;
         } catch (error) {
