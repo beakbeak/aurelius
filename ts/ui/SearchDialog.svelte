@@ -17,6 +17,7 @@
     let results = $state<SearchResult[]>([]);
     let focusedIndex = $state(-1);
     let errorMessage = $state("");
+    let loading = $state(false);
     let searchTimeout: ReturnType<typeof setTimeout> | undefined;
     let searchSequence = 0;
     let searchInput: HTMLInputElement | undefined = $state(undefined);
@@ -27,6 +28,7 @@
         results = [];
         focusedIndex = -1;
         errorMessage = "";
+        loading = false;
         if (searchTimeout) {
             clearTimeout(searchTimeout);
             searchTimeout = undefined;
@@ -63,8 +65,10 @@
             clearSearch();
             return;
         }
+        loading = true;
         searchTimeout = setTimeout(() => {
             performSearch(q);
+            loading = false;
         }, 300);
     }
 
@@ -182,6 +186,11 @@
             <div bind:this={resultsContainer} class="search-results dir__list" role="listbox">
                 {#if errorMessage}
                     <div class="text-error text-center">{errorMessage}</div>
+                {:else if loading}
+                    <div class="text-center">
+                        <span class="loading loading-spinner loading-md place-content-center"
+                        ></span>
+                    </div>
                 {:else if query.trim() !== "" && results.length === 0}
                     <div class="opacity-70 text-center">No results found</div>
                 {:else}
