@@ -1,3 +1,7 @@
+.dir {
+	line-height: normal;
+}
+
 .dir__list {
 	list-style: none;
 	padding: 0;

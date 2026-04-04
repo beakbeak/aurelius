@@ -9,6 +9,7 @@
     import SettingsDialog from "../../ui/SettingsDialog.svelte";
     import SearchDialog from "../../ui/SearchDialog.svelte";
     import KeyboardShortcutsDialog from "../../ui/KeyboardShortcutsDialog.svelte";
+    import CenteredLayout from "../../ui/CenteredLayout.svelte";
     import AboutDialog from "../../ui/AboutDialog.svelte";
 
     const settings = getSettings();
@@ -179,9 +180,11 @@
     />
 </div>
 
-<main class="dir-browser">
-    <DirectoryBrowser {playerState} {dirState} />
-</main>
+<CenteredLayout>
+    <div class="dir-browser">
+        <DirectoryBrowser {playerState} {dirState} />
+    </div>
+</CenteredLayout>
 
 <aside class="menu top-right__menu">
     <button
@@ -228,13 +231,7 @@
     }
 
     .dir-browser {
-        max-width: 960px;
-        margin-left: auto;
-        margin-right: auto;
         margin-bottom: 10rem;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-        line-height: normal;
     }
 
     .top-right__menu {
@@ -254,55 +251,7 @@
         cursor: pointer;
     }
 
-    :global(html) {
-        background: hsl(39, 0%, 11.8%);
-    }
-
-    @media (min-width: 960px) {
-        :global(html) {
-            background:
-                calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
-                    linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
-                left top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
-                    linear-gradient(
-                        to right,
-                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
-                        rgba(0, 0, 0, 0.35) 100%
-                    ),
-                right top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
-                    linear-gradient(
-                        to left,
-                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
-                        rgba(0, 0, 0, 0.35) 100%
-                    ),
-                fixed url("/img/bg.svgz"),
-                fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
-        }
-    }
-
     @media (min-width: 1200px) {
-        :global(html) {
-            background:
-                calc(50vw - (960px + 2rem) / 2) top / calc(960px + 2rem) fixed no-repeat
-                    linear-gradient(hsl(39, 0%, 11.8%) 50%, hsl(39, 0%, 11.8%)),
-                left top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
-                    linear-gradient(
-                        to right,
-                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
-                        rgba(0, 0, 0, 0.35) 100%
-                    ),
-                right top / calc((100vw - (960px + 2rem)) / 2) fixed no-repeat
-                    linear-gradient(
-                        to left,
-                        rgba(0, 0, 0, 0.25) calc(100% - 150px),
-                        rgba(0, 0, 0, 0.35) 100%
-                    ),
-                fixed url("/img/bg.svgz"),
-                fixed linear-gradient(hsl(240, 2%, 30%) 50%, hsl(240, 2%, 20%));
-            margin-left: calc(100vw - 100%);
-            margin-right: 0;
-        }
-
         .controls {
             left: calc(50% + (100vw - 100%) / 2);
             bottom: inherit;
@@ -310,7 +259,7 @@
         }
 
         .dir-browser {
-            margin-bottom: inherit;
+            margin-bottom: 0;
             margin-top: 8rem;
         }
 

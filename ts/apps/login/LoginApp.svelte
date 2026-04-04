@@ -53,6 +53,12 @@
 </main>
 
 <style>
+    :global(html) {
+        background:
+            fixed url("/img/bg.svgz"),
+            fixed linear-gradient(hsl(240, 2%, 22%) 50%, hsl(240, 2%, 15%));
+    }
+
     main {
         display: block;
         position: fixed;
@@ -61,6 +67,7 @@
         transform: translate(-50%, -80%);
         z-index: 100;
     }
+
     main::before {
         content: "";
         background: center center / contain url("/img/aurelius.svgz") no-repeat;
