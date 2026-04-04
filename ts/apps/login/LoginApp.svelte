@@ -18,7 +18,7 @@
 </script>
 
 <main>
-    <div class="card bg-base-100 shadow-xl/50 p-4">
+    <div class="card card-sm bg-base-100 shadow-xl/50 p-4">
         <div class="card-title justify-center">
             <p>aurelius</p>
         </div>
