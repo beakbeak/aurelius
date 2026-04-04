@@ -4,12 +4,12 @@
     let { children }: { children: Snippet } = $props();
 </script>
 
-<main>
+<div class="wrapper">
     {@render children()}
-</main>
+</div>
 
 <style>
-    main {
+    .wrapper {
         max-width: 960px;
         margin-left: auto;
         margin-right: auto;

@@ -181,9 +181,9 @@
 </div>
 
 <CenteredLayout>
-    <div class="dir-browser">
+    <main class="dir-browser">
         <DirectoryBrowser {playerState} {dirState} />
-    </div>
+    </main>
 </CenteredLayout>
 
 <aside class="menu top-right__menu">
