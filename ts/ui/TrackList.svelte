@@ -123,7 +123,6 @@
     .dir__cell-num {
         white-space: nowrap;
         color: hsl(0, 0%, 50%);
-        margin-left: -0.5em;
     }
     .dir__cell-duration {
         white-space: nowrap;

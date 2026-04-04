@@ -8,12 +8,14 @@
 	margin: 1em 0;
 }
 
-.dir__row > * {
-	vertical-align: middle;
+.dir__row {
+	display: flex;
+	align-items: center;
 }
 
 .dir__link {
 	text-decoration: none;
+	text-align: left;
 	color: hsl(0, 0%, 66.3%);
 	cursor: pointer;
 }
@@ -24,7 +26,9 @@
 .dir__icon {
 	color: hsl(198.3, 56.5%, 72.9%);
 	font-size: 24px;
-	margin-right: 0.25em;
+}
+.dir__icon:not(.dir__track-list .dir__icon) {
+	margin-right: 0.5em;
 }
 .dir__icon--playing {
 	display: none;
