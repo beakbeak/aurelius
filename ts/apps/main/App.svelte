@@ -49,6 +49,9 @@
         if (isTypingInInput(e.target) || e.metaKey || e.ctrlKey || e.altKey) {
             return;
         }
+        if (showSettings || showSearch || showShortcuts || showAbout) {
+            return;
+        }
 
         switch (e.key) {
             case "/":
