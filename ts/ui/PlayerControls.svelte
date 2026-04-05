@@ -13,10 +13,12 @@
         playerState,
         onAbout,
         onNavigateToDir,
+        onShowImageGallery,
     }: {
         playerState: PlayerState;
         onAbout: () => void;
         onNavigateToDir: (url: string) => void;
+        onShowImageGallery: () => void;
     } = $props();
 
     const player = $derived(playerState.player);
@@ -30,9 +32,9 @@
     });
     let trackImageCursor = $derived(trackImageUrl !== defaultTrackImageUrl ? "pointer" : "default");
 
-    function openTrackImageInNewTab(): void {
+    function openImageGallery(): void {
         if (trackImageUrl !== defaultTrackImageUrl) {
-            window.open(trackImageUrl, "_blank");
+            onShowImageGallery();
         }
     }
 
@@ -240,8 +242,8 @@
         class="track-image-container"
         type="button"
         style:cursor={trackImageCursor}
-        aria-label="Open track image"
-        onclick={openTrackImageInNewTab}
+        aria-label="Open image gallery"
+        onclick={openImageGallery}
     >
         <img class="track-image" src={trackImageUrl} alt="cover art" />
     </button>

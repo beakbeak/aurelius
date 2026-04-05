@@ -11,6 +11,7 @@
     import KeyboardShortcutsDialog from "../../ui/KeyboardShortcutsDialog.svelte";
     import CenteredLayout from "../../ui/CenteredLayout.svelte";
     import AboutDialog from "../../ui/AboutDialog.svelte";
+    import ImageGalleryDialog from "../../ui/ImageGalleryDialog.svelte";
 
     const settings = getSettings();
     const player = new Player({ streamConfig: settings.streamConfig });
@@ -37,6 +38,7 @@
     let showSearch = $state(false);
     let showShortcuts = $state(false);
     let showAbout = $state(false);
+    let showImageGallery = $state(false);
 
     function isTypingInInput(target: EventTarget | null): boolean {
         if (!target || !(target instanceof HTMLElement)) {
@@ -50,7 +52,7 @@
         if (isTypingInInput(e.target) || e.metaKey || e.ctrlKey || e.altKey) {
             return;
         }
-        if (showSettings || showSearch || showShortcuts || showAbout) {
+        if (showSettings || showSearch || showShortcuts || showAbout || showImageGallery) {
             return;
         }
 
@@ -157,7 +159,7 @@
             case "c":
                 e.preventDefault();
                 if (playerState.track?.info.attachedImages?.length) {
-                    window.open(playerState.track.info.attachedImages[0].url, "_blank");
+                    showImageGallery = true;
                 }
                 break;
             case "g":
@@ -177,6 +179,7 @@
         {playerState}
         onAbout={() => (showAbout = true)}
         onNavigateToDir={(url) => dirState.loadDir(url)}
+        onShowImageGallery={() => (showImageGallery = true)}
     />
 </div>
 
@@ -218,6 +221,11 @@
 <KeyboardShortcutsDialog bind:open={showShortcuts} />
 
 <AboutDialog bind:open={showAbout} />
+
+<ImageGalleryDialog
+    bind:open={showImageGallery}
+    images={playerState.track?.info.attachedImages ?? []}
+/>
 
 <style>
     .controls {

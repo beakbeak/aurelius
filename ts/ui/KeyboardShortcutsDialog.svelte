@@ -57,7 +57,7 @@
                 </tr>
                 <tr>
                     <td><kbd class="kbd">c</kbd></td>
-                    <td>Open cover image in new tab</td>
+                    <td>Open image gallery</td>
                 </tr>
             </tbody>
 
