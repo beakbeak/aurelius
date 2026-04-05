@@ -235,6 +235,8 @@
             navigator.mediaSession?.setActionHandler("seekto", null);
         };
     });
+
+    const isPaused = $derived(!playerState.track || playerState.paused);
 </script>
 
 <nav class="controls">
@@ -286,26 +288,27 @@
             >
                 <i class="material-icons text-5xl!">skip_previous</i>
             </button>
-            {#if !playerState.track || playerState.paused}
-                <button
-                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
-                    disabled={!playerState.track}
-                    type="button"
-                    title="Play"
-                    onclick={() => player.unpause()}
-                >
-                    <i class="material-icons text-5xl!">play_arrow</i>
-                </button>
-            {:else}
-                <button
-                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
-                    type="button"
-                    title="Pause"
-                    onclick={() => player.pause()}
-                >
-                    <i class="material-icons text-5xl!">pause</i>
-                </button>
-            {/if}
+            <button
+                class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
+                disabled={!playerState.track}
+                type="button"
+                title={isPaused ? "Play" : "Pause"}
+                onclick={() => {
+                    if (isPaused) {
+                        player.unpause();
+                    } else {
+                        player.pause();
+                    }
+                }}
+            >
+                <i class="material-icons text-5xl!">
+                    {#if isPaused}
+                        play_arrow
+                    {:else}
+                        pause
+                    {/if}
+                </i>
+            </button>
             <button
                 class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
                 disabled={!playerState.hasNext}
@@ -315,26 +318,25 @@
             >
                 <i class="material-icons text-5xl!">skip_next</i>
             </button>
-            {#if !playerState.favorite}
-                <button
-                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
-                    disabled={!playerState.track}
-                    type="button"
-                    title="Add to favorites"
-                    onclick={() => player.favorite()}
-                >
-                    <i class="material-icons text-4xl!">favorite_border</i>
-                </button>
-            {:else}
-                <button
-                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
-                    type="button"
-                    title="Remove from favorites"
-                    onclick={() => player.unfavorite()}
-                >
+            <button
+                class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
+                disabled={!playerState.track}
+                type="button"
+                title={playerState.favorite ? "Add to favorites" : "Remove from favorites"}
+                onclick={() => {
+                    if (playerState.favorite) {
+                        player.unfavorite();
+                    } else {
+                        player.favorite();
+                    }
+                }}
+            >
+                {#if playerState.favorite}
                     <i class="material-icons text-4xl! text-red-300">favorite</i>
-                </button>
-            {/if}
+                {:else}
+                    <i class="material-icons text-4xl!">favorite_border</i>
+                {/if}
+            </button>
         </div>
         <div class="controls__bottom">
             <button class="controls__link controls__bottom-left" type="button" onclick={onAbout}>
