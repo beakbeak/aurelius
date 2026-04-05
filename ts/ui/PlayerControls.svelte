@@ -233,6 +233,7 @@
 </script>
 
 <nav class="flex items-center bg-base-100 rounded-sm">
+    <!-- Cover image -->
     <button
         class="flex items-center not-disabled:cursor-pointer"
         type="button"
@@ -240,14 +241,20 @@
         onclick={onShowImageGallery}
         disabled={trackImageUrl === defaultTrackImageUrl}
     >
-        <img class="track-image" src={trackImageUrl} alt="cover art" />
+        <img
+            class="track-image size-24 m-2 object-contain"
+            src={trackImageUrl}
+            alt="cover art"
+        />
     </button>
-    <div class="everything-else">
-        <div class="marquee-spacer">
-            <div class="marquee-container">
+    <!-- Controls to right of cover image -->
+    <div class="flex-1 relative">
+        <!-- Top row: marquee -->
+        <div class="relative h-[1.1em] mx-2">
+            <div class="absolute inset-0 w-full h-[200%] overflow-hidden">
                 <Marquee contentKey={marqueeText}>
                     <a
-                        class="controls__link marquee-text"
+                        class="cursor-pointer italic no-underline hover:underline text-[1.1em]"
                         href={marqueeUrl
                             ? `/media/tree/?path=${encodeURIComponent(marqueeUrl)}`
                             : "#"}
@@ -271,7 +278,8 @@
             {onseek}
             keyboardStep={seekKeyboardStep}
         />
-        <div class="controls__group controls__group--shift-up">
+        <!-- Middle row: playback buttons -->
+        <div class="flex h-12 items-center justify-center relative bottom-[0.5em]">
             <button
                 class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
                 disabled={!playerState.hasPrevious}
@@ -331,93 +339,39 @@
                 {/if}
             </button>
         </div>
-        <div class="controls__bottom">
-            <button class="controls__link controls__bottom-left" type="button" onclick={onAbout}>
+        <!-- Bottom row -->
+        <div class="bottom-row">
+            <!-- About dialog -->
+            <button
+                class="bottom-row-left cursor-pointer italic no-underline hover:underline absolute bottom-2 left-2"
+                type="button"
+                onclick={onAbout}
+            >
                 aurelius
             </button>
-            <span class="controls__bottom-center"></span>
-            <span class="controls__bottom-right">{durationText}</span>
+            <span class="bottom-row-center"></span>
+            <!-- Timestamp -->
+            <span
+                class="bottom-row-right absolute bottom-2 right-2"
+                >{durationText}</span
+            >
         </div>
     </div>
 </nav>
 
 <style>
-    .track-image {
-        height: 6rem;
-        width: 6rem;
-        margin: 0.5rem;
-        object-fit: contain;
-    }
-
-    /* Controls to the right of the track image */
-    .everything-else {
-        flex: 1;
-        position: relative;
-    }
-
-    .marquee-spacer {
-        position: relative;
-        height: 1.1em;
-        margin: 0 0.5rem 0 0.5rem;
-    }
-    .marquee-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 200%;
-        overflow: hidden;
-    }
-    .marquee-text {
-        font-size: 1.1em;
-    }
-
-    /* Positioning */
-    .controls__group {
-        display: flex;
-        height: 3rem;
-        align-items: center;
-        justify-content: center;
-    }
-    .controls__group--shift-up {
-        position: relative;
-        bottom: 0.5em;
-    }
-
-    .controls__link {
-        cursor: pointer;
-        font-style: italic;
-        text-decoration: none;
-        color: inherit;
-    }
-    .controls__link:hover {
-        text-decoration: underline;
-    }
-
-    /* Text below controls */
-    .controls__bottom-left {
-        position: absolute;
-        bottom: 0.5rem;
-        left: 0.5rem;
-    }
-    .controls__bottom-right {
-        position: absolute;
-        bottom: 0.5rem;
-        right: 0.5rem;
-    }
-
     /* Prevent text from overlapping buttons */
     @media (max-width: 530px) {
-        .controls__bottom {
+        .bottom-row {
             display: flex;
         }
-        .controls__bottom-left {
+        .bottom-row-left {
             position: relative;
         }
-        .controls__bottom-right {
+        .bottom-row-right {
             position: relative;
         }
-        .controls__bottom-center {
+        .bottom-row-center {
             flex: 1;
         }
         .track-image {
