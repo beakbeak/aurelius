@@ -400,8 +400,7 @@
     }
 
     /* Positioning */
-    .controls__group,
-    .controls :global(.controls__group) {
+    .controls__group {
         display: flex;
         height: 3rem;
         align-items: center;

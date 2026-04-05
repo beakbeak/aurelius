@@ -90,10 +90,10 @@
     }
 </script>
 
-<div class="controls__group" class:controls--disabled={disabled}>
+<div class="container" class:disabled={disabled}>
     <div
         bind:this={progressBarEmpty}
-        class="controls__progress-trough"
+        class="progress-trough"
         role="slider"
         aria-label="Seek"
         aria-valuemin="0"
@@ -105,18 +105,25 @@
         onkeydown={handleKeyDown}
     >
         <span
-            class="controls__progress-fill"
+            class="progress-fill"
             style:left={`${bufferLeft * 100}%`}
             style:width={`${bufferWidth * 100}%`}
         ></span>
-        <span class="controls__slider-range">
-            <span class="controls__slider" style:left={seekLeft}></span>
+        <span class="slider-range">
+            <span class="slider" style:left={seekLeft}></span>
         </span>
     </div>
 </div>
 
 <style>
-    .controls__progress-trough {
+    .container {
+        display: flex;
+        height: 3rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .progress-trough {
         cursor: pointer;
         flex: 1;
         position: relative;
@@ -125,11 +132,11 @@
         margin: 0 0.5rem;
         border-radius: 0.5em;
     }
-    .controls--disabled .controls__progress-trough {
+    .disabled .progress-trough {
         cursor: default;
     }
 
-    .controls__progress-fill {
+    .progress-fill {
         position: absolute;
         top: 0;
         left: 0;
@@ -139,13 +146,13 @@
         border-radius: 0.5em;
     }
 
-    .controls__slider-range {
+    .slider-range {
         position: absolute;
         left: 0;
         width: calc(100% - 3rem);
         height: 100%;
     }
-    .controls__slider {
+    .slider {
         cursor: pointer;
         position: absolute;
         width: 3rem;
@@ -154,7 +161,7 @@
         background-color: hsl(0, 0%, 10%);
         border-radius: 0.25em;
     }
-    .controls--disabled .controls__slider {
+    .disabled .slider {
         cursor: default;
         background-color: hsl(0, 0%, 24%);
     }
