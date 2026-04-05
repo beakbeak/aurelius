@@ -237,21 +237,23 @@
 
 <nav class="controls">
     <button
-        class="controls__track-image-container"
+        class="track-image-container"
         type="button"
         style:cursor={trackImageCursor}
         aria-label="Open track image"
         onclick={openTrackImageInNewTab}
     >
-        <img class="controls__track-image" src={trackImageUrl} alt="cover art" />
+        <img class="track-image" src={trackImageUrl} alt="cover art" />
     </button>
-    <div class="controls__everything-else">
-        <div class="controls__marquee-spacer">
-            <div class="controls__marquee-container">
+    <div class="everything-else">
+        <div class="marquee-spacer">
+            <div class="marquee-container">
                 <Marquee contentKey={marqueeText}>
                     <a
-                        class="controls__link controls__marquee-text"
-                        href={marqueeUrl ? `/media/tree/?path=${encodeURIComponent(marqueeUrl)}` : "#"}
+                        class="controls__link marquee-text"
+                        href={marqueeUrl
+                            ? `/media/tree/?path=${encodeURIComponent(marqueeUrl)}`
+                            : "#"}
                         title="Jump to directory containing this track"
                         onclick={(e: MouseEvent) => {
                             e.preventDefault();
@@ -274,61 +276,61 @@
         />
         <div class="controls__group controls__group--shift-up">
             <button
-                class="controls__button material-icons"
-                class:controls__button--disabled={!playerState.hasPrevious}
+                class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
+                disabled={!playerState.hasPrevious}
                 type="button"
                 title="Previous track"
                 onclick={() => player.previous()}
             >
-                skip_previous
+                <i class="material-icons text-5xl!">skip_previous</i>
             </button>
             {#if !playerState.track || playerState.paused}
                 <button
-                    class="controls__button material-icons"
-                    class:controls__button--disabled={!playerState.track}
+                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
+                    disabled={!playerState.track}
                     type="button"
                     title="Play"
                     onclick={() => player.unpause()}
                 >
-                    play_arrow
+                    <i class="material-icons text-5xl!">play_arrow</i>
                 </button>
             {:else}
                 <button
-                    class="controls__button material-icons"
+                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
                     type="button"
                     title="Pause"
                     onclick={() => player.pause()}
                 >
-                    pause
+                    <i class="material-icons text-5xl!">pause</i>
                 </button>
             {/if}
             <button
-                class="controls__button material-icons"
-                class:controls__button--disabled={!playerState.hasNext}
+                class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
+                disabled={!playerState.hasNext}
                 type="button"
                 title="Next track"
                 onclick={() => player.next()}
             >
-                skip_next
+                <i class="material-icons text-5xl!">skip_next</i>
             </button>
             {#if !playerState.favorite}
                 <button
-                    class="controls__button controls__button--medium material-icons"
-                    class:controls__button--disabled={!playerState.track}
+                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
+                    disabled={!playerState.track}
                     type="button"
                     title="Add to favorites"
                     onclick={() => player.favorite()}
                 >
-                    favorite_border
+                    <i class="material-icons text-4xl!">favorite_border</i>
                 </button>
             {:else}
                 <button
-                    class="controls__button controls__button--medium material-icons unfavorite-button"
+                    class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
                     type="button"
                     title="Remove from favorites"
                     onclick={() => player.unfavorite()}
                 >
-                    favorite
+                    <i class="material-icons text-4xl! text-red-300">favorite</i>
                 </button>
             {/if}
         </div>
@@ -350,13 +352,13 @@
         align-items: center;
     }
 
-    .controls__track-image-container {
+    .track-image-container {
         display: flex;
         align-items: center;
         cursor: inherit;
     }
 
-    .controls__track-image {
+    .track-image {
         height: 6rem;
         width: 6rem;
         margin: 0.5rem;
@@ -364,30 +366,17 @@
     }
 
     /* Controls to the right of the track image */
-    .controls__everything-else {
+    .everything-else {
         flex: 1;
         position: relative;
     }
 
-    .controls__button {
-        cursor: pointer;
-        color: hsl(0, 0%, 10%);
-        font-size: 4rem;
-    }
-    .controls__button--medium {
-        font-size: 3rem;
-    }
-    .controls__button--disabled {
-        cursor: default;
-        color: rgba(0, 0, 0, 0.3);
-    }
-
-    .controls__marquee-spacer {
+    .marquee-spacer {
         position: relative;
         height: 1.1em;
         margin: 0 0.5rem 0 0.5rem;
     }
-    .controls__marquee-container {
+    .marquee-container {
         position: absolute;
         top: 0;
         left: 0;
@@ -395,7 +384,7 @@
         height: 200%;
         overflow: hidden;
     }
-    .controls__marquee-text {
+    .marquee-text {
         font-size: 1.1em;
     }
 
@@ -433,10 +422,6 @@
         right: 0.5rem;
     }
 
-    .unfavorite-button {
-        color: hsl(0, 70%, 72.9%);
-    }
-
     /* Prevent text from overlapping buttons */
     @media (max-width: 530px) {
         .controls__bottom {
@@ -451,7 +436,7 @@
         .controls__bottom-center {
             flex: 1;
         }
-        .controls__track-image {
+        .track-image {
             width: 7rem;
             height: 7rem;
         }
