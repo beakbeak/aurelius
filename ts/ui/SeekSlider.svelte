@@ -90,10 +90,14 @@
     }
 </script>
 
-<div class="container" class:disabled={disabled}>
+<div class="flex h-12 items-center justify-center">
+    <!-- Progress trough -->
     <div
         bind:this={progressBarEmpty}
-        class="progress-trough"
+        class={[
+            "progress-trough flex-1 relative h-2 mx-2 rounded-lg",
+            !disabled && "cursor-pointer",
+        ]}
         role="slider"
         aria-label="Seek"
         aria-valuemin="0"
@@ -104,65 +108,34 @@
         ontouchstart={handleTouchStart}
         onkeydown={handleKeyDown}
     >
+        <!-- Progress fill -->
         <span
-            class="progress-fill"
+            class="bg-base-200 absolute inset-0 h-full rounded-lg"
             style:left={`${bufferLeft * 100}%`}
             style:width={`${bufferWidth * 100}%`}
         ></span>
-        <span class="slider-range">
-            <span class="slider" style:left={seekLeft}></span>
+        <!-- Slider range (trough width - handle width) -->
+        <span class="absolute inset-0 h-full" style:width="calc(100% - 3rem)">
+            <!-- Slider handle -->
+            <span
+                class={[
+                    "absolute w-12 h-[200%] -top-[50%] rounded-sm z-1",
+                    disabled ? "bg-base-200" : "bg-neutral cursor-pointer",
+                ]}
+                style:left={seekLeft}
+            ></span>
         </span>
     </div>
 </div>
 
 <style>
-    .container {
-        display: flex;
-        height: 3rem;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .progress-trough {
-        cursor: pointer;
-        flex: 1;
-        position: relative;
-        height: 0.5rem;
+    /* Draw progress trough shadow above progress fill */
+    .progress-trough::after {
+        content: "";
+        position: absolute;
+        inset: 0;
         box-shadow: inset 0 0 3px black;
-        margin: 0 0.5rem;
-        border-radius: 0.5em;
-    }
-    .disabled .progress-trough {
-        cursor: default;
-    }
-
-    .progress-fill {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 0;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.27);
-        border-radius: 0.5em;
-    }
-
-    .slider-range {
-        position: absolute;
-        left: 0;
-        width: calc(100% - 3rem);
-        height: 100%;
-    }
-    .slider {
-        cursor: pointer;
-        position: absolute;
-        width: 3rem;
-        height: 200%;
-        top: -50%;
-        background-color: hsl(0, 0%, 10%);
-        border-radius: 0.25em;
-    }
-    .disabled .slider {
-        cursor: default;
-        background-color: hsl(0, 0%, 24%);
+        border-radius: inherit;
+        pointer-events: none;
     }
 </style>

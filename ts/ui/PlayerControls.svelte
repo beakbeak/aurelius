@@ -30,13 +30,6 @@
         }
         return info.attachedImages.length > 0 ? info.attachedImages[0].url : defaultTrackImageUrl;
     });
-    let trackImageCursor = $derived(trackImageUrl !== defaultTrackImageUrl ? "pointer" : "default");
-
-    function openImageGallery(): void {
-        if (trackImageUrl !== defaultTrackImageUrl) {
-            onShowImageGallery();
-        }
-    }
 
     let marqueeText = $derived.by(() => {
         const info = playerState.track?.info;
@@ -60,7 +53,7 @@
     const seekDisabled = $derived(!playerState.track);
 
     const seekPosition = $derived(
-        playerState.duration > 0 ? playerState.currentTime / playerState.duration : 0,
+        playerState.duration > 0 ? Math.min(1, playerState.currentTime / playerState.duration) : 0,
     );
 
     const seekBufferLeft = $derived.by(() => {
@@ -239,13 +232,13 @@
     const isPaused = $derived(!playerState.track || playerState.paused);
 </script>
 
-<nav class="controls">
+<nav class="flex items-center bg-base-100 rounded-sm">
     <button
-        class="track-image-container"
+        class="flex items-center not-disabled:cursor-pointer"
         type="button"
-        style:cursor={trackImageCursor}
         aria-label="Open image gallery"
-        onclick={openImageGallery}
+        onclick={onShowImageGallery}
+        disabled={trackImageUrl === defaultTrackImageUrl}
     >
         <img class="track-image" src={trackImageUrl} alt="cover art" />
     </button>
@@ -349,19 +342,6 @@
 </nav>
 
 <style>
-    .controls {
-        background-color: hsl(0, 0%, 33%);
-        color: white;
-        display: flex;
-        align-items: center;
-    }
-
-    .track-image-container {
-        display: flex;
-        align-items: center;
-        cursor: inherit;
-    }
-
     .track-image {
         height: 6rem;
         width: 6rem;

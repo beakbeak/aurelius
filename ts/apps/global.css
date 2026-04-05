@@ -1,10 +1,8 @@
 html {
 	min-height: 100%;
-	scrollbar-color: hsl(0, 0%, 30%) hsl(0, 0%, 20%);
 }
 
 body {
-	color: white;
 	font-family:
 		segoe ui,
 		roboto,

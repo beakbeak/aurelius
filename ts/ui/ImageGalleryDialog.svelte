@@ -42,7 +42,7 @@
 
 <svelte:window onkeydown={open ? handleKeydown : undefined} />
 
-<Modal bind:open hideCloseFocusRing>
+<Modal bind:open>
     <div class="modal-box w-fit min-w-1/2 max-w-3/4 h-3/4 flex flex-col items-center gap-2">
         {#if current}
             <img class="gallery-image" src={current.url} alt="Track image {index + 1} of {images.length}" />
