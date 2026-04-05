@@ -123,6 +123,7 @@
         height: 0.5rem;
         box-shadow: inset 0 0 3px black;
         margin: 0 0.5rem;
+        border-radius: 0.5em;
     }
     .controls--disabled .controls__progress-trough {
         cursor: default;
@@ -135,6 +136,7 @@
         width: 0;
         height: 100%;
         background-color: rgba(0, 0, 0, 0.27);
+        border-radius: 0.5em;
     }
 
     .controls__slider-range {
