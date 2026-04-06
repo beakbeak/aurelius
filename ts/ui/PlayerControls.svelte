@@ -241,11 +241,7 @@
         onclick={onShowImageGallery}
         disabled={trackImageUrl === defaultTrackImageUrl}
     >
-        <img
-            class="track-image size-24 m-2 object-contain"
-            src={trackImageUrl}
-            alt="cover art"
-        />
+        <img class="track-image size-24 m-2 object-contain" src={trackImageUrl} alt="cover art" />
     </button>
     <!-- Controls to right of cover image -->
     <div class="flex-1 relative">
@@ -323,7 +319,7 @@
                 class="btn btn-ghost btn-xl btn-square mx-1.5 btn-primary not-disabled:text-primary-content"
                 disabled={!playerState.track}
                 type="button"
-                title={playerState.favorite ? "Add to favorites" : "Remove from favorites"}
+                title={playerState.favorite ? "Remove from favorites" : "Add to favorites"}
                 onclick={() => {
                     if (playerState.favorite) {
                         player.unfavorite();
@@ -351,10 +347,7 @@
             </button>
             <span class="bottom-row-center"></span>
             <!-- Timestamp -->
-            <span
-                class="bottom-row-right absolute bottom-2 right-2"
-                >{durationText}</span
-            >
+            <span class="bottom-row-right absolute bottom-2 right-2">{durationText}</span>
         </div>
     </div>
 </nav>
