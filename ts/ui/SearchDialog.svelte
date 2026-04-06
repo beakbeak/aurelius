@@ -177,6 +177,7 @@
                 bind:this={searchInput}
                 bind:value={query}
                 type="text"
+                name="search"
                 placeholder="Type to search..."
                 autocomplete="off"
                 oninput={handleInput}

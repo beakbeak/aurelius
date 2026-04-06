@@ -116,7 +116,7 @@
                     <tr>
                         <td>Codec</td>
                         <td>
-                            <select class="select" bind:value={codec}>
+                            <select class="select" name="codec" bind:value={codec}>
                                 {#each Object.values(StreamCodec) as c (c)}
                                     <option value={c}>{c}</option>
                                 {/each}
@@ -126,7 +126,11 @@
                     {#if showTargetMetric}
                         <tr>
                             <td>
-                                <select class="select" bind:value={targetMetricType}>
+                                <select
+                                    class="select"
+                                    name="metric-type"
+                                    bind:value={targetMetricType}
+                                >
                                     <option value="quality">Quality</option>
                                     <option value="bit-rate">Bit rate (kb/s)</option>
                                 </select>
@@ -136,6 +140,7 @@
                                     <input
                                         class="input"
                                         type="number"
+                                        name="metric"
                                         bind:value={targetMetricValue}
                                         min={targetMetricMin}
                                         max={targetMetricMax}
@@ -161,7 +166,11 @@
                     <tr>
                         <td>Mode</td>
                         <td>
-                            <select class="select" bind:value={replayGainMode}>
+                            <select
+                                class="select"
+                                name="replaygain-mode"
+                                bind:value={replayGainMode}
+                            >
                                 <option value="auto">auto</option>
                                 {#each Object.values(ReplayGainMode) as mode (mode)}
                                     <option value={mode}>{mode}</option>
