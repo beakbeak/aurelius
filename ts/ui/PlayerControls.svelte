@@ -232,7 +232,7 @@
     const isPaused = $derived(!playerState.track || playerState.paused);
 </script>
 
-<nav class="flex items-center bg-base-100 rounded-sm">
+<nav class="container flex items-center bg-base-100 rounded-sm">
     <!-- Cover image -->
     <button
         class="flex items-center not-disabled:cursor-pointer"
@@ -353,6 +353,10 @@
 </nav>
 
 <style>
+    .container {
+        box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.75);
+    }
+
     /* Prevent text from overlapping buttons */
     @media (max-width: 530px) {
         .bottom-row {

@@ -250,7 +250,6 @@
         transform: translateX(-50%);
         width: 100%;
         max-width: 1200px;
-        box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.75);
     }
 
     .dir-browser {
