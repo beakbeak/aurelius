@@ -108,6 +108,21 @@
                 e.preventDefault();
                 dirState.playTrackByIndex(e.key === "0" ? 9 : parseInt(e.key) - 1);
                 break;
+            case "!":
+            case "@":
+            case "#":
+            case "$":
+            case "%":
+            case "^":
+            case "&":
+            case "*":
+            case "(":
+            case ")":
+                e.preventDefault();
+                dirState.playTrackByIndex(
+                    "!@#$%^&*()".indexOf(e.key) + 10,
+                );
+                break;
             case "f":
                 e.preventDefault();
                 if (player.track) {

@@ -19,7 +19,7 @@
             <tbody class="shortcut-group">
                 <tr>
                     <td><kbd class="kbd">1</kbd> through <kbd class="kbd">0</kbd></td>
-                    <td>Play track at index 1-10 in current directory</td>
+                    <td>Play track 1-10 in current directory (<kbd class="kbd">Shift</kbd> for 11-20)</td>
                 </tr>
                 <tr>
                     <td><kbd class="kbd">]</kbd> or <kbd class="kbd">w</kbd></td>
