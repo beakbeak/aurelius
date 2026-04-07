@@ -29,13 +29,22 @@
     }
 
     function handleKeydown(e: KeyboardEvent): void {
-        if (images.length <= 1) return;
-        if (e.key === "ArrowLeft") {
-            e.preventDefault();
-            prev();
-        } else if (e.key === "ArrowRight") {
-            e.preventDefault();
-            next();
+        if (images.length <= 1) {
+            return;
+        }
+        switch (e.key) {
+            case "ArrowLeft":
+            case "[":
+            case "q":
+                e.preventDefault();
+                prev();
+                break;
+            case "ArrowRight":
+            case "]":
+            case "w":
+                e.preventDefault();
+                next();
+                break;
         }
     }
 </script>
@@ -45,7 +54,11 @@
 <Modal bind:open hideCloseFocusRing>
     <div class="modal-box w-fit min-w-1/2 max-w-3/4 h-3/4 flex flex-col items-center gap-2">
         {#if current}
-            <img class="gallery-image" src={current.url} alt="Track image {index + 1} of {images.length}" />
+            <img
+                class="gallery-image"
+                src={current.url}
+                alt="Track image {index + 1} of {images.length}"
+            />
         {/if}
         {#if images.length > 1}
             <div class="flex items-center gap-2">
