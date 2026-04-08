@@ -1,5 +1,8 @@
 import type { TrackInfo } from "../core/track";
 
+const SMALL_DOT = " \u00b7 ";
+const EM_DASH = " \u2014 ";
+
 function fileExtension(name: string): string {
     const dot = name.lastIndexOf(".");
     return dot >= 0 ? name.substring(dot + 1).toLowerCase() : "";
@@ -33,6 +36,14 @@ export function formatTrackArtist(track: TrackInfo): string {
     return track.tags["artist"] ?? "";
 }
 
+function formatTrackAlbum(track: TrackInfo): string {
+    let trackAlbum = `${track.tags["album"] ?? ""}`;
+    if (track.tags["track"]) {
+        trackAlbum += ` #${track.tags["track"]}`;
+    }
+    return trackAlbum;
+}
+
 function formatCodec(track: TrackInfo): string {
     return track.codec || fileExtension(track.name);
 }
@@ -43,5 +54,13 @@ export function formatTrackMeta(track: TrackInfo): string {
         formatBitRate(track.bitRate),
         track.sampleFormat,
         formatSampleRate(track.sampleRate),
-    ].filter(Boolean).join(" \u00b7 ");
+    ]
+        .filter(Boolean)
+        .join(SMALL_DOT);
+}
+
+export function formatMarqueeText(info: TrackInfo): string {
+    return [formatTrackArtist(info), formatTrackTitle(info), formatTrackAlbum(info)]
+        .filter(Boolean)
+        .join(EM_DASH);
 }

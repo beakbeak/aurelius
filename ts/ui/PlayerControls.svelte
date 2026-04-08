@@ -2,7 +2,7 @@
     import type { PlayerState } from "./PlayerState.svelte";
     import Marquee from "./Marquee.svelte";
     import SeekSlider from "./SeekSlider.svelte";
-    import { formatDuration } from "./format";
+    import { formatDuration, formatMarqueeText } from "./format";
     import { getSettings } from "./settings";
     import { onMount } from "svelte";
     import type { Track } from "../core/track";
@@ -31,23 +31,7 @@
         return info.attachedImages.length > 0 ? info.attachedImages[0].url : defaultTrackImageUrl;
     });
 
-    let marqueeText = $derived.by(() => {
-        const info = playerState.track?.info;
-        if (!info) {
-            return "";
-        }
-        const artist = info.tags["artist"] ?? info.tags["composer"] ?? "";
-        const title = info.tags["title"] ?? info.name;
-        let album = "";
-        if (info.tags["album"] !== undefined) {
-            let trackName = "";
-            if (info.tags["track"] !== undefined) {
-                trackName = ` #${info.tags["track"]}`;
-            }
-            album = `${info.tags["album"]}${trackName}`;
-        }
-        return `${artist ? `${artist} - ` : ""}${title}${album ? ` [${album}]` : ""}`;
-    });
+    let marqueeText = $derived(playerState.track ? formatMarqueeText(playerState.track.info) : "");
     let marqueeUrl = $derived(playerState.track?.info.dir ?? "");
 
     const seekDisabled = $derived(!playerState.track);
