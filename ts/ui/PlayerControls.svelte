@@ -232,7 +232,7 @@
     const isPaused = $derived(!playerState.track || playerState.paused);
 </script>
 
-<nav class="container flex items-center bg-base-100 rounded-sm">
+<nav class="controls-container flex items-center bg-base-100 rounded-sm">
     <!-- Cover image -->
     <button
         class="flex items-center not-disabled:cursor-pointer"
@@ -353,7 +353,7 @@
 </nav>
 
 <style>
-    .container {
+    .controls-container {
         box-shadow: 0px 0px 1rem rgba(0, 0, 0, 0.75);
     }
 
