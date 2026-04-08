@@ -11,7 +11,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "daisyui": "^5.5.19",
     "tailwindcss": "^4.2.2",
-    "vite": "^8.0.3"
+    "vite": "^8.0.7"
   },
   "devDependencies": {
     "@playwright/cli": "^0.1.1",
