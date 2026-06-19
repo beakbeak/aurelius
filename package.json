@@ -20,7 +20,7 @@
     "mocha-suppress-logs": "^0.6.0",
     "nyc": "^17.1.0",
     "svelte-check": "^4.4.5",
-    "tsx": "^4.21.0"
+    "tsx": "^4.22.4"
   },
   "scripts": {
     "gobuild": "go build -tags sqlite_fts5 ./cmd/aurelius",
