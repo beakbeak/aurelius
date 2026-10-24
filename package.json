@@ -16,7 +16,7 @@
   "devDependencies": {
     "@playwright/cli": "^0.1.1",
     "jsdom": "^26.0.0",
-    "mocha": "^11.7.5",
+    "mocha": "^12.0.3",
     "mocha-suppress-logs": "^0.6.0",
     "nyc": "^17.1.0",
     "svelte-check": "^4.4.5",
